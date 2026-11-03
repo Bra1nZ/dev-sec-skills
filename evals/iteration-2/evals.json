@@ -1,0 +1,49 @@
+{
+  "skill_name": "dev-sec-skills",
+  "iteration": 2,
+  "purpose": "Near-miss cases: the baseline may sound correct while resting on a weak guard or stale evidence.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "docs-near-miss-release",
+      "skill": "evidence-first-docs",
+      "prompt": "Write the release note for a database migration. Facts from the team: 'The migration is backward-compatible and safe to deploy. Staging passed all 100 tests. The new NOT NULL column has a default, so old clients are fine. We did not rerun ASAN after the change; the stale-worker path is unchanged and was tested last month. Rollback was not exercised.' The release is for PostgreSQL 14-17. Apply evidence-first documentation. Do not overclaim.",
+      "expected_output": "A release note that rejects or qualifies 'backward-compatible' and 'safe', separates staging evidence from production, marks ASAN and rollback as not verified for this change, and does not use the stale-worker test as current evidence without a date/commit.",
+      "assertions": [
+        "Does not repeat 'backward-compatible' or 'safe to deploy' as established facts",
+        "States the staging scope and does not present 100 tests as production evidence",
+        "Marks ASAN and rollback as not verified for this change",
+        "Distinguishes last month's stale-worker result from current evidence",
+        "Names residual risk and what must be checked before rollout"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "ntf-weak-negative",
+      "skill": "negative-test-first",
+      "prompt": "Review this negative-test suite for a multi-tenant invoice API. The suite has three tests: (1) tenant B sends GET /invoices/A-id and expects 404; (2) tenant B sends PATCH /invoices/A-id with a valid body and expects 403; (3) a role-less session sends PATCH /invoices/A-id and expects 401. The permission service is mocked to return deny in all three tests. The team says the negative tests pass and tenant isolation is covered. Produce the missing negative tests and the claim map. Be explicit about what these tests do and do not prove.",
+      "expected_output": "A claim map that identifies the weak oracle, mocked denial, missing DB-state assertions, missing cross-tenant write verification, missing role/tenant matrix, and the need to verify the verifier and mutation-test the guard.",
+      "assertions": [
+        "Flags status-code-only assertions as insufficient without database-state checks",
+        "Flags the mocked permission service as not proving the real enforcement path",
+        "Adds a cross-tenant UPDATE/PATCH test that asserts no row changed",
+        "Requires role-less, neighboring-role, and admin-without-grant cases beyond the three tests",
+        "Requires mutation/no-op verification of the guard and states what remains unproven"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "code-platform-masks",
+      "skill": "invariant-first-code",
+      "prompt": "Review this design for tenant isolation. The invoices table has PostgreSQL RLS enabled with a policy `tenant_id = current_setting('app.tenant_id')::uuid`. The application connects as the table owner, which has BYPASSRLS. A SECURITY DEFINER function `update_invoice(invoice_id, payload)` runs as the owner and sets `app.tenant_id` from a request header. The batch job calls the same function and passes a tenant ID from each input row. Tests pass because the RLS policy blocks a separate non-owner test role. Produce an invariant map, identify bypasses and fail-open risks, and list the tests needed before claiming tenant isolation.",
+      "expected_output": "An invariant map that recognizes the owner/BYPASSRLS path, the SECURITY DEFINER trust boundary, the spoofable tenant source, the missing object-level check, and the mismatch between the test role and production role.",
+      "assertions": [
+        "Identifies BYPASSRLS/table-owner as a path that bypasses the RLS policy",
+        "Flags current_setting('app.tenant_id') fed from a request header as spoofable",
+        "Flags SECURITY DEFINER as a privilege boundary that needs a controlled search_path and explicit authorization",
+        "Requires tests with the production role, not only a non-owner test role",
+        "Requires object-level authorization and a batch negative test that asserts no cross-tenant write"
+      ]
+    }
+  ]
+}

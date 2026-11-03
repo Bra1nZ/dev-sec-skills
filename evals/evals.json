@@ -1,0 +1,89 @@
+{
+  "skill_name": "dev-sec-skills",
+  "evals": [
+    {
+      "id": 0,
+      "name": "ntf-money-transfer",
+      "skill": "negative-test-first",
+      "prompt": "We have a Django endpoint that transfers money between accounts. The test suite is green and has happy-path tests plus a few 400-response tests. We need to claim: (1) no double spending under concurrent retries, and (2) balance can never go negative. Review the gaps and produce the missing negative test plan. Be concrete about cases, assertions, and what evidence would justify each claim.",
+      "expected_output": "A negative-first test plan that attacks both claims, enumerates concurrency/retry and boundary cases, checks side effects after refusal, classifies refusal layer, and states what remains unproven.",
+      "assertions": [
+        "Names a test that attempts double spending via concurrent/retried transfers",
+        "Names a test that attempts to cross the zero/negative balance boundary, including one past the limit",
+        "Requires absence-of-side-effects checks after refused transfers",
+        "Distinguishes application refusal from database/platform refusal",
+        "Does not claim the properties are proven by happy-path tests"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "ntf-rls-review",
+      "skill": "negative-test-first",
+      "prompt": "Review a PostgreSQL RLS policy test plan for an invoices table. The policy is supposed to let only tenant_admin update invoices in its own tenant. Current tests: tenant_admin can update its own invoice; a SELECT by another tenant returns no rows. Produce the missing negative tests and the claim map. Include migrations and alternate paths if relevant.",
+      "expected_output": "A claim map and negative test plan covering outsider roles, role-less sessions, cross-tenant object access, alternate write paths, migration reruns, and refusal classification.",
+      "assertions": [
+        "Covers cross-tenant UPDATE, not only SELECT",
+        "Covers role-less, neighboring-role, and admin-without-grant cases",
+        "Checks object-level access, not only table-level policy",
+        "Includes migration/upgrade rerun",
+        "Classifies who refused and verifies no partial write"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "docs-readme-claims",
+      "skill": "evidence-first-docs",
+      "prompt": "Rewrite this README section for a PostgreSQL RBAC extension using evidence-first documentation. Current text: 'The extension is secure and fully tested. All 876 tests pass. It guarantees tenant isolation and is compliant with FSTEC 76.' Known facts: negative tests T-04..T-11 cover role Y, role-less sessions, and cross-tenant writes on PostgreSQL 14-17; 876/876 tests passed on PG14-17; ASAN was not rerun after the CE-3 fix; stale-worker behavior after rotate_session_secret() is untested; superuser and DBA are outside the threat model; no FSTEC audit was performed. Produce the corrected text plus a claim ledger.",
+      "expected_output": "Rewritten text with no unsupported absolutes, a claim ledger with statuses and scope, explicit open claims, and a clear statement that mapping is not certification.",
+      "assertions": [
+        "Removes or qualifies 'secure', 'fully tested', 'guarantees', and 'compliant'",
+        "Includes a claim ledger with evidence, scope, status, and limitations",
+        "Marks stale-worker and ASAN as open/not rerun",
+        "Names superuser/DBA as outside the model",
+        "Distinguishes FSTEC mapping from a certification/audit"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "docs-release-notes",
+      "skill": "evidence-first-docs",
+      "prompt": "Draft release notes for rbac 1.4.12 from these facts: CE-3 fixed a context leak by dropping context before RAISE; t/131 passes 10/10; full installcheck 876/876 on PG14-17; CE-4 now fails closed for out-of-supported configurations; CE-7 is documented as PARALLEL RESTRICTED; ASAN was 866/866 before CE-3 and was not rerun after; stale worker after secret rotation is unverified. Apply evidence-first documentation. Do not overclaim.",
+      "expected_output": "Release notes with supported claims, exact evidence and scope, open claims/residual risk, and no 'all tests pass' or certification language.",
+      "assertions": [
+        "Separates supported claims from open claims",
+        "States exact test counts and the PG14-17 scope",
+        "Marks ASAN and stale-worker as not verified after the change",
+        "Describes CE-4 and CE-7 precisely without overclaiming",
+        "Includes residual risk and evidence freshness"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "code-auth-review",
+      "skill": "invariant-first-code",
+      "prompt": "Review this design: a Python API checks `current_user.role == 'tenant_admin'` in the HTTP update_invoice handler before writing. A batch import job writes invoices directly through the ORM and does not call the handler. The database has no RLS. Tenant ID comes from the request body. Produce an invariant map, identify bypasses and fail-open risks, and list the tests needed before claiming tenant isolation.",
+      "expected_output": "Invariant map with enforcement points and failure modes, explicit bypass via batch/ORM, object-level and tenant-source issues, fail-closed recommendations, and negative tests.",
+      "assertions": [
+        "Identifies the batch/ORM path as an unguarded bypass",
+        "Requires enforcement at a choke point or database policy, not only the handler",
+        "Flags tenant ID from request body as spoofable",
+        "Requires object-level authorization and default deny",
+        "Names negative tests including role-less, cross-tenant, and batch path"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "code-tenant-invariants",
+      "skill": "invariant-first-code",
+      "prompt": "Design the invariants for a multi-tenant API that creates and updates invoices. Requirements: a user can touch only their tenant's invoices; admins can act only with an explicit grant; retries must not create duplicate invoices; a worker that lost its lease must not commit; secrets rotate without a restart. Produce an invariant map and the negative tests that would make each invariant credible.",
+      "expected_output": "Invariant map covering tenant isolation, object-level auth, explicit admin grants, idempotency, lease fencing, secret rotation, failure modes, and negative tests.",
+      "assertions": [
+        "Separates tenant isolation from role checks",
+        "Requires explicit admin grant, not ambient admin bypass",
+        "Uses an idempotency key for duplicate creation",
+        "Requires fencing token/epoch for stale worker",
+        "Tests stale credentials after rotation"
+      ]
+    }
+  ]
+}

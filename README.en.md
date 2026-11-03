@@ -1,103 +1,159 @@
-# negative-test-first
+# Dev-Sec Skills: Evidence Before Claims
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Format: agent skill](https://img.shields.io/badge/format-SKILL.md-orange)](SKILL.md)
-[![Discipline: negative test first](https://img.shields.io/badge/discipline-negative--test--first-2ea44f)](SKILL.md)
+[![Format: SKILL.md](https://img.shields.io/badge/format-SKILL.md-orange)](skills/negative-test-first/SKILL.md)
+[![Languages: RU / EN](https://img.shields.io/badge/docs-RU%20%2F%20EN-2ea44f)](README.md)
 
-An agent skill for the general testing discipline of any product with
-claims that must hold: business rules ("a withdrawal cannot exceed the
-balance"), data invariants ("balance equals the sum of movements"),
-persistence ("data survives a restart"), concurrency ("no double
-spending"), API contracts, access control, and audit — everything where
-"the feature works" proves nothing and only "the violation fails" does.
+Agent skills for teams that need more than a green test and a confident
+sentence. One working principle in three planes: **a claim exists only with
+evidence, scope, and an honest status.**
 
-The skill grew out of practice: building a PostgreSQL access-control
-extension where every protection mechanism must carry a negative test, and
-every escaped defect becomes a named lesson that lives in code comments and
-in the tests. Not textbook theory — a checklist of what actually broke and
-how it got caught.
+The skills are not tied to a language, framework, or standard. They describe
+how an agent should reason and what it should check; the references connect
+those rules to international and Russian standards.
 
-## How this differs from generic testing skills
+## Why this exists
 
-Most testing-related agent skills teach TDD or a general checklist: write
-tests first, cover the happy path, watch coverage. This one is built around
-a single inverted question — *which test tried to violate this rule?* — and
-the mechanics that make the answer trustworthy: refusal classification (who
-exactly refused — your code or the platform), honest branching when
-platforms behave differently, absence-of-side-effects assertions after every
-refusal, two evidence channels, negative-test reruns after migrations, and
-A/B baselines instead of bare thresholds. Every pattern corresponds to a
-defect that actually escaped and was caught.
+Agents write positive tests well and convincing READMEs even better. They
+check that code does what was asked and almost never that code refuses what
+was not. The result is a green suite that proves nothing about the rule, and a
+document that promises more than was verified.
 
-## The core idea
+These skills invert the question:
 
-A requirement is covered only when a test shows that **violating it does not
-work**. A suite that checks only happy paths proves nothing about the rule.
-For every claim — "you cannot withdraw more than the balance", "only role X
-may write table T", "data survives a restart" — there must be a test that
-tried to violate it: at the boundary, one past the boundary, in parallel,
-through an alternative path — and failed.
+- not "does the feature work?" but "which test tried to violate it?";
+- not "is the system secure?" but "who exactly failed to get through, under
+  which threat model?";
+- not "is everything tested?" but "which claims are still `open`, and who
+  admits it?".
 
-The usual order is reversed: positives first, negatives "if time permits".
-Here the negative is written first; the positive is the cheap half. Security
-is not a separate topic but the sharpest case of the same discipline: a
-security claim with no negative test is a claim nobody has checked even once.
+## The three skills
 
-## What's inside
+| Skill | Use when | Main output |
+| --- | --- | --- |
+| [`negative-test-first`](skills/negative-test-first/SKILL.md) | Test planning, coverage review, "is it done?", release gate | Every requirement paired with a test that attempts to violate it |
+| [`evidence-first-docs`](skills/evidence-first-docs/SKILL.md) | README, architecture, ADR, API contracts, security/compliance claims, release notes, audit packs | Claim ledger: mechanism, evidence, scope, status, limitations |
+| [`invariant-first-code`](skills/invariant-first-code/SKILL.md) | Auth, permissions, data, transactions, migrations, concurrency, APIs, secrets, supply chain | Invariant, enforcement point, fail-closed behavior, negative check |
 
-Three layers: a universal "claim → required negative" table (seven kinds of
-claims: feature conditions, business rules, data invariants, persistence,
-API contracts, concurrency, security), nine patterns and eight
-anti-patterns. The patterns, briefly:
+They compose:
 
-* every requirement pairs with a negative test — the claim list becomes the
-  coverage index: each claim names the test that violates it;
-* input classes are enumerated and tested individually, not by example:
-  empty, one, many, at the limit, past the limit — off-by-one errors live
-  exactly at the boundary;
-* after an expected failure, assert the world did not change: nothing was
-  created, charged, or counted — a half-applied error is a bug in a test's
-  clothes;
-* failures are classified by **who** failed — your code, the platform, the
-  driver, a typo; "caught some exception" does not count;
-* platform branching is honest: if another build's platform catches the
-  violation earlier, the test says so ("our check is defense in depth")
-  instead of reporting a green pass for nothing;
-* failure evidence is checked in two channels: what dies with the
-  transaction and what survives it (the server log);
-* negative tests rerun after a migration on live data — an upgrade that
-  silently relaxes a rule is worse than a bug: a regression with a green
-  release note;
-* performance thresholds come from an A/B baseline; absolute limits are
-  valid only under proven-quiet conditions;
-* counts are exact ("57 OK, 0 FAIL", failures by name), a release waits for
-  a green run on every platform, and an escaped defect becomes a named
-  lesson.
+1. `invariant-first-code` names what must always hold.
+2. `negative-test-first` tries to break it.
+3. `evidence-first-docs` records what was actually proven, where, and with
+   which limits.
+
+## Shared principles
+
+- **Claim, not mood.** "Secure" and "correct" are not claims. A claim must be
+  falsifiable.
+- **Negative first.** The positive test is the cheap half. Coverage starts
+  with an attempt to violate.
+- **Scope next to the claim.** Versions, platforms, privileged actors, and
+  exclusions belong where the promise is made.
+- **Status, not belief.** `proven`, `model-checked`, `tested`,
+  `static-refinement`, `reviewed`, and `open` are different things.
+- **An artifact is not evidence.** A report, test, or PDF does not prove
+  anything without a result, a scope, and reproducibility.
+- **Standard-agnostic core.** The skills do not name standards. The crosswalk
+  does.
+
+## Standards
+
+The core draws on practices found in NIST SSDF, NIST SP 800-160, OWASP ASVS,
+ISO/IEC/IEEE 29148/42010/29119, ISO/IEC 25010, CWE/SARIF, SLSA,
+SPDX/CycloneDX, RFC 2119/8174, and Diátaxis.
+
+Russian requirements — FSTEC 55, 76, 64 and GOST R 56939-2024 / 71207-2024 —
+are not dissolved into the core. They live in
+[`references/standards-map.md`](references/standards-map.md) with international
+analogues. It is a **crosswalk, not a certification or an audit**: a mapping
+table cannot declare compliance.
+
+Downloaded freely available documents and links to paywalled ISO standards are
+in [`references/standards/SOURCES.md`](references/standards/SOURCES.md).
+
+## Layout
+
+```text
+skills/
+  negative-test-first/
+    SKILL.md
+    README.md
+    README.en.md
+  evidence-first-docs/
+    SKILL.md
+    README.md
+    README.en.md
+    references/
+      banned-words.md
+      evidence-template.md
+  invariant-first-code/
+    SKILL.md
+    README.md
+    README.en.md
+    references/
+      invariant-template.md
+      review-checklist.md
+references/
+  standards-map.md
+  standards/
+    SOURCES.md
+    downloaded/
+evals/
+  evals.json
+  iteration-1/
+    RESULTS.md
+  iteration-2/
+    evals.json
+    RESULTS.md
+```
 
 ## Install
 
-The skill is agent-neutral — a `SKILL.md` with principles and patterns.
+The skills are agent-neutral: each is a directory with a `SKILL.md`. Copy the
+ones you need where your agent looks for skills.
 
 ```bash
-git clone https://github.com/Bra1nZ/negative-test-first
-cp -r negative-test-first ~/.config/opencode/skills/negative-test-first
+git clone <repo-url> dev-sec-skills
+cp -r dev-sec-skills/skills/negative-test-first ~/.config/opencode/skills/
+cp -r dev-sec-skills/skills/evidence-first-docs ~/.config/opencode/skills/
+cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 ```
 
-For agents that read skills elsewhere, put `SKILL.md` where the agent looks
-for skills. It activates when the task involves designing a test plan for a
-feature or a product, writing tests for business rules or invariants,
-reviewing negative-case coverage, classifying failures, or setting
-performance baselines.
+For another agent, put `SKILL.md` and its `references/` where that agent looks
+for skills. The `README.md` next to a skill is for humans, not for context
+loading.
 
-## Why agents need this
+## How to use
 
-Agents write positive tests well and negative tests poorly: they check that
-code does what was asked and almost never that code refuses what was not.
-The more expensive a violated rule is, the more this bias costs: a green
-suite looks like "the rule works" while not a single attempt to violate it
-was ever made. The skill forces the question "which test tried to violate
-this rule?" before a feature is called done.
+- Before a release: run `negative-test-first` over the claims and list the ones
+  without a violating test.
+- Before publishing a README or audit pack: run `evidence-first-docs` to
+  remove unsupported absolutes and add scope.
+- Before merging a security-sensitive change: run `invariant-first-code`
+  through the checklist and verify the guard cannot be bypassed and the test
+  fails when the guard is removed.
+- After an incident: add a named lesson to a test, not only to a comment.
+
+## Languages
+
+- `SKILL.md` is English so the skill works in multilingual agents.
+- `README.md` is Russian.
+- `README.en.md` is English.
+- The skills contain no language-specific annexes: examples and rules apply to
+  any stack.
+
+## Status
+
+This is an early `0.1`: three skills, a crosswalk, evidence templates, and two
+eval sets (six baseline tasks and three near-miss tasks). Results are in
+[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md) and
+[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md). Planned:
+executable checks for static analysis, a claim-ledger linter, and trigger
+evals. For now this is discipline and documentation, not a certificate or a
+substitute for an audit.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Third-party standards keep their own licenses;
+see [`references/standards/SOURCES.md`](references/standards/SOURCES.md).
