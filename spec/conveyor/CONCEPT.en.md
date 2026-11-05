@@ -33,7 +33,7 @@
 | C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
 | C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
 | C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 18/18 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
-| C-18 | The cell registry instantiates on a real repository, rbac_pg | 29 cells; every non-open cell links to an existing suite or the claim ledger, open cells link to recorded gaps in their limitations; artifacts resolve; CL1/CL3/CL4 have no errors | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; command `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | One repository, rbac_pg at HEAD `492f23c` | tested | The cell-to-test meaning was checked by review, not by machine; 4 suites were re-run on a fresh stand on 2026-11-06 (57/22/45/54 OK), the rest are recorded baselines dated 2026-10-30; 5/27 detectors have a mutation fixture, 22 do not; 22/29 cells have no claim; lint proves internal consistency, not that a property holds |
+| C-18 | The cell registry instantiates on a real repository, rbac_pg | 29 cells; every non-open cell links to an existing suite or the claim ledger, open cells link to recorded gaps in their limitations; artifacts resolve; CL1/CL3/CL4 have no errors | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; command `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | One repository, rbac_pg at HEAD `492f23c` | tested | The cell-to-test meaning was checked by review, not by machine; all 10 suites were re-run on a fresh stand on 2026-11-06 (57/22/45/54/20/25/17/20/9 OK and 5 OK/2 GAP); 5/27 detectors have a mutation fixture, 22 do not; 22/29 cells have no claim; lint proves internal consistency, not that a property holds |
 
 Registry rules:
 
@@ -398,11 +398,11 @@ layer (SeaHorn/Frama-C).
 ## 13. Open questions and next evidence
 
 1. **Pilot.** rbac_pg is chosen; the pilot registry is built (C-18): 29
-   cells, 0 CL1/CL3/CL4 errors. Four suites were re-run on a fresh stand on
+   cells, 0 CL1/CL3/CL4 errors. All ten suites were re-run on a fresh stand on
    2026-11-06, and 5 of 27 detectors now have a mutation fixture. Still
-   missing: fixtures for the other 22 detectors, a re-run of six more suites,
-   and a decision on whether the claim ledger covers more than the FSTEC
-   matrix. Without those, C-07…C-12 remain hypotheses.
+   missing: fixtures for the other 22 detectors, and a decision on whether the
+   claim ledger covers more than the FSTEC matrix. Without those, C-07…C-12
+   remain hypotheses.
 2. **Verdict anchor.** Rekor/SCITT, in-toto+Sigstore, or an append-only
    repository. Needs a threat model and operating cost.
 3. **Self-mutation judge.** Who accepts that a defective PR was caught, and by

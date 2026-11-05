@@ -39,13 +39,14 @@ residual risk. No cell was invented to fill a taxonomy class.
 baseline. Of the 27 detectors, 5 test detectors now also have a mutation fixture
 showing that the detector fails when the mechanism is removed. The other 22
 (21 test, 1 review) have none, and CL2 keeps warning that they are not
-verified. On 2026-11-06 four suites were re-run on a fresh PostgreSQL 15.17
+verified. On 2026-11-06 all ten suites were re-run on a fresh PostgreSQL 15.17
 stand: `test_fstek.py` 57 OK, `test_v191_fixes.py` 22 OK,
-`test_v16_guards.py` 45 OK, `test_v17_events.py` 54 OK. The other suites were
-not re-run; their `last_verified` remains the recorded baseline date
-(2026-10-30). `reviewed` means a review artifact, not an executable detector.
-`open` means either no detector exists or the recorded run shows the property
-failing.
+`test_v16_guards.py` 45 OK, `test_v17_events.py` 54 OK,
+`test_v15_idempotency.py` 20 OK, `test_v151_ranges.py` 25 OK,
+`test_v15_security.py` 17 OK, `test_v15_ceiling_trigger.py` 20 OK,
+`test_perf_envelope.py` 9 OK, `test_side_channels.py` 5 OK / 2 GAP.
+`reviewed` means a review artifact, not an executable detector. `open` means
+either no detector exists or the recorded run shows the property failing.
 
 ## Lint result
 
@@ -269,6 +270,24 @@ local documentation (`MODEL.md`, `FSTEC-GAP.md`, `SCOPE.md`,
 `docs/persey/INDEX.md`). The warnings do not block the pilot, but they are the
 same class of overclaim the `evidence-first-docs` skill exists to remove.
 
+## Decisions recorded 2026-11-06
+
+- **Claim ledger.** `docs/claims.yaml` stays a FSTEC-matrix artifact
+  (C-01…C-07). It is not extended to the 22 unlinked cells: those cells are
+  backed by test detectors, not by claims, and widening the ledger would blur
+  the difference between "what the project claims" and "what has a detector".
+  The registry remains the coverage map; the ledger remains the claim map.
+  Revisit when a second consumer needs linked claims.
+- **CELL-028.** Stays `open`. The fix belongs in `rbac_pg`: `secure_table()`
+  should reject a foreign key to a protected parent with `0P000`. Until that
+  ships, the contract gap is an accepted residual. It was not patched here
+  because the target repository is read-only for this pilot.
+- **CELL-026.** Stays `open`. The oracle is PostgreSQL core behaviour. The
+  extension-level mitigation is to require `UNIQUE(tenant_id, id)` in
+  `secure_table()`; that is a design change, not a test fix.
+- **CELL-029.** Stays `tested` as a configuration control. Re-run C4 whenever
+  catalog privileges change; the cell must not be read as a code guard.
+
 ## What this proves
 
 - The cell contract is instantiable on a real repository: 29 cells, all
@@ -282,12 +301,13 @@ same class of overclaim the `evidence-first-docs` skill exists to remove.
   `cell_lint` CL4 with no errors (22 infos are the unlinked cells).
 - Five detectors are falsifiable: the named suites fail exactly on the
   predicted tests when the mechanism is removed, and stay green otherwise.
-- Four suites reproduce their recorded baselines on a fresh PostgreSQL 15.17
-  stand: FSTEC 57 OK, v1.9.1 fixes 22 OK, v1.6 guards 45 OK, v1.7 events 54 OK.
+- All ten suites reproduce their recorded baselines on a fresh PostgreSQL 15.17
+  stand, including the two recorded side-channel GAPs (П-1, П-2). The
+  performance thresholds remain hardware-specific.
 
 ## What this does not prove
 
-- That any security property holds in production. Four suites were re-run on
+- That any security property holds in production. All ten suites were re-run on
   one stand; `tested` still rests on tests, not on a proof.
 - That the remaining 22 detectors can fail. Only 5 of 27 have a mutation
   fixture.
@@ -341,17 +361,11 @@ global roles must already exist.
    next targets: CELL-002 (blocked at the repository layer, see Finding 1),
    CELL-009 (audit attribution), CELL-014 (replay), CELL-021 (idempotency),
    CELL-027/029 (side channels).
-2. Re-run the remaining six suites on the same stand and replace their
-   recorded `last_verified` dates: `test_side_channels.py`,
-   `test_v15_idempotency.py`, `test_v151_ranges.py`, `test_perf_envelope.py`,
-   `test_v15_security.py`, `test_v15_ceiling_trigger.py`. Performance needs a
-   quiet stand.
-3. Add migration-path mutation fixtures: the `test_fstek.py` M-series,
+2. Add migration-path mutation fixtures: the `test_fstek.py` M-series,
    `test_v16_guards.py` M1, and `test_v17_events.py` M1–M4.
-4. Either extend `docs/claims.yaml` to the 22 unlinked cells or record that the
-   ledger is a FSTEC-matrix artifact, not a coverage map.
-5. Decide CELL-028 (the closable side-channel contract gap) and record CELL-026
-   (core oracle) and CELL-029 (configuration control) as residual risk.
+
+The claim-ledger and side-channel questions are recorded as decisions above,
+not left open. Reopen them only with new evidence.
 
 ## Limitations
 
@@ -360,8 +374,8 @@ global roles must already exist.
   The registry cites only tracked test artifacts except where a path is
   explicitly a documentation artifact.
 - The recorded baselines were produced on two clusters (ЗСУБД and PP1C) on
-  2026-10-30. Four of them were reproduced on a third, fresh 15.17 stand on
-  2026-11-06; the other six were not.
+  2026-10-30. All ten were reproduced on a third, fresh 15.17 stand on
+  2026-11-06.
 - `cell_lint` checks internal consistency, not truth. A cell can be `tested`
   and wrong if the test asserts the wrong thing.
 - The registry is a snapshot. A change to a suite changes the detector's

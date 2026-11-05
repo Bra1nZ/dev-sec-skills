@@ -41,7 +41,9 @@ This is the first batch: it covers 5 of the pilot's 27 detectors. The remaining
 | MUT-005 | CELL-012 | D-V17-E1 | `security_events_append_only()` becomes a no-op | UPDATE, DELETE, TRUNCATE refusals | 51 OK, 3 FAIL |
 
 Unmutated baselines on the same stand: `test_v191_fixes.py` 22 OK, `test_v16_guards.py`
-45 OK, `test_v17_events.py` 54 OK. `test_fstek.py` was also re-run: 57 OK.
+45 OK, `test_v17_events.py` 54 OK. `test_fstek.py` was also re-run: 57 OK. The
+other six pilot suites reproduced as well: 20, 25, 17, 20, 9 OK and
+`test_side_channels.py` 5 OK / 2 GAP.
 
 ## Findings
 

@@ -267,8 +267,8 @@ cells:
         artifact: setup/test_v15_ceiling_trigger.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_ceiling_trigger.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "Branch coverage of the trigger, including NULL semantics. Recorded baseline 20 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "Branch coverage of the trigger, including NULL semantics. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 20 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Only the minimum ceiling over all roles is protected; a session whose effective minimum did not change keeps its context.
     limitations: The epoch counter is tested; clock and transaction ordering across concurrent ALTER ROLE statements are not.
@@ -375,8 +375,8 @@ cells:
         artifact: setup/test_v15_security.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_security.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "P1-P3, including 'alice sees only her tenant and below the ceiling'. Recorded baseline 17 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "P1-P3, including 'alice sees only her tenant and below the ceiling'. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 17 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Superuser and BYPASSRLS roles see everything; side channels that leak existence without returning rows are separate open cells.
     limitations: The detector asserts row visibility, not the absence of every inference channel.
@@ -484,8 +484,8 @@ cells:
         artifact: setup/test_v15_idempotency.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_idempotency.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "Three repeated runs plus a real change and a rollback case. Recorded baseline 20 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "Three repeated runs plus a real change and a rollback case. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 20 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Idempotency is asserted for the tested document shapes; a semantically equal document with different ordering is not exercised.
     limitations: The test compares catalog state and policy OIDs, not lock waits under concurrency.
@@ -505,8 +505,8 @@ cells:
         artifact: setup/test_v151_ranges.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v151_ranges.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "S1 and S2 (fresh install and 1.5 -> 1.5.1 migration). Recorded baseline 25 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "S1 and S2 (fresh install and 1.5 -> 1.5.1 migration). Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 25 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: The clamp is a one-way data reduction; the original out-of-range values are not recoverable from the label itself.
     limitations: The test covers the recorded migration path, not arbitrary upgrades from earlier versions.
@@ -527,8 +527,8 @@ cells:
         artifact: setup/test_perf_envelope.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_perf_envelope.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "_ctx_valid <= 300 us, has_role <= 500 us, point SELECT <= 2 ms, INSERT <= 3.2 ms/row. Recorded baseline 9 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "_ctx_valid <= 300 us, has_role <= 500 us, point SELECT <= 2 ms, INSERT <= 3.2 ms/row. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 9 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Thresholds are valid only on a quiet stand and are not portable across hardware; a regression below the threshold is invisible.
     limitations: The suite measures a 100k-row table, not production cardinality or concurrent load.
@@ -599,8 +599,8 @@ cells:
         artifact: setup/test_side_channels.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_side_channels.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "C3 report 'FK-зонд не выдаёт невидимого родителя'. Recorded baseline 5 OK / 0 FAIL / 2 GAP; the two GAPs are П-1 and the П-2 secure_table contract."
+        last_verified: "2026-11-06"
+        note: "C3 report 'FK-зонд не выдаёт невидимого родителя'. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 5 OK / 0 FAIL / 2 GAP (recorded baseline 2026-10-30); the two GAPs are П-1 and the П-2 secure_table contract."
     claim_ids: []
     residual_risk: TESTING.md records no actual parent disclosure through 23503 on the current model, but the FK trigger still reads the parent as the owner; a schema change can reopen the channel.
     limitations: The probe uses a parent invisible by tenant and MAC; another invisible-row shape is not exercised.
@@ -634,8 +634,8 @@ cells:
         artifact: setup/test_side_channels.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_side_channels.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "C4 report 'pg_stats пуста для прикладной роли'. Recorded baseline 5 OK / 0 FAIL / 2 GAP."
+        last_verified: "2026-11-06"
+        note: "C4 report 'pg_stats пуста для прикладной роли'. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 5 OK / 0 FAIL / 2 GAP (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: The channel is closed by catalog privileges on the recorded server, not by the extension; TESTING.md warns that SELECT on the table can expose statistics under a different privilege policy.
     limitations: "A configuration control, not a code guard; must be re-run when catalog privileges change."
