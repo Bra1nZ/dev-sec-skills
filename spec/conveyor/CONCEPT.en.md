@@ -395,6 +395,48 @@ learning channel (retrieval of contrastive pairs at the moment of writing).
 price list; certification module for critical infrastructure; VC path over the C
 layer (SeaHorn/Frama-C).
 
+### 12.1 v0.2 backlog (tasks)
+
+Not commitments and not status: a task closes only with evidence.
+
+**P0 — evidence integrity**
+
+- [ ] V2-01. Run-record schema: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps.
+- [ ] V2-02. `claim_lint`: verify the run record (hashes, executed IDs, exit_code) instead of string evidence.
+- [ ] V2-03. `status_diff`: missing or unknown base ref → error; only `--first-release` is exempt.
+- [ ] V2-04. `cell_lint`: missing base registry → error, not a gate-less run.
+- [ ] V2-05. Removed claim or cell → error, or a mandatory `retired:` with a reason.
+- [ ] V2-06. CL2: missing mutation_fixture → error for security and correctness classes.
+- [ ] V2-07. Diff coverage: changed choke-point paths and symbols must map to a claim.
+- [ ] V2-08. `make verify` as the single local entry point for all gates.
+- [ ] V2-09. Negative controls in `evals/linter`: stub test, re-dating, unrelated commit, empty model.
+- [ ] V2-10. `model-checked` and `proven`: require tool output, not artifact existence.
+
+**P1 — enforcement**
+
+- [ ] V2-11. `run_mutations.py` in CI for changed cells.
+- [ ] V2-12. Assert that the predicted IDs failed, not just any test.
+- [ ] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled.
+- [ ] V2-14. Mutation fixtures for the remaining 22 pilot detectors.
+- [ ] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell.
+- [ ] V2-16. A "runtime enforcement" evidence kind with a mandatory negative test.
+
+**P2 — continuous loop**
+
+- [ ] V2-17. Fuzzing adapter: oracle, seed corpus, budget, fixed seed, run artifact.
+- [ ] V2-18. Triage fuzzer findings → cell + detector + fixture.
+- [ ] V2-19. Scheduled fuzzing that does not block merges.
+- [ ] V2-20. Coverage report: unmapped symbols, stale claims, cells without a fixture.
+
+**General-code track — beyond RBAC**
+
+- [ ] V2-21. Invariant catalogue outside databases and roles: input validation, authn/session, secrets, lifecycle, transactions.
+- [ ] V2-22. AST choke-point extractor for ordinary code and mapping to cell classes.
+- [ ] V2-23. SARIF adapters for two or three engines as evidence sources.
+- [ ] V2-24. A second pilot on a non-RBAC codebase (web service or CLI).
+- [ ] V2-25. Check that the taxonomy is not overfit to FSTEC and databases; measure the `unroutable` share.
+- [ ] V2-26. Exit criterion: two pilots, a measured `unroutable` share, a threshold fixed before the start; fixtures for most security detectors.
+
 ## 13. Open questions and next evidence
 
 1. **Pilot.** rbac_pg is chosen; the pilot registry is built (C-18): 29

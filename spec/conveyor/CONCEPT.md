@@ -388,6 +388,48 @@ prior-art sweep, а не этот абзац.
 **Фаза 4.** Конфигурации как продукт с матрицей покрытия вместо прайса;
 сертификационный модуль для КИИ; VC-путь по C-слою (SeaHorn/Frama-C).
 
+### 12.1 Бэклог v0.2 (задачи)
+
+Не обязательства и не статус: задача закрывается только evidence.
+
+**P0 — целостность evidence**
+
+- [ ] V2-01. Схема run-record: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps.
+- [ ] V2-02. `claim_lint`: проверять run-record (хэши, исполненные ID, exit_code) вместо строкового evidence.
+- [ ] V2-03. `status_diff`: отсутствующий или неизвестный base-ref → error; исключение только `--first-release`.
+- [ ] V2-04. `cell_lint`: отсутствующий base registry → error, а не запуск без гейта.
+- [ ] V2-05. Удалённый claim или cell → error либо обязательное `retired:` с причиной.
+- [ ] V2-06. CL2: отсутствие mutation_fixture → error для классов security и correctness.
+- [ ] V2-07. Diff-покрытие: изменённые choke-point пути и символы обязаны отображаться на claim.
+- [ ] V2-08. `make verify` — единая локальная точка запуска всех гейтов.
+- [ ] V2-09. Негативные контроли в `evals/linter`: заглушка, пере-датировка, посторонний коммит, пустая модель.
+- [ ] V2-10. `model-checked` и `proven`: требовать вывод инструмента, а не существование артефакта.
+
+**P1 — принуждение**
+
+- [ ] V2-11. `run_mutations.py` в CI для изменённых cell'ов.
+- [ ] V2-12. Проверять, что упали именно предсказанные ID, а не любой тест.
+- [ ] V2-13. Negative control для `tested` в security: записанный прогон с отключённым guard'ом.
+- [ ] V2-14. Mutation fixtures для оставшихся 22 детекторов пилота.
+- [ ] V2-15. Поля `enforced_at`, `oracle`, `violation_response` в ячейке.
+- [ ] V2-16. Evidence-kind «runtime enforcement» с обязательным негативным тестом.
+
+**P2 — непрерывный контур**
+
+- [ ] V2-17. Фаззинг-адаптер: oracle, seed-корпус, бюджет, фиксированный seed, артефакт прогона.
+- [ ] V2-18. Триаж находок фаззера → cell + detector + fixture.
+- [ ] V2-19. Scheduled-запуск фаззера, не блокирующий merge.
+- [ ] V2-20. Отчёт покрытия: unmapped symbols, stale claims, cells без fixture.
+
+**Трек general-code — выход за пределы RBAC**
+
+- [ ] V2-21. Каталог инвариантов вне БД и ролей: input validation, authn/session, secrets, lifecycle, transactions.
+- [ ] V2-22. AST-экстрактор choke points для обычного кода и маппинг на классы ячеек.
+- [ ] V2-23. SARIF-адаптеры двух-трёх движков как источники evidence.
+- [ ] V2-24. Второй пилот на не-RBAC кодовой базе (веб-сервис или CLI).
+- [ ] V2-25. Проверить, что таксономия не переобучена под FSTEC и БД; измерить долю `unroutable`.
+- [ ] V2-26. Критерий выхода: два пилота, измеренная доля `unroutable`, порог зафиксирован до старта; fixtures у большинства security-детекторов.
+
 ## 13. Открытые вопросы и следующий evidence
 
 1. **Пилот.** Выбран rbac_pg; пилотный реестр собран (C-18): 29 ячеек,
