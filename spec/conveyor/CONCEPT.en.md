@@ -22,17 +22,18 @@
 | C-04 | The skills change an agent's answer in the intended direction | `with_skill` / `without_skill` pairs | `evals/iteration-1/RESULTS.md`; `evals/iteration-2/RESULTS.md`; `evals/README.md` | Nine synthetic tasks | reviewed | Qualitative inspection; no scored harness; small sample |
 | C-05 | The linter catches a forged trace and the runner does not pass vacuously | `fake-test-id` case + runner negative control | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Synthetic fixtures | tested | 12/12 cases prove the linter contract, not that any production ledger is clean |
 | C-06 | The product sells verification throughput, not tests | Layers + routing + coverage table | None | — | open | No measurement of throughput, false-positive rate, or latency; next step is to instrument a baseline on the pilot |
-| C-07 | L0: an AST diff routes a PR to the affected security cells in seconds | AST extractor + code-to-cell index | None | SQL/C first | open | Extractor and index are not built; a false negative in routing is a risk; needs a pilot and precision/recall measurement against human labelling |
+| C-07 | L0: an AST diff routes a PR to the affected security cells in seconds | AST extractor + code-to-cell index | None | SQL/C first | open | Extractor and index are not built; a false negative in routing is a risk; needs precision/recall measurement on the rbac_pg pilot against human labelling |
 | C-08 | L1: an engine-agnostic ensemble through SARIF adapters covers cells in minutes | Adapters for SVACE/PVS/Semgrep/CodeQL and others | None | Two or three engines first | open | Adapters are not written; "SARIF" is a format, not evidence; needs a triage sample and rules that route findings into cells |
 | C-09 | L2: regenerating a slice of a formal model from unannotated code works as a merge gate | Bounded guard grammar + bounded model checking / VC + completeness gate | None; language limits in `guard-grammar.md` | Only cells expressible by the grammar | open | The extractor is TCB; risk of a vacuous model; the grammar covers an authorization slice, not concurrency or transactions; the model↔code gap remains |
 | C-10 | Self-mutation of the conveyor is a condition of its release | Injected defective and clean PRs + an external judge | None | Conveyor releases | open | The judge is undefined; the held-out suite is not deployed; without an external judge the check is circular |
-| C-11 | The taxonomy is bounded to hundreds of cells and lessons live as fixtures | Matrix of failure class × entry point × failure mode | `spec/conveyor/cell-registry.schema.json`; `spec/conveyor/cells.seed.yaml` | Four taxonomies | open | "~200" is a design estimate; no pilot calibration; the unroutable share is unmeasured |
+| C-11 | The taxonomy is bounded to hundreds of cells and lessons live as fixtures | Matrix of failure class × entry point × failure mode | `spec/conveyor/cell-registry.schema.json`; `spec/conveyor/cells.seed.yaml`; `spec/pilots/rbac_pg/` | Four taxonomies | open | "~200" is a design estimate; the rbac_pg pilot produced 29 cells for one extension (25 security, 2 correctness, 1 performance, 1 maintainability), 3 of them open; the unroutable share is unmeasured |
 | C-12 | Review time for an average PR falls from ~45 to ~15 minutes | Routing + dissolving verification into the conveyor | None | — | open | No baseline measurement; depends on language, domain, and test maturity; publish a distribution, not a point estimate |
 | C-13 | The verdict registry is a hash chain with an external anchor | Hash of (commit + extractor + verifier versions + model + result), append-only | None | All verdicts | open | The anchor is not chosen; no implementation; needs a threat model for log substitution |
 | C-14 | The agent-guard and Citadel building blocks transfer to the code supply chain | Broker/default-deny, taint, one-shot grants, hash-chain audit | No pointers in this repository | External repositories | open | This document does not confirm them; each block needs a "repository + path/commit" pointer |
 | C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
 | C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
 | C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 18/18 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
+| C-18 | The cell registry instantiates on a real repository, rbac_pg | 29 cells; every non-open cell links to an existing suite or the claim ledger, open cells link to recorded gaps in their limitations; artifacts resolve; CL1/CL3/CL4 have no errors | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; command `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | One repository, rbac_pg at HEAD `492f23c` | tested | The cell-to-test meaning was checked by review, not by machine; suites were not re-run (recorded baselines dated 2026-10-30); 0/27 detectors have a mutation fixture; 22/29 cells have no claim; lint proves internal consistency, not that a property holds |
 
 Registry rules:
 
@@ -179,7 +180,8 @@ data, not by an agent.
 
 10,000 lessons = 10,000 fixtures at hundreds of cells. The knowledge base is
 audited through cells, not through history. The number "~200" is a design
-estimate (C-11); pilot calibration will show the real order.
+estimate (C-11); the rbac_pg pilot produced 29 cells for one extension, but the
+order of magnitude for a multi-component platform is not confirmed.
 
 ## 6. Lessons and business rules
 
@@ -372,8 +374,9 @@ sweep is needed, not this paragraph.
 - Cell registry schema and seed set.
 - Guard grammar specification and its limits.
 - `cell_lint` and adversarial cases: CL1–CL6, 18/18 (C-17).
-- A pilot, taxonomy calibration, and a production registry are not part of
-  phase 0.
+- Pilot registry for rbac_pg: 29 cells, 26 non-open, 3 open, 0
+  CL1/CL3/CL4 errors (C-18).
+- Taxonomy calibration and a production registry are not part of phase 0.
 
 **Phase 1.** L0+L1 on our own repositories: AST extractor, SARIF adapters for
 two or three engines, security taxonomy from the `invariant-first` categories,
@@ -392,9 +395,10 @@ layer (SeaHorn/Frama-C).
 
 ## 13. Open questions and next evidence
 
-1. **Pilot.** Not chosen. Candidate: Citadel/rbac_pg, which already has a role
-   DSL, a requirements pipeline, and `probcli` experience. Without a pilot
-   C-07…C-12 remain hypotheses.
+1. **Pilot.** rbac_pg is chosen; the pilot registry is built (C-18): 29
+   cells, 0 CL1/CL3/CL4 errors. Still missing: a stand re-run of the suites,
+   mutation fixtures, and a decision on whether the claim ledger covers more
+   than the FSTEC matrix. Without those, C-07…C-12 remain hypotheses.
 2. **Verdict anchor.** Rekor/SCITT, in-toto+Sigstore, or an append-only
    repository. Needs a threat model and operating cost.
 3. **Self-mutation judge.** Who accepts that a defective PR was caught, and by
@@ -423,6 +427,7 @@ layer (SeaHorn/Frama-C).
 | `evals/linter/` | Example adversarial set for detectors |
 | `evals/cell-lint/` | Adversarial set for `cell_lint` |
 | `spec/conveyor/cell-registry.schema.json` | Machine-readable cell |
+| `spec/pilots/rbac_pg/` | Pilot registry: 29 cells on a real repository |
 | `spec/conveyor/guard-grammar.en.md` | Limits of L2 |
 
 This document is not a certification, an audit, or a coverage promise. It

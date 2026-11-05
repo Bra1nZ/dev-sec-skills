@@ -15,15 +15,20 @@ spec/
     cells.seed.yaml               # seed cells from the six invariant categories
     guard-grammar.md              # bounded guard grammar for L2, Russian source
     guard-grammar.en.md           # English derivative
+  pilots/
+    rbac_pg/
+      cells.yaml                  # 29 cells derived from rbac_pg detectors
+      README.md                   # calibration, findings, limits
 ```
 
 ## Status
 
-Phase 0: documents, schema, seed registry, and `cell_lint` (CL1–CL6, 18/18
-synthetic adversarial cases, see `evals/iteration-4/RESULTS.md`). There is no
-pilot calibration and no claim that the conveyor exists. Every material
-statement in `CONCEPT.md` carries a status from the evidence-first ladder;
-design intents are `open` and carry limitations.
+Phase 0: documents, schema, seed registry, `cell_lint` (CL1–CL6, 18/18
+synthetic adversarial cases, see `evals/iteration-4/RESULTS.md`), and one
+pilot registry on `rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4
+errors, C-18). There is no production registry and no claim that the conveyor
+exists. Every material statement in `CONCEPT.md` carries a status from the
+evidence-first ladder; design intents are `open` and carry limitations.
 
 ## Reading order
 
@@ -33,6 +38,8 @@ design intents are `open` and carry limitations.
 4. `guard-grammar.md` — what L2 can and cannot model.
 5. `../../tools/cell_lint.py` — the executable subset of the cell contract;
    its cases are in `../../evals/cell-lint/`.
+6. `pilots/rbac_pg/README.md` — what a real registry looks like and what it
+   still cannot prove.
 
 ## What this is not
 

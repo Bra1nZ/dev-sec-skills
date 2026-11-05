@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-16; английская версия —
+  утверждений C-01…C-18; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -89,9 +89,13 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 - [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — что L2
   может и чего не может проверять; английская версия —
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+- [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — пилотный реестр на
+  29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4.
 
-Статус фазы 0: документ и схема, без линтера и без пилота. Числа вроде «~200
-ячеек» и «45 → 15 минут» помечены `open` — это design intent, а не измерение.
+Статус фазы 0: документ, схема, `cell_lint` и один пилотный реестр. Реестра
+для production нет. Числа вроде «~200 ячеек» и «45 → 15 минут» помечены
+`open` — это design intent, а не измерение; пилот дал 29 ячеек на одно
+расширение.
 
 ## Структура
 
@@ -164,6 +168,10 @@ spec/
     cells.seed.yaml
     guard-grammar.md
     guard-grammar.en.md
+  pilots/
+    rbac_pg/
+      cells.yaml
+      README.md
 ```
 
 ## Установка
@@ -225,6 +233,12 @@ evidence, трассировка, таксономия, гейт эскалац�
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, тоже с
 негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
+
+Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
+29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Он же показывает главный
+разрыв: 0 из 27 детекторов имеют mutation fixture, а claim-леджер rbac_pg
+покрывает 7 из 29 ячеек. Чистый lint означает внутреннюю согласованность, а не
+истинность свойств.
 
 Пока это дисциплина и документация, а не сертификат и не замена аудиту.
 

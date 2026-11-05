@@ -1,0 +1,316 @@
+# Pilot cell registry — `rbac_pg` ("Цитадель")
+
+Date: 2026-11-05. Target: `/home/admini/projects/rbac_pg`, HEAD `492f23c`
+(working tree has untracked model and documentation files; see Limitations).
+Registry: [`cells.yaml`](cells.yaml). Linter: `tools/cell_lint.py` (CL1–CL6).
+
+This is the first registry built against a real repository. The point is
+calibration: how many cells one repository actually uses, how many resolve to
+real artifacts, how many are linked to claims, and how many detectors can be
+shown to fail. It is not a security audit of `rbac_pg`.
+
+## Method
+
+Cells were derived from detectors that already exist in the repository:
+
+- `setup/test_fstek.py` — FSTEC matrix, F1–F15, recorded 57 OK / 0 FAIL;
+- `setup/test_v191_fixes.py` — security-audit fixes, F1–F4 and M1–M2,
+  recorded 22 OK / 0 FAIL;
+- `setup/test_v16_guards.py` — DDL, TRUNCATE and COPY guards, G1–G9,
+  recorded 45 OK / 0 FAIL;
+- `setup/test_v17_events.py` — events, replay and integrity, E/J/A/I,
+  recorded 54 OK / 0 FAIL;
+- `setup/test_side_channels.py` — side channels, recorded 5 OK / 0 FAIL /
+  2 GAP;
+- `setup/test_v15_idempotency.py` — 20 OK / 0 FAIL;
+- `setup/test_v151_ranges.py` — 25 OK / 0 FAIL;
+- `setup/test_perf_envelope.py` — 9 OK / 0 FAIL;
+- `setup/test_v15_security.py` — 17 OK / 0 FAIL;
+- `setup/test_v15_ceiling_trigger.py` — 20 OK / 0 FAIL;
+- `docs/claims.yaml` — the claim ledger, C-01…C-07.
+
+Each cell names the suite, the test IDs, the claim (where one exists), and the
+residual risk. No cell was invented to fill a taxonomy class.
+
+### Evidence policy
+
+`tested` means a test detector exists and the suite has a recorded passing
+baseline in `TESTING.md`. The pilot did **not** re-run the suites: they need a
+live PostgreSQL 15+ cluster and application roles. `last_verified` is the date
+of the recorded baseline (2026-10-30 for suites whose last commit is
+`2e120b6`/`29977b2`; the baseline table was updated on 2026-10-30), not the
+date of this review. `reviewed` means a review artifact, not an executable
+detector. `open` means either no detector exists or the recorded run shows the
+property failing.
+
+## Lint result
+
+```text
+$ python3 tools/cell_lint.py \
+    --root /home/admini/projects/rbac_pg \
+    --ledger /home/admini/projects/rbac_pg/docs/claims.yaml \
+    spec/pilots/rbac_pg/cells.yaml
+
+registry: spec/pilots/rbac_pg/cells.yaml | cells: 29
+  CL1 structure     OK
+  CL2 coverage      0 error(s), 27 warning(s), 0 info
+  CL3 evidence      OK
+  CL4 traceability  0 error(s), 0 warning(s), 22 info
+  CL5 taxonomy      0 error(s), 0 warning(s), 3 info
+total: 0 error(s), 27 warning(s), 25 info
+```
+
+CL1, CL3 and CL4 errors are zero: every required field is present, every
+artifact path resolves on disk, every linked claim exists, and no cell claims
+more than its strongest detector or its linked claim. The registry also
+validates against `spec/conveyor/cell-registry.schema.json` with `jsonschema`.
+
+### Negative control
+
+The clean run is not vacuous. Two mutations of the same registry each produce
+an error and exit code 1:
+
+```text
+# missing artifact
+[CL3] error CELL-001 detector 'D-FSTEC-F2F3' artifact not found: setup/missing_suite.py
+total: 1 error(s), 27 warning(s), 25 info
+
+# cell claims proven, detector is only tested
+[CL2] error CELL-001 cell claims proven but its strongest detector is tested
+total: 1 error(s), 28 warning(s), 25 info
+```
+
+The first control proves CL3 reads the filesystem, not just the YAML. The
+second proves CL2 compares the cell status against the detector status. Neither
+mutation was added to the repository; both were run on temporary copies.
+
+## Calibration
+
+| Measure | Value |
+| --- | --- |
+| Cells | 29 |
+| Non-open cells | 26 (25 `tested`, 1 `reviewed`) |
+| Open cells | 3 |
+| Detectors | 27 (26 `test`, 1 `review`) |
+| Detectors with a mutation fixture | **0 / 27** |
+| Cells linked to a claim | 7 / 29 |
+| Cells with no claim | 22 / 29 |
+| Claim ledger entries | 7 (C-01…C-07; C-07 is `open`) |
+| Duplicate `failure_class` values | 3 (info only) |
+
+Class and failure-mode distribution:
+
+| Class | Cells |
+| --- | --- |
+| security | 25 |
+| correctness | 2 |
+| performance | 1 |
+| maintainability | 1 |
+
+| Failure mode | Cells |
+| --- | --- |
+| deny | 16 |
+| abort | 6 |
+| detect | 6 |
+| rollback | 1 |
+
+Entry-point prefixes: `sql:` 51 occurrences, `admin` 23, `import` 2,
+`migration` 2, `docs` 2, `log` 1, `batch` 1.
+
+## Cell map
+
+| Cell | Property | Class | Status | Detector | Claim |
+| --- | --- | --- | --- | --- | --- |
+| CELL-001 | Policy apply only by `rbac_admin` | security | tested | D-FSTEC-F2F3 | C-01 |
+| CELL-002 | Admin role membership cannot be granted under `rbac_admin` | security | tested | D-FSTEC-F8 | C-02 |
+| CELL-003 | Journals readable only by auditor/admin | security | tested | D-FSTEC-F5F9 | C-03 |
+| CELL-004 | Lockout and admin-only unlock | security | tested | D-FSTEC-F11 | C-04 |
+| CELL-005 | Directory anchor invariants | security | tested | D-FSTEC-F12 | C-05 |
+| CELL-006 | Integrity digest detects rule substitution | security | tested | D-FSTEC-F15 | C-06 |
+| CELL-007 | Service roles are NOLOGIN | security | tested | D-FSTEC-F4 | — |
+| CELL-008 | `CREATE FUNCTION/PROCEDURE` denied, incl. `pg_temp` | security | tested | D-FSTEC-F7 | — |
+| CELL-009 | Security events record the real login | security | tested | D-FSTEC-F10 | — |
+| CELL-010 | RSID warning without rejection | security | tested | D-FSTEC-F13 | — |
+| CELL-011 | Ceiling change bumps `auth_epoch` | security | tested | D-FSTEC-F14, D-V15-CEILING | — |
+| CELL-012 | Security events are append-only | security | tested | D-V17-E1 | — |
+| CELL-013 | Second audit channel survives rollback | security | tested | D-V17-E2 | — |
+| CELL-014 | Token replay refused before role checks | security | tested | D-V17-J1 | — |
+| CELL-015 | DDL/TRUNCATE/policy guards | security | tested | D-V16-GUARDS | — |
+| CELL-016 | Tenant and MAC-ceiling isolation | security | tested | D-V15-SEC | — |
+| CELL-017 | Foreign trap table not labelled | security | tested | D-V191-F2 | — |
+| CELL-018 | GUC context tampering does not change identity | security | tested | D-V191-F1 | — |
+| CELL-019 | DDL guard fail-closed on comments/ONLY/multi-statement | security | tested | D-V191-F3 | — |
+| CELL-020 | Trigger disable blocked and tamper-evident | security | tested | D-V191-F4 | — |
+| CELL-021 | `apply_policy_document` is idempotent | correctness | tested | D-V15-IDEMPOTENCY | — |
+| CELL-022 | Label ranges and migration clamp | correctness | tested | D-V151-RANGES | — |
+| CELL-023 | Performance envelope of enforcement | performance | tested | D-PERF-ENVELOPE | — |
+| CELL-024 | Claims name mechanism, artifact, commit, tests | maintainability | reviewed | D-CLAIM-LEDGER | — |
+| CELL-025 | PostgreSQL 14 install rejected | security | open | — | C-07 |
+| CELL-026 | `UNIQUE(id)` existence oracle | security | open | — | — |
+| CELL-027 | FK probe does not reveal an invisible parent | security | tested | D-SIDE-FK | — |
+| CELL-028 | `secure_table` rejects FK to a protected table | security | open | — | — |
+| CELL-029 | `pg_stats` does not leak protected values | security | tested | D-SIDE-PGSTATS | — |
+
+## Findings
+
+### 1. The verify-the-verifier gap is total, and the linter says so
+
+All 27 detectors have no `mutation_fixture`, so CL2 marks every one of them
+"not verified". This is the honest headline of the pilot: the registry can show
+that a detector exists and passed, but not that it would fail if the property
+were removed.
+
+Partial exceptions are visible only inside some suites:
+
+- `setup/test_v191_fixes.py` M1 reproduces the 1.9 vulnerability before the
+  fix, and F2d/F3c/F3d are positive controls;
+- `setup/test_v16_guards.py` G9 checks the internal channel still passes;
+- `setup/test_perf_envelope.py` has both a threshold and a regression history.
+
+Those are real controls, but they are not per-cell mutation fixtures and the
+linter cannot attribute them. Do not raise a cell above `tested` on their
+strength.
+
+### 2. The claim ledger is not a coverage map
+
+`docs/claims.yaml` links 7 of 29 cells. It covers the FSTEC matrix
+(C-01…C-06) and the open PostgreSQL 14 item (C-07). It does not cover:
+
+- the DDL guard family (CELL-015, CELL-019, CELL-020);
+- the audit event family (CELL-009, CELL-012, CELL-013);
+- replay (CELL-014);
+- idempotency and label ranges (CELL-021, CELL-022);
+- performance (CELL-023);
+- the 22 cells listed above.
+
+A clean claim ledger therefore does not mean the registry is covered. The two
+artifacts measure different things: the ledger records what the project
+*claims*, the registry records what has a *detector*. The pilot's 22 unlinked
+cells are the concrete size of that gap for this repository.
+
+### 3. Recorded gaps stay visible; only the failing ones are open
+
+`setup/test_side_channels.py` records 5 OK and 2 GAP. The registry turns that
+into four cells, but it does not mark all four `open`:
+
+- CELL-026 (П-1) is `open`: a global `UNIQUE(id)` leaks the existence of an
+  invisible row through `23505`.
+- CELL-027 is `tested`: the FK probe did not disclose an invisible parent on
+  the recorded model. TESTING.md still warns that the FK trigger reads the
+  parent as the owner, so the cell carries that as residual risk.
+- CELL-028 (П-2 contract) is `open`: `secure_table()` accepts a table with a FK
+  to a protected table, although the reference contract expects `0P000`.
+  TESTING.md records no actual disclosure today; the contract is still not
+  met.
+- CELL-029 is `tested`: `pg_stats` was empty for the application role on the
+  recorded server. This is a configuration control, not a code guard, and must
+  be re-run when catalog privileges change.
+
+CELL-026 is PostgreSQL core behaviour: the extension can mitigate it by
+requiring the `UNIQUE(tenant_id, id)` convention in `secure_table()`, but it
+does not do so today. CELL-028 is the layer defect the extension can close
+directly.
+
+CELL-025 is C-07: installation on PostgreSQL 14 is a deployment rule, not a
+code check. The claim is `open`, the cell is `open`, and nothing was upgraded
+to look better.
+
+### 4. Calibration says 29 cells for one extension, not ~200
+
+The concept's "~200" (C-11) is a design estimate for a platform with several
+repositories and layers. One PostgreSQL extension repository with a mature
+security test suite produced 29 cells, 24 of them covered. That is consistent
+with a few hundred cells for a multi-component product, but it does not confirm
+the number. The unroutable share is still unmeasured: no external finding was
+routed through the taxonomy in this pilot.
+
+The distribution is also skewed: 25 of 29 cells are security. That is what the
+repository's detectors actually cover, not a taxonomy failure. Correctness,
+performance and maintainability each have one or two cells; a second pilot on a
+different repository is needed before changing the class list.
+
+Three `failure_class` values repeat (`broken-access-control`,
+`privilege-escalation`, `existence-oracle`). CL5 reports this as info. The
+taxonomy is coarser than the failure classes; splitting them now would be an
+uncalibrated change.
+
+### 5. The prose layer is not clean
+
+`tools/claim_lint.py --no-vale --root . --suite-glob 'setup/*.py'
+docs/claims.yaml` returns L1–L4 clean, 0 errors, and 14 L5 warnings about
+unqualified absolutes in Russian docs. Four of those warnings are in tracked
+files (`ROLES.md`, `COMPARISON_ASTRA.md`, `Public.md`); ten are in untracked
+local documentation (`MODEL.md`, `FSTEC-GAP.md`, `SCOPE.md`,
+`docs/persey/INDEX.md`). The warnings do not block the pilot, but they are the
+same class of overclaim the `evidence-first-docs` skill exists to remove.
+
+## What this proves
+
+- The cell contract is instantiable on a real repository: 29 cells, all
+  required fields, all artifact paths resolving, 0 CL1/CL3/CL4 errors.
+- The status ladder is usable without inflation: 25 `tested`, 1 `reviewed`,
+  3 `open`, and the 3 open cells are exactly the two recorded gaps and the open
+  claim.
+- The linter is fast enough for a per-commit gate on this repository (well
+  under a second on 29 cells).
+- The two independent checks agree on traceability: `claim_lint` L1–L4 clean,
+  `cell_lint` CL4 with no errors (22 infos are the unlinked cells).
+
+## What this does not prove
+
+- That any security property holds. The suites were not re-run; `tested` rests
+  on recorded baselines in `TESTING.md`, dated 2026-10-30.
+- That any detector can fail. 0 of 27 detectors has a mutation fixture.
+- That the registry is complete. It covers the detectors that exist; a missing
+  detector produces no cell, and this pilot did not hunt for missing cells
+  beyond the recorded GAPs.
+- That 29 is the right number. One repository, one reviewer, one day.
+- That ownership is real. `owner: rbac_pg maintainer` is a role, not a named
+  person.
+
+## Reproduction
+
+```bash
+# registry lint
+python3 tools/cell_lint.py \
+  --root /home/admini/projects/rbac_pg \
+  --ledger /home/admini/projects/rbac_pg/docs/claims.yaml \
+  spec/pilots/rbac_pg/cells.yaml
+
+# claim ledger lint (in the target repository)
+cd /home/admini/projects/rbac_pg
+python3 tools/claim_lint.py --no-vale --root . --suite-glob "setup/*.py" docs/claims.yaml
+
+# the test suites themselves need a stand:
+export ADMIN_DATABASE_URL="postgresql://postgres:<password>@127.0.0.1:5432/postgres"
+python3 setup/test_fstek.py
+python3 setup/test_v191_fixes.py
+python3 setup/test_v16_guards.py
+python3 setup/test_v17_events.py
+```
+
+## Next evidence, in priority order
+
+1. Add per-cell mutation fixtures for the highest-consequence cells:
+   CELL-002 (membership), CELL-015/019 (DDL guard), CELL-012 (append-only),
+   CELL-018 (context tampering). A fixture must make the named detector fail.
+2. Re-run the suites on a stand and replace the recorded `last_verified` dates
+   with the run dates.
+3. Either extend `docs/claims.yaml` to the 22 unlinked cells or record that the
+   ledger is a FSTEC-matrix artifact, not a coverage map.
+4. Decide CELL-028 (the closable side-channel contract gap) and record CELL-026
+   (core oracle) and CELL-029 (configuration control) as residual risk.
+
+## Limitations
+
+- The target repository has untracked files (`MODEL.md`, `FSTEC-GAP.md`,
+  `SCOPE.md`, `model/`, `docs/persey/`) that were present during the review.
+  The registry cites only tracked test artifacts except where a path is
+  explicitly a documentation artifact.
+- The recorded baselines were produced on two clusters (ЗСУБД and PP1C) on
+  2026-10-30. The pilot did not reproduce them.
+- `cell_lint` checks internal consistency, not truth. A cell can be `tested`
+  and wrong if the test asserts the wrong thing.
+- The registry is a snapshot. A change to a suite changes the detector's
+  identity only if `cell_lint` is re-run with `--base`; this pilot has no base
+  registry yet.

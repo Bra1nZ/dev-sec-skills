@@ -1,0 +1,638 @@
+# Pilot cell registry for rbac_pg ("Цитадель"), a PostgreSQL RBAC extension.
+#
+# Purpose: calibrate the taxonomy and the cell contract on a real repository.
+# Every cell below is derived from a detector that exists in the repository
+# (a test suite, a claim-ledger review, or a recorded gap), not invented.
+#
+# Evidence policy for this pilot:
+#   - `tested` means a test detector exists in the repository and the suite has
+#     a recorded passing baseline in TESTING.md. The pilot did NOT re-run the
+#     suites: they need a live PostgreSQL 15+ cluster. `last_verified` is the
+#     date of the recorded baseline, not the date of this review.
+#   - `reviewed` means the property is asserted by a review artifact, not by an
+#     executable detector.
+#   - `open` means no detector covers the property, or the recorded run shows
+#     the property failing (the side-channel GAPs).
+#   - No detector has a per-cell mutation fixture. This is the pilot's central
+#     verify-the-verifier gap and is reported, not fabricated.
+#
+# Lint:
+#   python3 tools/cell_lint.py \
+#     --root /home/admini/projects/rbac_pg \
+#     --ledger /home/admini/projects/rbac_pg/docs/claims.yaml \
+#     spec/pilots/rbac_pg/cells.yaml
+
+project: rbac_pg
+generated: "2026-11-05"
+
+taxonomy:
+  name: invariant-first-code
+  version: "1"
+  classes:
+    - security
+    - correctness
+    - maintainability
+    - performance
+
+cells:
+  # ---------------------------------------------------------------- access matrix
+  - id: CELL-001
+    title: Only rbac_admin applies a policy document; application roles and role-less logins are refused.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points: [admin, "sql:rbac.apply_policy_document"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F2F3
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F2, F3, F3a. Recorded baseline 57 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+    claim_ids: [C-01]
+    residual_risk: A superuser or the extension owner bypasses the check; rbac_admin is allowed to change the matrix by design.
+    limitations: The suite needs a live PostgreSQL 15+ cluster; the pilot consumed the recorded baseline.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-002
+    title: A login holding rbac_admin cannot grant or revoke membership in the administrative roles.
+    taxonomy_class: security
+    failure_class: privilege-escalation
+    entry_points: [admin, "sql:GRANT ROLE", "sql:REVOKE ROLE"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F8
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F8a, F8b, F8c, F8d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: [C-02]
+    residual_risk: On true vanilla PostgreSQL 15 an implicit ADMIN OPTION remains (ROLES.md 2.2); the superuser is outside the model.
+    limitations: The refusal is platform membership semantics on the tested clusters, not a portable application guard.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-003
+    title: Only rbac_auditor and rbac_admin read audit_log and security_events; application roles receive 42501.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points: [admin, "sql:rbac.read_audit_log", "sql:rbac.read_security_events"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F5F9
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F5a-F5d, F9a, F9b. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: [C-03]
+    residual_risk: The append-only trigger can be disabled by the extension owner; the superuser is outside the model.
+    limitations: Read denial is tested; write denial is covered by CELL-012, not by this cell.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-004
+    title: Five failed logins lock the account and only rbac_admin can unlock it; application roles receive 42501.
+    taxonomy_class: security
+    failure_class: authentication-bypass
+    entry_points: [admin, "sql:rbac.register_auth_failure", "sql:rbac.unlock_user"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F11
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F11a-F11d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: [C-04]
+    residual_risk: An application can lock any account by design, which is denial of service rather than privilege escalation (ROLES.md 1.1).
+    limitations: The lockout counter and unlock path are tested; distributed or out-of-band login paths are not.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-005
+    title: A directory mapping without external_id or onto an administrative pg_role is refused, and an occupied role anchor cannot change.
+    taxonomy_class: security
+    failure_class: privilege-escalation
+    entry_points: [import, "sql:rbac.sync_directory", "sql:rbac.role_mappings"]
+    failure_mode: abort
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F12
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F12a-F12d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: [C-05]
+    residual_risk: A faulty policy file is caught by the trigger, but the extension owner can disable the trigger; the superuser is outside the model.
+    limitations: The invariants cover the mapping table, not the upstream directory content that feeds it.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-006
+    title: Substituting protection rules after a recorded baseline yields INTEGRITY_VIOLATION and assert_integrity() = false.
+    taxonomy_class: security
+    failure_class: config-tampering
+    entry_points: [admin, "sql:rbac.assert_integrity", "sql:rbac.security_digest"]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F15
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F15a, F15b. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: [C-06]
+    residual_risk: The baseline is opt-in and must be recorded by the superuser after each policy change; an unrecorded baseline detects nothing.
+    limitations: The digest covers configuration rows, not the extension binary or the PostgreSQL server.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-007
+    title: The service roles rbac_label_admin and rbac_auditor are NOLOGIN and cannot start a session.
+    taxonomy_class: security
+    failure_class: privilege-separation
+    entry_points: [admin, "sql:CREATE ROLE"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F4
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F4. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: A superuser can still grant LOGIN; NOLOGIN is not a cryptographic restriction.
+    limitations: No claim in docs/claims.yaml covers this property; the cell is linked to no claim.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-008
+    title: CREATE FUNCTION and CREATE PROCEDURE are refused to application and role-less logins, including the pg_temp path, while rbac_admin may create.
+    taxonomy_class: security
+    failure_class: code-injection
+    entry_points: [admin, "sql:CREATE FUNCTION", "sql:CREATE PROCEDURE"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F7
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F7a-F7f. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: rbac_admin keeps DDL rights by design; SECURITY DEFINER functions created by the extension owner are outside the tested path.
+    limitations: The guard is tested through the tested SQL forms; an unmodelled CREATE form remains a parser-bypass risk (see CELL-019).
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- audit and events
+  - id: CELL-009
+    title: Every security event records the real database login as db_user, not a caller-supplied name.
+    taxonomy_class: security
+    failure_class: audit-attribution
+    entry_points: [admin, "sql:rbac.log_security_event", "sql:rbac.audit_log"]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F10
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F10a-F10c and M4. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: Attribution relies on SESSION_USER; a connection proxy that changes the login is out of scope.
+    limitations: The test checks the recorded subject, not the integrity of the logging pipeline after the row is written.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-010
+    title: A SID-style anchor raises RSID_FORMAT_WARNING without rejecting the operation, while a valid RSID stays quiet.
+    taxonomy_class: security
+    failure_class: input-validation
+    entry_points: [import, "sql:rbac.role_mappings"]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F13
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F13a-F13d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: The channel is warning-only; an operator who ignores the log still applies the mapping.
+    limitations: The test checks the warning and the summary, not downstream consumption of the warning.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-011
+    title: Changing a role's MAC/MIC ceiling increments auth_epoch and revokes live sessions, while an unrelated description edit does not.
+    taxonomy_class: security
+    failure_class: stale-authorization
+    entry_points: [admin, "sql:rbac.bump_epoch_on_role_ceiling", "sql:rbac.refresh_session"]
+    failure_mode: abort
+    coverage_status: tested
+    detectors:
+      - id: D-FSTEC-F14
+        kind: test
+        artifact: setup/test_fstek.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F14a. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+      - id: D-V15-CEILING
+        kind: test
+        artifact: setup/test_v15_ceiling_trigger.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_ceiling_trigger.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "Branch coverage of the trigger, including NULL semantics. Recorded baseline 20 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: Only the minimum ceiling over all roles is protected; a session whose effective minimum did not change keeps its context.
+    limitations: The epoch counter is tested; clock and transaction ordering across concurrent ALTER ROLE statements are not.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-012
+    title: security_events accepts only the closed event and severity list and refuses UPDATE, DELETE, and TRUNCATE.
+    taxonomy_class: security
+    failure_class: audit-tampering
+    entry_points: [admin, "sql:rbac.log_security_event", "sql:rbac.security_events"]
+    failure_mode: abort
+    coverage_status: tested
+    detectors:
+      - id: D-V17-E1
+        kind: test
+        artifact: setup/test_v17_events.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "E1. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: A table owner or the extension owner can disable the append-only triggers; the superuser is outside the model.
+    limitations: Append-only is enforced by trigger and privilege, not by an immutable storage layer.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-013
+    title: A refused session writes AUTH_FAILURE to the server log channel even when the table row rolls back with the transaction.
+    taxonomy_class: security
+    failure_class: missing-audit-on-rollback
+    entry_points: [admin, "sql:rbac.init_session", "log:RBAC_SECURITY_EVENT"]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+      - id: D-V17-E2
+        kind: test
+        artifact: setup/test_v17_events.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "E2. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: The second channel depends on PostgreSQL log collection and retention outside the extension.
+    limitations: The test reads conn.notices; it does not prove that a deployed log shipper persists the record.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-014
+    title: A replayed single-use token is refused before the role check and raises TOKEN_REPLAY at critical severity.
+    taxonomy_class: security
+    failure_class: replay
+    entry_points: [admin, "sql:rbac.init_session", "sql:rbac._used_tokens"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V17-J1
+        kind: test
+        artifact: setup/test_v17_events.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "J1. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: jti consumption is transactional; a failed first use rolls the consumption back, which is safe because that token did not authenticate.
+    limitations: Concurrent first uses and multi-node clock skew are not exercised.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- DDL and RLS
+  - id: CELL-015
+    title: TRUNCATE, policy DDL, destructive ALTER TABLE, and multi-statement DDL are refused on protected tables.
+    taxonomy_class: security
+    failure_class: guard-bypass
+    entry_points: [admin, "sql:TRUNCATE", "sql:CREATE POLICY", "sql:ALTER TABLE"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V16-GUARDS
+        kind: test
+        artifact: setup/test_v16_guards.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v16_guards.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "G1, G4, G5, G7, G8. Recorded baseline 45 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+    claim_ids: []
+    residual_risk: DROP TABLE of a protected table is allowed by design for cleanup; the extension owner can disable the guard triggers.
+    limitations: The guard is a SQL-text parser; a form it does not model can pass. CELL-019 covers comment and ONLY forms only.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-016
+    title: A session sees only rows of its tenant and at or below its effective MAC ceiling.
+    taxonomy_class: security
+    failure_class: tenant-isolation
+    entry_points: [admin, "sql:RLS", "sql:rbac.has_role", "sql:rbac._ctx_valid"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V15-SEC
+        kind: test
+        artifact: setup/test_v15_security.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_security.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "P1-P3, including 'alice sees only her tenant and below the ceiling'. Recorded baseline 17 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: Superuser and BYPASSRLS roles see everything; side channels that leak existence without returning rows are separate open cells.
+    limitations: The detector asserts row visibility, not the absence of every inference channel.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-017
+    title: set_object_label refuses a foreign trap table without firing its trigger, while a legitimate owner table is labelled.
+    taxonomy_class: security
+    failure_class: confused-deputy
+    entry_points: [admin, "sql:rbac.set_object_label"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V191-F2
+        kind: test
+        artifact: setup/test_v191_fixes.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F2a-F2d, with a positive control. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: Registering a trap table as rbac_admin is allowed by design (case-2); only the label write is refused.
+    limitations: The test covers the registered-table path; an unregistered table owned by an attacker is a different path.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-018
+    title: Substituting app.user_id, app.username, or the context deadline before refresh_session does not change the session identity.
+    taxonomy_class: security
+    failure_class: context-tampering
+    entry_points: [admin, "sql:rbac.init_session", "sql:rbac.refresh_session"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V191-F1
+        kind: test
+        artifact: setup/test_v191_fixes.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F1a-F1c. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: A stolen signing secret or a superuser write to the session blob is outside the model.
+    limitations: The test tampers with GUCs; a compromised backend process is not modelled.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-019
+    title: The DDL guard stays fail-closed on comments, ONLY, and multi-statement forms while safe ALTER subcommands pass.
+    taxonomy_class: security
+    failure_class: parser-bypass
+    entry_points: [admin, "sql:ALTER TABLE", "sql:CREATE POLICY"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V191-F3
+        kind: test
+        artifact: setup/test_v191_fixes.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F3a-F3d, including safe controls. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: The guard parses SQL text, not the PostgreSQL AST; any form it does not model is a residual bypass.
+    limitations: The tested forms are representative, not exhaustive; no fuzzing of the guard grammar is recorded.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-020
+    title: DISABLE TRIGGER on a protected table is refused, and an added trigger changes the digest so assert_integrity returns false.
+    taxonomy_class: security
+    failure_class: tamper-evidence
+    entry_points: [admin, "sql:DISABLE TRIGGER", "sql:rbac.assert_integrity"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-V191-F4
+        kind: test
+        artifact: setup/test_v191_fixes.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "F4c-F4e, plus the _internal_on() probe. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: The extension owner can still disable triggers; the internal probe deliberately bypasses the guard.
+    limitations: "Tamper-evidence is detection, not prevention: a change made and reverted before a digest check is invisible."
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- correctness
+  - id: CELL-021
+    title: Repeated apply_policy_document runs do not change auth_epoch, recreate policies, or duplicate role links.
+    taxonomy_class: correctness
+    failure_class: non-idempotent-apply
+    entry_points: [batch, "sql:rbac.apply_policy_document"]
+    failure_mode: rollback
+    coverage_status: tested
+    detectors:
+      - id: D-V15-IDEMPOTENCY
+        kind: test
+        artifact: setup/test_v15_idempotency.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v15_idempotency.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "Three repeated runs plus a real change and a rollback case. Recorded baseline 20 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: Idempotency is asserted for the tested document shapes; a semantically equal document with different ordering is not exercised.
+    limitations: The test compares catalog state and policy OIDs, not lock waits under concurrency.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-022
+    title: Labels outside MAC 0..63 and MIC 0..3 are refused, and migration clamps existing values with LABEL_RANGE_CLAMP.
+    taxonomy_class: correctness
+    failure_class: label-range
+    entry_points: [migration, "sql:rbac.set_user_label", "sql:rbac.roles"]
+    failure_mode: abort
+    coverage_status: tested
+    detectors:
+      - id: D-V151-RANGES
+        kind: test
+        artifact: setup/test_v151_ranges.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v151_ranges.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "S1 and S2 (fresh install and 1.5 -> 1.5.1 migration). Recorded baseline 25 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: The clamp is a one-way data reduction; the original out-of-range values are not recoverable from the label itself.
+    limitations: The test covers the recorded migration path, not arbitrary upgrades from earlier versions.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- performance
+  - id: CELL-023
+    title: The enforcement layer stays inside its measured envelope for _ctx_valid, has_role, point SELECT, and row INSERT.
+    taxonomy_class: performance
+    failure_class: performance-regression
+    entry_points: [admin, "sql:rbac._ctx_valid", "sql:rbac.has_role", "sql:RLS"]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+      - id: D-PERF-ENVELOPE
+        kind: test
+        artifact: setup/test_perf_envelope.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_perf_envelope.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "_ctx_valid <= 300 us, has_role <= 500 us, point SELECT <= 2 ms, INSERT <= 3.2 ms/row. Recorded baseline 9 OK / 0 FAIL in TESTING.md."
+    claim_ids: []
+    residual_risk: Thresholds are valid only on a quiet stand and are not portable across hardware; a regression below the threshold is invisible.
+    limitations: The suite measures a 100k-row table, not production cardinality or concurrent load.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- maintainability
+  - id: CELL-024
+    title: Every FSTEC claim names a mechanism, an artifact, a commit, test IDs, and a residual limitation.
+    taxonomy_class: maintainability
+    failure_class: untraceable-claim
+    entry_points: [docs, "docs:claims.yaml"]
+    failure_mode: detect
+    coverage_status: reviewed
+    detectors:
+      - id: D-CLAIM-LEDGER
+        kind: review
+        artifact: docs/claims.yaml
+        command: "python3 tools/claim_lint.py --no-vale --root . --suite-glob 'setup/*.py' docs/claims.yaml"
+        status: reviewed
+        last_verified: "2026-11-05"
+        note: "Pilot run: L1-L4 clean, 0 errors; L5 prose 14 warnings. The ledger has 7 claims and links 7 cells of this registry."
+    claim_ids: []
+    residual_risk: A claim can be traceable and still false; the ledger checks shape and links, not whether the mechanism holds.
+    limitations: L5 prose warnings are advisory; the pilot ran with --no-vale and did not gate on them.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  # ---------------------------------------------------------------- recorded gaps
+  - id: CELL-025
+    title: Installing the extension on PostgreSQL 14 or older is refused by server_version_num.
+    taxonomy_class: security
+    failure_class: unsupported-platform
+    entry_points: [migration, "sql:CREATE EXTENSION"]
+    failure_mode: abort
+    coverage_status: open
+    detectors: []
+    claim_ids: [C-07]
+    residual_risk: An operator can install the SQL manually on PostgreSQL 14 because no code check exists yet.
+    limitations: C-07 is open and planned for 1.9.2; the current control is a deployment rule, not a code check.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-026
+    title: A global unique index does not reveal the existence of an invisible row from another tenant.
+    taxonomy_class: security
+    failure_class: existence-oracle
+    entry_points: [admin, "sql:UNIQUE INDEX", "sql:INSERT"]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    claim_ids: []
+    residual_risk: A global UNIQUE(id) leaks existence through a 23505 on a duplicate insert; the recommendation is UNIQUE(tenant_id, id).
+    limitations: setup/test_side_channels.py records this as GAP П-1 (5 OK, 2 GAP baseline). No detector passes, so the cell stays open.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-027
+    title: A foreign-key probe does not reveal the existence of an invisible parent row in another tenant.
+    taxonomy_class: security
+    failure_class: existence-oracle
+    entry_points: [admin, "sql:FOREIGN KEY", "sql:INSERT"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-SIDE-FK
+        kind: test
+        artifact: setup/test_side_channels.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_side_channels.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "C3 report 'FK-зонд не выдаёт невидимого родителя'. Recorded baseline 5 OK / 0 FAIL / 2 GAP; the two GAPs are П-1 and the П-2 secure_table contract."
+    claim_ids: []
+    residual_risk: TESTING.md records no actual parent disclosure through 23503 on the current model, but the FK trigger still reads the parent as the owner; a schema change can reopen the channel.
+    limitations: The probe uses a parent invisible by tenant and MAC; another invisible-row shape is not exercised.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-028
+    title: secure_table refuses a table that has a foreign key to an already protected table.
+    taxonomy_class: security
+    failure_class: unsafe-secure-table-contract
+    entry_points: [admin, "sql:rbac.secure_table"]
+    failure_mode: abort
+    coverage_status: open
+    detectors: []
+    claim_ids: []
+    residual_risk: A protected table can point at an unprotected parent, leaving a probe channel open even though no disclosure is recorded today.
+    limitations: setup/test_side_channels.py records this as GAP П-2 (the reference contract 0P000 is not enforced). No detector passes, so the cell stays open.
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"
+
+  - id: CELL-029
+    title: pg_stats does not expose the value distribution of a protected table to an application role.
+    taxonomy_class: security
+    failure_class: statistics-side-channel
+    entry_points: [admin, "sql:pg_stats", "sql:ANALYZE"]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+      - id: D-SIDE-PGSTATS
+        kind: test
+        artifact: setup/test_side_channels.py
+        command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_side_channels.py"
+        status: tested
+        last_verified: "2026-10-30"
+        note: "C4 report 'pg_stats пуста для прикладной роли'. Recorded baseline 5 OK / 0 FAIL / 2 GAP."
+    claim_ids: []
+    residual_risk: The channel is closed by catalog privileges on the recorded server, not by the extension; TESTING.md warns that SELECT on the table can expose statistics under a different privilege policy.
+    limitations: "A configuration control, not a code guard; must be re-run when catalog privileges change."
+    owner: rbac_pg maintainer
+    last_seen: "2026-11-05"

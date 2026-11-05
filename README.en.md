@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-16 (Russian source of truth); English derivative:
+  claims C-01…C-18 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -89,10 +89,13 @@ registry, and an explicit promise boundary for L2.
 - [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — what L2
   can and cannot check; English derivative:
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+- [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — pilot registry with
+  29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors.
 
-Phase 0 status: document and schema, no linter and no pilot. Numbers such as
-"~200 cells" and "45 → 15 minutes" are marked `open`: design intent, not
-measurement.
+Phase 0 status: document, schema, `cell_lint`, and one pilot registry. There is
+no production registry. Numbers such as "~200 cells" and "45 → 15 minutes" are
+marked `open`: design intent, not measurement; the pilot produced 29 cells for
+one extension.
 
 ## Layout
 
@@ -154,6 +157,10 @@ spec/
     cells.seed.yaml
     guard-grammar.md
     guard-grammar.en.md
+  pilots/
+    rbac_pg/
+      cells.yaml
+      README.md
 ```
 
 ## Install
@@ -208,6 +215,12 @@ coverage, evidence, traceability, taxonomy, status-escalation gate) and the
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, with a
 runner negative control. These are synthetic fixtures, not proof that any
 production registry is clean.
+
+The pilot registry on a real repository is
+[`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,
+3 open, 0 CL1/CL3/CL4 errors. It also shows the main gap: 0 of 27 detectors
+have a mutation fixture, and the rbac_pg claim ledger covers 7 of 29 cells. A
+clean lint means internal consistency, not that a property holds.
 
 For now this is discipline and documentation, not a certificate or a substitute
 for an audit.
