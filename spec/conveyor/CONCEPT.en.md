@@ -437,6 +437,13 @@ Not commitments and not status: a task closes only with evidence.
 - [ ] V2-25. Check that the taxonomy is not overfit to FSTEC and databases; measure the `unroutable` share.
 - [ ] V2-26. Exit criterion: two pilots, a measured `unroutable` share, a threshold fixed before the start; fixtures for most security detectors.
 
+**Formal-model boundary**
+
+- [x] V2-27. Record in `guard-grammar.md`: L2 is a model diff plus a check that stable goals survive; theorem synthesis from code is not claimed.
+- [ ] V2-28. Bounded fallback for goal-survival checking: timeout → `unverified`, not "verified".
+- [ ] V2-29. Proofs (`proven`) are event-driven: the trigger is a changed choke point or model, not every PR.
+- [ ] V2-30. Model-sync budget: the cost of maintaining the slice per PR as a degradation metric.
+
 ## 13. Open questions and next evidence
 
 1. **Pilot.** rbac_pg is chosen; the pilot registry is built (C-18): 29

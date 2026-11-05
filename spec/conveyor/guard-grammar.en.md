@@ -439,6 +439,7 @@ exactly the defect CELL-002 captures as a separate cell.
 | Platform drift | PostgreSQL/ORM changes semantics | platform tests for the extractor |
 | Value substitution | tenant from a header | `value-provenance` in scope |
 | Language growth for coverage | the grammar grows without evidence | reviewed change, 6.5 |
+| Expectation of a "theorem per PR" | specification synthesis from code is passed off as checking | L2 is a model diff and goal survival, not synthesis; proofs are event-driven, CONCEPT §12.1 (V2-29) |
 
 ## 11. Open questions
 
@@ -452,6 +453,8 @@ exactly the defect CELL-002 captures as a separate cell.
    `unroutable`.
 6. How an L2 verdict links to the claim registry: which claim a covered cell
    closes.
+7. Goal-survival cost: the timeout share, the `unverified` policy, and the
+   model-sync budget per PR.
 
 ## 12. What would change this document
 
