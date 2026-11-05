@@ -32,6 +32,7 @@
 | C-14 | The agent-guard and Citadel building blocks transfer to the code supply chain | Broker/default-deny, taint, one-shot grants, hash-chain audit | No pointers in this repository | External repositories | open | This document does not confirm them; each block needs a "repository + path/commit" pointer |
 | C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
 | C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
+| C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 18/18 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
 
 Registry rules:
 
@@ -370,7 +371,9 @@ sweep is needed, not this paragraph.
 - Concept with a claim registry.
 - Cell registry schema and seed set.
 - Guard grammar specification and its limits.
-- `cell_lint` and adversarial cases are the next step, not part of phase 0.
+- `cell_lint` and adversarial cases: CL1–CL6, 18/18 (C-17).
+- A pilot, taxonomy calibration, and a production registry are not part of
+  phase 0.
 
 **Phase 1.** L0+L1 on our own repositories: AST extractor, SARIF adapters for
 two or three engines, security taxonomy from the `invariant-first` categories,
@@ -415,8 +418,10 @@ layer (SeaHorn/Frama-C).
 | `skills/evidence-first-docs/` | Verdict format and status ladder |
 | `schemas/claim-ledger.schema.json` | Prototype of the verdict registry |
 | `tools/claim_lint.py` | Checks L1–L5 that `cell_lint` will reuse |
+| `tools/cell_lint.py` | Checks CL1–CL6 over the cell registry |
 | `tools/status_diff.py` | Ban on status escalation without new evidence |
 | `evals/linter/` | Example adversarial set for detectors |
+| `evals/cell-lint/` | Adversarial set for `cell_lint` |
 | `spec/conveyor/cell-registry.schema.json` | Machine-readable cell |
 | `spec/conveyor/guard-grammar.en.md` | Limits of L2 |
 

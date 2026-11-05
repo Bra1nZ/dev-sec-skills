@@ -125,6 +125,7 @@ schemas/
   README.md
 tools/
   claim_lint.py
+  cell_lint.py
   status_diff.py
 styles/
   RussianAbsolutes/
@@ -136,6 +137,7 @@ styles/
   README.md
 ci/
   claim-lint.yml
+  cell-lint.yml
 evals/
   evals.json
   iteration-1/
@@ -146,7 +148,12 @@ evals/
   linter/
     run_evals.py
     cases/
+  cell-lint/
+    run_evals.py
+    cases/
   iteration-3/
+    RESULTS.md
+  iteration-4/
     RESULTS.md
 spec/
   README.md
@@ -197,11 +204,12 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 
 ## Статус
 
-Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три eval-набора и
-каталог `spec/` с концептом конвейера. Результаты — в
-[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
-[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md) и
-[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md).
+Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
+скилов, два набора для линтеров и каталог `spec/` с концептом конвейера.
+Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
+[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
+[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
+[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md).
 
 Исполняемая часть: `tools/claim_lint.py` (L1–L5 над claim-леджером, Vale-first
 для прозы, встроенный сканер как fallback), `tools/status_diff.py` (гейт
@@ -209,8 +217,16 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 `ci/claim-lint.yml` — шаблон GitHub Actions для целевого репозитория.
 Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/) и
 `evals/iteration-3/RESULTS.md`: 12/12 проходят, включая негативный контроль
-самого runner'а. Пока это дисциплина и документация, а не сертификат и не
-замена аудиту.
+самого runner'а.
+
+Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
+evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон
+`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/) и
+[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, тоже с
+негативным контролем runner'а. Это синтетические fixtures, а не
+доказательство чистоты production-реестра.
+
+Пока это дисциплина и документация, а не сертификат и не замена аудиту.
 
 ## Лицензия
 

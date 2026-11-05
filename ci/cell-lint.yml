@@ -1,0 +1,39 @@
+# Template: cell-registry gate. Copy into the target repo as
+# .github/workflows/cell-lint.yml and vendor from dev-sec-skills:
+#   tools/cell_lint.py, spec/conveyor/cell-registry.schema.json
+# Adjust REGISTRY, LEDGER and BASE_REF per repo. The claim ledger is optional:
+# drop --ledger when cells are not linked to claims.
+name: cell-lint
+
+on: [push, pull_request]
+
+env:
+  REGISTRY: spec/cells.yaml
+  LEDGER: docs/claims.yaml
+  BASE_REF: v1.3   # base ref for the status-escalation gate; last release tag
+
+jobs:
+  cell-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the base registry comes from a git ref
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Lint cell registry (CL1-CL6)
+        run: |
+          ARGS=(--root .)
+          if [ -f "$LEDGER" ]; then ARGS+=(--ledger "$LEDGER"); fi
+          if git show "$BASE_REF:$REGISTRY" > /tmp/cells.base.yaml 2>/dev/null; then
+            ARGS+=(--base /tmp/cells.base.yaml)
+          else
+            echo "No $REGISTRY at $BASE_REF; running without the escalation gate."
+          fi
+          python3 tools/cell_lint.py "${ARGS[@]}" "$REGISTRY"

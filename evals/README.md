@@ -22,6 +22,16 @@ evals/
       without_skill/outputs/answer.md
     evals.json
     RESULTS.md
+  iteration-3/
+    RESULTS.md          # claim_lint: 12 adversarial cases
+  iteration-4/
+    RESULTS.md          # cell_lint: 18 adversarial cases
+  linter/
+    run_evals.py
+    cases/
+  cell-lint/
+    run_evals.py
+    cases/
 ```
 
 ## Prompts
@@ -50,6 +60,19 @@ Iteration 2 near-misses:
 `RESULTS.md` records assertion pass/fail by inspection. The assertions are in
 `evals.json`. This is a qualitative evaluation; a keyword script cannot judge
 whether a claim ledger is honest or whether a test can actually fail.
+
+## Executable linters
+
+Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
+`tools/cell_lint.py`. Reproduce both:
+
+```bash
+python3 evals/linter/run_evals.py
+python3 evals/cell-lint/run_evals.py
+```
+
+Both runners need PyYAML. A passing run means the contract holds on synthetic
+adversarial fixtures, not that a production ledger or registry is clean.
 
 ## Reproduce
 

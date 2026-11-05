@@ -121,6 +121,13 @@ references/
   standards/
     SOURCES.md
     downloaded/
+tools/
+  claim_lint.py
+  cell_lint.py
+  status_diff.py
+ci/
+  claim-lint.yml
+  cell-lint.yml
 evals/
   evals.json
   iteration-1/
@@ -131,7 +138,12 @@ evals/
   linter/
     run_evals.py
     cases/
+  cell-lint/
+    run_evals.py
+    cases/
   iteration-3/
+    RESULTS.md
+  iteration-4/
     RESULTS.md
 spec/
   README.md
@@ -181,14 +193,24 @@ loading.
 
 ## Status
 
-This is an early `0.1`: three skills, a crosswalk, evidence templates, three
-eval sets, and the `spec/` directory with the conveyor concept. Results are in
-[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
-[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md), and
-[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md). Planned:
-executable checks for static analysis, a claim-ledger linter, and trigger
-evals. For now this is discipline and documentation, not a certificate or a
-substitute for an audit.
+This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
+evals, two linter suites, and the `spec/` directory with the conveyor concept.
+Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
+[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
+[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
+[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md). Planned:
+executable checks for static analysis and trigger evals.
+
+The executable part also includes `tools/cell_lint.py` (CL1–CL6: structure,
+coverage, evidence, traceability, taxonomy, status-escalation gate) and the
+`ci/cell-lint.yml` template. Its cases are in
+[`evals/cell-lint/`](evals/cell-lint/) with results in
+[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, with a
+runner negative control. These are synthetic fixtures, not proof that any
+production registry is clean.
+
+For now this is discipline and documentation, not a certificate or a substitute
+for an audit.
 
 ## License
 

@@ -1,7 +1,8 @@
 # Specs
 
 Design artifacts for the verification conveyor. This directory is the
-knowledge layer of the system; executable pipeline code lives elsewhere.
+knowledge layer of the system; pipeline code lives elsewhere, and the cell
+linter is the executable exception.
 
 ## Files
 
@@ -18,10 +19,11 @@ spec/
 
 ## Status
 
-Phase 0: document and schema only. There is no `cell_lint` yet, no pilot
-calibration, and no claim that the conveyor exists. Every material statement
-in `CONCEPT.md` carries a status from the evidence-first ladder; design
-intents are `open` and carry limitations.
+Phase 0: documents, schema, seed registry, and `cell_lint` (CL1–CL6, 18/18
+synthetic adversarial cases, see `evals/iteration-4/RESULTS.md`). There is no
+pilot calibration and no claim that the conveyor exists. Every material
+statement in `CONCEPT.md` carries a status from the evidence-first ladder;
+design intents are `open` and carry limitations.
 
 ## Reading order
 
@@ -29,6 +31,8 @@ intents are `open` and carry limitations.
 2. `cell-registry.schema.json` — the machine-readable shape of a cell.
 3. `cells.seed.yaml` — uncalibrated seed cells, all `open`.
 4. `guard-grammar.md` — what L2 can and cannot model.
+5. `../../tools/cell_lint.py` — the executable subset of the cell contract;
+   its cases are in `../../evals/cell-lint/`.
 
 ## What this is not
 
