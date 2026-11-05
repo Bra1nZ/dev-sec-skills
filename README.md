@@ -100,12 +100,33 @@ references/
   standards/
     SOURCES.md
     downloaded/
+schemas/
+  claim-ledger.schema.json
+  README.md
+tools/
+  claim_lint.py
+  status_diff.py
+styles/
+  RussianAbsolutes/
+    BannedAbsolutes.yml
+  config/
+    vocabularies/
+      RussianAbsolutes/
+        accept.txt
+  README.md
+ci/
+  claim-lint.yml
 evals/
   evals.json
   iteration-1/
     RESULTS.md
   iteration-2/
     evals.json
+    RESULTS.md
+  linter/
+    run_evals.py
+    cases/
+  iteration-3/
     RESULTS.md
 ```
 
@@ -147,12 +168,18 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 
 ## Статус
 
-Это ранняя версия `0.1`: три скила, crosswalk, шаблоны evidence и два
-eval-набора (шесть базовых задач и три near-miss). Результаты — в
-[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md) и
-[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md). В планах —
-исполняемые проверки для статического анализа, линтеры для claim ledger и
-trigger-eval. Пока это дисциплина и документация, а не сертификат и не
+Это версия `0.1`: три скила, crosswalk, шаблоны evidence и три eval-набора.
+Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
+[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md) и
+[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md).
+
+Исполняемая часть: `tools/claim_lint.py` (L1–L5 над claim-леджером, Vale-first
+для прозы, встроенный сканер как fallback), `tools/status_diff.py` (гейт
+эскалации статусов между релизами: переход вверх требует новой evidence) и
+`ci/claim-lint.yml` — шаблон GitHub Actions для целевого репозитория.
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/) и
+`evals/iteration-3/RESULTS.md`: 12/12 проходят, включая негативный контроль
+самого runner'а. Пока это дисциплина и документация, а не сертификат и не
 замена аудиту.
 
 ## Лицензия
