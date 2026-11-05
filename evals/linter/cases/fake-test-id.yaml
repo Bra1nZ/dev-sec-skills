@@ -1,0 +1,26 @@
+# Synthetic fixture — not evidence about any real project.
+name: fake-test-id
+description: >
+  status=tested cites report ID F16 that is absent from the suite.
+  Must be caught by L3 (traceability) and L4 (tested requires every ID resolve).
+files:
+  "setup/test_suite.py": |
+    def test_auth():
+        report("F1 auth gate rejects anonymous")
+ledger:
+  claims:
+    - id: C-01
+      claim: "Auth gate rejects anonymous requests."
+      mechanism: "Session check before handler dispatch."
+      evidence:
+        - kind: test
+          command: "python3 setup/test_suite.py"
+          tests: ["F16"]
+          date: "2026-10-30"
+      scope: "Single module, synthetic fixture."
+      status: tested
+expect:
+  L1: none
+  L3: error
+  L4: error
+exit: 1

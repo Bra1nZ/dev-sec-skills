@@ -1,0 +1,34 @@
+# Synthetic fixture — not evidence about any real project.
+name: valid-clean
+description: >
+  Control — well-formed ledger, resolvable test ID, existing artifact, fresh
+  date, clean prose. Must produce no findings and exit 0. A wide
+  --max-age-days keeps the fixture evergreen; freshness itself is covered by
+  stale-evidence and future-date.
+files:
+  "setup/test_suite.py": |
+    def test_auth():
+        report("F1 auth gate rejects anonymous")
+  "reports/run.txt": "PASS\n"
+  "docs/README.md": "The module validates every request before dispatch.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Auth gate rejects anonymous requests."
+      mechanism: "Session check before handler dispatch."
+      evidence:
+        - kind: test
+          command: "python3 setup/test_suite.py"
+          artifact: "reports/run.txt"
+          tests: ["F1"]
+          date: "2026-11-01"
+      scope: "Single module, synthetic fixture."
+      status: tested
+args: ["--max-age-days", "3650"]
+expect:
+  L1: none
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+exit: 0

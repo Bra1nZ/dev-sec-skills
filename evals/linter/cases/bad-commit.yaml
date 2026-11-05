@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real project.
+name: bad-commit
+description: >
+  Evidence commit does not resolve. L2 must error: every commit must be
+  resolvable in the project repository. Harness note: the fixture root is
+  a temp directory without .git, so the check fails closed — this case
+  verifies the error path, not repository resolution itself.
+ledger:
+  claims:
+    - id: C-01
+      claim: "Review approved the design."
+      mechanism: "Reviewer checklist."
+      evidence:
+        - kind: review
+          commit: "0123456789abcdef0123456789abcdef01234567"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: reviewed
+expect:
+  L1: none
+  L2: error
+exit: 1

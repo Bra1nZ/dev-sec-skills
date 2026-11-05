@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real project.
+name: missing-artifact
+description: >
+  Evidence artifact reports/missing.txt does not exist. L2 must error:
+  every artifact path must resolve.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Review approved the design."
+      mechanism: "Reviewer checklist."
+      evidence:
+        - kind: review
+          artifact: "reports/missing.txt"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: reviewed
+expect:
+  L1: none
+  L2: error
+exit: 1

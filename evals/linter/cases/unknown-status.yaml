@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real project.
+name: unknown-status
+description: >
+  status "verified" is not in the status enum. L1 must error: only ladder
+  statuses (proven/model-checked/tested/static-refinement/reviewed/open)
+  are allowed.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Auth gate rejects anonymous requests."
+      mechanism: "Session check."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: verified
+expect:
+  L1: error
+exit: 1

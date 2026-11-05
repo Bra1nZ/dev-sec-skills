@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real project.
+name: future-date
+description: >
+  Evidence dated in the future (2099-01-01). L2 must warn: evidence cannot
+  postdate the run.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Review approved the design."
+      mechanism: "Reviewer checklist."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2099-01-01"
+      scope: "Synthetic fixture."
+      status: reviewed
+expect:
+  L1: none
+  L2: warning
+exit: 0

@@ -1,0 +1,18 @@
+# Synthetic fixture — not evidence about any real project.
+name: open-without-limitations
+description: >
+  status=open without a limitations field. L1 must error: open claims must
+  state what is NOT covered.
+ledger:
+  claims:
+    - id: C-01
+      claim: "Auth gate rejects anonymous requests."
+      mechanism: "Session check before handler dispatch."
+      evidence:
+        - kind: planned
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: open
+expect:
+  L1: error
+exit: 1

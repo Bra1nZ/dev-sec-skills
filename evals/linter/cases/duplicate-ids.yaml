@@ -1,0 +1,30 @@
+# Synthetic fixture — not evidence about any real project.
+name: duplicate-ids
+description: >
+  Two claims share ID C-01. L1 must error: IDs are the stable key of the
+  ledger and the release diff.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "First claim."
+      mechanism: "Session check."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: reviewed
+    - id: C-01
+      claim: "Second claim with a duplicate ID."
+      mechanism: "Session check."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: reviewed
+expect:
+  L1: error
+exit: 1

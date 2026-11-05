@@ -1,0 +1,21 @@
+# Synthetic fixture — not evidence about any real project.
+name: bad-id-format
+description: >
+  ID "C-1" does not match ^C-[0-9]{2,}$. L1 must error: short IDs collide
+  across ledgers and break the release diff.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-1
+      claim: "Review approved the design."
+      mechanism: "Reviewer checklist."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: reviewed
+expect:
+  L1: error
+exit: 1

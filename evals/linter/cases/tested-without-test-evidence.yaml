@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real project.
+name: tested-without-test-evidence
+description: >
+  status=tested but evidence only contains kind=review. L4 must error:
+  tested requires evidence kind=test.
+files:
+  "docs/review.md": "Review notes.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Auth gate rejects anonymous requests."
+      mechanism: "Session check before handler dispatch."
+      evidence:
+        - kind: review
+          artifact: "docs/review.md"
+          date: "2026-10-30"
+      scope: "Synthetic fixture."
+      status: tested
+expect:
+  L1: none
+  L4: error
+exit: 1
