@@ -1,0 +1,20 @@
+extends: substitution
+level: warning
+message: "Абсолют без обоснования: найдено '%s' — рядом с claim-ом нужны mechanism, evidence и scope."
+link: https://github.com/Bra1nZ/dev-sec-skills
+ignorecase: true
+swap:
+  'полностью\s+протестирован[а-яё]*': 'протестировано (укажите тесты и результат)'
+  'гарантиру[а-яё]*': 'см. evidence'
+  'сертифицирован[а-яё]*': 'сертификация — это claim со статусом'
+  'полностью\s+безопасн[а-яё]*': 'безопасность требует scope'
+  'абсолютно\s+надёжн[а-яё]*': 'надёжность требует evidence'
+  'fully\s+tested': 'tested (name the tests)'
+  'completely\s+tested': 'tested (name the tests)'
+  'guarantees?': 'state the mechanism'
+  'guaranteed': 'state the mechanism'
+  'certified': 'compliance needs scope'
+  '\bcompliant\b': 'compliance needs scope'
+  'proven\s+secure': 'needs proof'
+  'completely\s+secure': 'needs scope'
+  'all\s+tests\s+pass': 'name the tests'

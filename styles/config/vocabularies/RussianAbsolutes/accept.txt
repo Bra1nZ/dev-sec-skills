@@ -1,0 +1,9 @@
+сертифицированная сборка
+сборка
+Persey
+Персей
+ASTRA
+Astra Linux
+ЗСУБД
+PostgreSQL
+pgcrypto
