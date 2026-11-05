@@ -1,0 +1,44 @@
+# Template: claim-ledger gate. Copy into the target repo as
+# .github/workflows/claim-lint.yml and vendor from dev-sec-skills:
+#   tools/claim_lint.py, tools/status_diff.py, styles/ (without README.md),
+#   schemas/ (without README.md)
+# Do not vendor the checker's own README.md files: the default *.md docs-glob
+# would flag them as meta false positives (they quote the banned words).
+# Adjust LEDGER, SUITE_GLOB and RELEASE_REF per repo.
+name: claim-lint
+
+on: [push, pull_request]
+
+env:
+  LEDGER: docs/claims.yaml
+  SUITE_GLOB: "setup/*.py"
+  RELEASE_REF: v1.3   # base ref for the status diff; set to your last release tag
+
+jobs:
+  claim-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # status_diff needs the base ref
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Install Vale 3.26.0 (L5 prose engine, pinned)
+        run: |
+          curl -sL -o /tmp/vale.tar.gz \
+            https://github.com/vale-cli/vale/releases/download/v3.26.0/vale_3.26.0_Linux_64-bit.tar.gz
+          mkdir -p "$HOME/.local/bin"
+          tar xzf /tmp/vale.tar.gz -C "$HOME/.local/bin" vale
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Lint claim ledger (L1-L5)
+        run: python3 tools/claim_lint.py --root . --suite-glob "$SUITE_GLOB" "$LEDGER"
+
+      - name: Status diff vs previous release
+        run: python3 tools/status_diff.py --repo . --ledger "$LEDGER" --git-ref "$RELEASE_REF"
