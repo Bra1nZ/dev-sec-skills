@@ -72,6 +72,28 @@ table cannot declare compliance.
 Downloaded freely available documents and links to paywalled ISO standards are
 in [`references/standards/SOURCES.md`](references/standards/SOURCES.md).
 
+## Concept: the verification conveyor
+
+The [`spec/`](spec/README.md) directory is the knowledge layer of a system that
+assembles these skills into a conveyor: default deny at merge, provenance as
+taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
+registry, and an explicit promise boundary for L2.
+
+- [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
+  claims C-01…C-16 (Russian source of truth); English derivative:
+  [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
+- [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
+  — the machine-readable cell.
+- [`spec/conveyor/cells.seed.yaml`](spec/conveyor/cells.seed.yaml) — 12 seed
+  cells from the six invariant categories, all `open`.
+- [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — what L2
+  can and cannot check; English derivative:
+  [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+
+Phase 0 status: document and schema, no linter and no pilot. Numbers such as
+"~200 cells" and "45 → 15 minutes" are marked `open`: design intent, not
+measurement.
+
 ## Layout
 
 ```text
@@ -106,6 +128,20 @@ evals/
   iteration-2/
     evals.json
     RESULTS.md
+  linter/
+    run_evals.py
+    cases/
+  iteration-3/
+    RESULTS.md
+spec/
+  README.md
+  conveyor/
+    CONCEPT.md
+    CONCEPT.en.md
+    cell-registry.schema.json
+    cells.seed.yaml
+    guard-grammar.md
+    guard-grammar.en.md
 ```
 
 ## Install
@@ -145,10 +181,11 @@ loading.
 
 ## Status
 
-This is an early `0.1`: three skills, a crosswalk, evidence templates, and two
-eval sets (six baseline tasks and three near-miss tasks). Results are in
-[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md) and
-[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md). Planned:
+This is an early `0.1`: three skills, a crosswalk, evidence templates, three
+eval sets, and the `spec/` directory with the conveyor concept. Results are in
+[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
+[`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md), and
+[`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md). Planned:
 executable checks for static analysis, a claim-ledger linter, and trigger
 evals. For now this is discipline and documentation, not a certificate or a
 substitute for an audit.

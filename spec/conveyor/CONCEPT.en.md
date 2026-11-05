@@ -1,0 +1,424 @@
+# Code Verification Conveyor
+
+> **Document status:** living concept. Most statements below are design intent
+> and carry the status `open`. The Russian version is the source of truth;
+> this file is a derivative translation of [`CONCEPT.md`](CONCEPT.md). When the
+> two disagree, the Russian text wins.
+>
+> **How to read.** Start with section 0: the claim registry. Statuses follow the
+> `evidence-first-docs` ladder: `proven`, `model-checked`, `tested`,
+> `static-refinement`, `reviewed`, `open`. `reviewed` means "checked by reading
+> an artifact in this repository"; `tested` means an executable check exists;
+> `open` means intent without evidence. A status may not be raised without new
+> evidence: `tools/status_diff.py` enforces that rule.
+
+## 0. Claim registry
+
+| ID | Claim | Mechanism | Evidence | Scope | Status | Limitations |
+| --- | --- | --- | --- | --- | --- | --- |
+| C-01 | The three skills define one contract: claim → mechanism → evidence → scope → status | `SKILL.md` in three directories | `skills/*/SKILL.md`; `README.md` | Any language and agent | reviewed | Checked by reading; no automated consistency check across skills |
+| C-02 | `claim_lint.py` implements checks L1–L5 over a claim ledger | Schema + linter + prose fallback scanner | `tools/claim_lint.py`; `schemas/claim-ledger.schema.json`; `evals/iteration-3/RESULTS.md`; command `python3 evals/linter/run_evals.py` | JSON/YAML ledger; `.md` prose | tested | The L5 fallback has a known accuracy gap; the commit check fails closed outside a git repository |
+| C-03 | `status_diff.py` prevents raising a status without new evidence | Ledger comparison; evidence identity by (kind, commit, artifact, command, tests, date) | `tools/status_diff.py` | Two files or a git ref | reviewed | No adversarial eval set; the identity rule is a design decision |
+| C-04 | The skills change an agent's answer in the intended direction | `with_skill` / `without_skill` pairs | `evals/iteration-1/RESULTS.md`; `evals/iteration-2/RESULTS.md`; `evals/README.md` | Nine synthetic tasks | reviewed | Qualitative inspection; no scored harness; small sample |
+| C-05 | The linter catches a forged trace and the runner does not pass vacuously | `fake-test-id` case + runner negative control | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Synthetic fixtures | tested | 12/12 cases prove the linter contract, not that any production ledger is clean |
+| C-06 | The product sells verification throughput, not tests | Layers + routing + coverage table | None | — | open | No measurement of throughput, false-positive rate, or latency; next step is to instrument a baseline on the pilot |
+| C-07 | L0: an AST diff routes a PR to the affected security cells in seconds | AST extractor + code-to-cell index | None | SQL/C first | open | Extractor and index are not built; a false negative in routing is a risk; needs a pilot and precision/recall measurement against human labelling |
+| C-08 | L1: an engine-agnostic ensemble through SARIF adapters covers cells in minutes | Adapters for SVACE/PVS/Semgrep/CodeQL and others | None | Two or three engines first | open | Adapters are not written; "SARIF" is a format, not evidence; needs a triage sample and rules that route findings into cells |
+| C-09 | L2: regenerating a slice of a formal model from unannotated code works as a merge gate | Bounded guard grammar + bounded model checking / VC + completeness gate | None; language limits in `guard-grammar.md` | Only cells expressible by the grammar | open | The extractor is TCB; risk of a vacuous model; the grammar covers an authorization slice, not concurrency or transactions; the model↔code gap remains |
+| C-10 | Self-mutation of the conveyor is a condition of its release | Injected defective and clean PRs + an external judge | None | Conveyor releases | open | The judge is undefined; the held-out suite is not deployed; without an external judge the check is circular |
+| C-11 | The taxonomy is bounded to hundreds of cells and lessons live as fixtures | Matrix of failure class × entry point × failure mode | `spec/conveyor/cell-registry.schema.json`; `spec/conveyor/cells.seed.yaml` | Four taxonomies | open | "~200" is a design estimate; no pilot calibration; the unroutable share is unmeasured |
+| C-12 | Review time for an average PR falls from ~45 to ~15 minutes | Routing + dissolving verification into the conveyor | None | — | open | No baseline measurement; depends on language, domain, and test maturity; publish a distribution, not a point estimate |
+| C-13 | The verdict registry is a hash chain with an external anchor | Hash of (commit + extractor + verifier versions + model + result), append-only | None | All verdicts | open | The anchor is not chosen; no implementation; needs a threat model for log substitution |
+| C-14 | The agent-guard and Citadel building blocks transfer to the code supply chain | Broker/default-deny, taint, one-shot grants, hash-chain audit | No pointers in this repository | External repositories | open | This document does not confirm them; each block needs a "repository + path/commit" pointer |
+| C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
+| C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
+
+Registry rules:
+
+- One claim per row. The statement must be falsifiable.
+- `open` always carries limitations and a next step. An empty `open` is a risk
+  disguised as a plan.
+- Claims about external building blocks must point to an artifact
+  (repository + path or commit). Without a pointer the status stays `open`.
+- Raising a status requires new evidence; a rerun with a newer date counts as
+  new evidence for freshness only, not for strength of proof.
+
+## 1. Thesis
+
+Code generation has become free; the bottleneck is verification capacity. A
+department of 10,000 juniors merging a PR per minute does not exist, but 10,000
+agents already do. The product does not sell "tests"; it sells **verification
+throughput**: verified PRs per unit of time at a bounded false-positive rate and
+bounded latency.
+
+"10,000 agents already do" is a statement about supply, not a measurement.
+Throughput, false-positive rate, and latency stay `open` (C-06, C-12) until they
+are instrumented on a pilot.
+
+## 2. Trust policy
+
+Origin-agnostic verification: an artifact is untrusted regardless of origin. The
+equivalence "junior = agent" is correct as a trust policy (verify everything,
+including senior code) and incomplete as a threat model:
+
+- agent code has correlated errors — blind spots of the model version;
+- injectable genesis — the code was shaped by texts the author did not write;
+- no learning loop, which a junior has;
+- no subject of responsibility.
+
+Therefore provenance is mandatory but grants no trust. The origin label routes
+checks; it does not weaken them.
+
+## 3. Principles
+
+1. **Default deny.** Merge and deploy are closed until verdicts are collected.
+2. **Provenance as taint.** Every PR carries an origin label: model, context,
+   inputs that shaped the code. The label routes checks; it does not weaken
+   them.
+3. **Verify the verifier.** The conveyor mutation-tests itself: an injected
+   defective PR must be caught, an injected clean one must pass. This applies to
+   extractors, risk classifiers, and the release judge, not only to engines.
+4. **Evidence-first.** Every verdict is a ledger row {mechanism, evidence,
+   scope, status}; the ledger is a hash chain with an external anchor.
+5. **Taxonomy before history.** The object of audit is a bounded matrix of
+   failure classes, not a growing pile of lessons.
+6. **Lessons compound, folklore evaporates.** Every human judgement is compiled
+   into an artifact: a detector, a contrastive pair, a specification. Review is
+   a compiler of judgements into artifacts, not a stream of checks.
+
+## 4. Verification layers
+
+| Layer | Trigger and cost | Content |
+| --- | --- | --- |
+| **L0** | every PR, seconds | AST diff (`libpg_query`/`pglast` for SQL, `libclang`/`tree-sitter` for C) → whether security-relevant functions were touched → regression of negative tests and detectors for the affected cells |
+| **L1** | every PR, minutes | Engine-agnostic ensemble through SARIF adapters (SVACE, PVS-Studio, Semgrep, CodeQL, clang-tidy, Infer, Bandit/ruff/gosec, SpotBugs, SCA/SLSA); findings are routed into cells; a detector for correlated failures across the PR stream; scanning of inputs that shaped the code |
+| **L2** | merge gate for products with a formal model, minutes to tens of minutes | Regeneration of a **slice** of the formal model from changed functions through a bounded guard grammar; bounded model checking (`probcli`) or VC over the C layer (`SeaHorn` / `Frama-C`+`WP` → Z3); targets are stable (from the requirements registry), and their survival on the new model is checked |
+| **L3** | nightly / release, hours | Full model regeneration + full model checking + Rodin round-trip; parser and state fuzzing; penetration-test simulation / BAS; self-mutation of the conveyor as a release condition |
+
+### 4.1 Configurations
+
+A configuration is a bundle of layers + a cell coverage matrix + model-checking
+bounds.
+
+- "Fast" — L0+L1 with a reduced ensemble.
+- "Balanced" — plus L2.
+- "Maximum" — L0–L3.
+- "No formal model" — L0+L1+fuzzing.
+
+The price of a configuration is its **coverage table**: "cell → covered by what →
+what remains open". The client buys a concrete list of closed cells and a
+concrete list of holes, not speed. The formal model, the SVACE adapter, fuzzing,
+and BAS are shop modules.
+
+### 4.2 Limits of L2
+
+L2 is the most ambitious layer and the narrowest in applicability. The bounded
+guard grammar expresses an authorization slice: roles, levels, equalities,
+attribute existence, TTL. The full specification is in
+[`guard-grammar.en.md`](guard-grammar.en.md) (Russian source:
+[`guard-grammar.md`](guard-grammar.md)).
+
+Consequences:
+
+- **L2 cannot be sold as coverage of all cells.** Concurrency, partial writes,
+  transactions, and the supply chain are not expressible in the grammar. For
+  them L2 must return `unroutable`, not "verified".
+- **The extraction completeness gate** (`code events ⊆ model events`) works only
+  if the extractor is trusted. The extractor is TCB. It therefore enters
+  verify-the-verifier: a mutation set where "inject a guard into code — the
+  extractor must see it; remove a guard — it must see the change".
+- **Vacuity check.** An empty or trivial set of model events makes the gate
+  meaningless. An empty slice is a failure, not a success.
+- **Unroutable bucket.** A guard outside the grammar is not discarded silently:
+  merge stays closed until a human decides, and the case enters the statistics.
+- **The model↔code gap remains:** the model checks predicates, not
+  cryptography, the network, or storage. This is recorded in the scope of every
+  verdict.
+
+### 4.3 Price = coverage table
+
+The same cell can be closed by different layers. The coverage table shows not
+"how much was run" but "which cell is closed by what and what remains open". It
+is also the interface to the client and to the auditor.
+
+## 5. Taxonomy and detectors
+
+### 5.1 Cell
+
+The skeleton is a fixed matrix: **failure class × entry-point class × failure
+mode**. Several taxonomies: security, correctness, maintainability,
+performance. The order of magnitude is hundreds of cells, not millions of
+lessons.
+
+A cell = `{class, detector set, coverage status, residual risk, owner}`. The
+machine-readable form is in
+[`cell-registry.schema.json`](cell-registry.schema.json); the seed set from the
+six invariant categories is in [`cells.seed.yaml`](cells.seed.yaml). All seed
+cells are `open`: they fix the shape of the taxonomy, not coverage.
+
+### 5.2 Detector
+
+A detector is a test, an analysis rule, or a formal invariant. Every detector is
+mutation-tested with its own fixture: a detector without a fixture is not
+verified, even if it is green. This applies principle 3 at the cell level.
+
+### 5.3 Audit surface
+
+One or two pairs of senior hands per quarter:
+
+- quarterly taxonomy review;
+- statistical sample of the routing log;
+- triage of the `unroutable` bucket with a quota.
+
+An empty bucket means the taxonomy is complete on the observed stream. A filling
+bucket signals an unknown unknown. Taxonomy expansion is decided by humans from
+data, not by an agent.
+
+### 5.4 Collapsing scale
+
+10,000 lessons = 10,000 fixtures at hundreds of cells. The knowledge base is
+audited through cells, not through history. The number "~200" is a design
+estimate (C-11); pilot calibration will show the real order.
+
+## 6. Lessons and business rules
+
+### 6.1 Lesson object
+
+`{id, taxonomy, cell_or_candidate, example_bad, example_good, reasons[],
+measurable, detector_id?, status, owner, last_seen}`.
+
+- Measurable reasons become detectors immediately.
+- Non-measurable ones become a contrastive pair for in-context AI review and a
+  fixture for a future detector.
+- Repeating reasons are distilled into a new cell with human acceptance.
+
+### 6.2 Learning channel
+
+Code that resembles `example_bad` receives, at the moment of writing, a
+bad/good pair and the reason — in the author's context and in the AI reviewer's
+prompt. A senior teaches only new cases; everything else is taught by the
+extracted artifact.
+
+### 6.3 Ladder of business-rule formalization
+
+Prose → decision table / property / BDD → DSL rule or policy (OPA/Rego, custom
+DSLs) → executable specification → fixtures.
+
+A rule = a claim in the ledger `{id, prose, spec_kind, spec, evidence, status,
+owner, domain_expert}`. Humans keep two bounded steps: extracting the rule from
+the domain owner's head and accepting the formalization. The unformalizable
+lives in a visible backlog of open rules with a quota.
+
+## 7. Verdicts, routing, and the human role
+
+### 7.1 Verdict registry
+
+A verdict record: commit hash + extractor hash + verifier versions + model hash
++ result. The log is append-only, hash-chained, externally anchored.
+
+Anchor options (choice is C-13, open):
+
+- transparency log: Rekor / SCITT;
+- in-toto layout + Sigstore attestations;
+- a separate append-only repository referenced by CI.
+
+The anchor is needed so that rewriting the log is visible. Without an external
+anchor a hash chain protects only against accidental corruption, not against
+deliberate substitution.
+
+### 7.2 Risk-based routing
+
+After verdicts:
+
+- low-risk (docs, configs, tests) — auto-merge when green;
+- medium (business logic, style) — light review;
+- high (architecture, impact) — deep review.
+
+Classification is an attack surface (C-16): code masquerading as a test or a
+config gets the easy path. Therefore classification rules:
+
+- live under the same integrity control as the conveyor config;
+- are versioned and pass their own negative tests (masquerade cases);
+- enter a sampled audit of misroutes with a quota.
+
+Auto-merge is allowed only with green verdicts; classification does not replace
+verdicts.
+
+### 7.3 Three roles of review
+
+- **Checking** dissolves into the conveyor.
+- **Teaching** becomes retrieval of contrastive pairs.
+- **Lawmaking** stays with humans: new cells, acceptance of formalizations,
+  taxonomy expansion.
+
+The economics ("45 → 15 minutes") is C-12, `open`. Until measured it is a
+hypothesis, not a promise. Next step: instrument a baseline on the pilot and
+publish a distribution, not a point estimate.
+
+## 8. Security of the conveyor itself
+
+### 8.1 What is attacked
+
+The conveyor is TCB and a target. Surfaces: the oracle, the reviewer agent
+(injection), the model generator (substitution), the config (tamper), the
+verdict log (rewrite), the risk classifier (masquerade).
+
+### 8.2 Measures
+
+- Verifiers and rule sets are pinned.
+- Pin sets of publisher keys are set by a trusted party at bootstrap.
+- The conveyor config is under integrity control (config-tamper pattern).
+- Verdicts are an append-only hash chain with an external anchor.
+- Checking, learning, and audit are separate channels: a logging failure does
+  not disable checking.
+
+### 8.3 Verify the verifier: what exactly is checked
+
+Mutation testing applies to:
+
+1. **Engines and rules** — an injected defect must be found.
+2. **Model extractor** — an added guard must enter the model; a removed one must
+   change it.
+3. **Risk classifier** — masquerade cases (code disguised as a test/config) must
+   route to high or enter the audit.
+4. **Conveyor release judge** — see 8.4.
+
+### 8.4 Self-mutation and the external judge
+
+Self-mutation of the conveyor is a release condition (C-10). But the judge
+cannot be the conveyor itself: that is a circular check. The minimal
+construction:
+
+- a held-out negative suite outside the conveyor repository;
+- fixed seeds and versions;
+- independent acceptance of the result: a second run with a different engine
+  set, or a human decision against a criterion recorded in advance.
+
+Without a named judge, the claim "the conveyor checks itself" stays `open`.
+
+### 8.5 Goodhart
+
+Code evolves toward the gate, not toward correctness. Measures:
+
+- rotating held-out negative suites outside the repository;
+- statistical human audit of a sample that audits **the conveyor**, not the
+  code;
+- periodic replacement of some detectors so that a fixed gate does not become
+  the objective function.
+
+## 9. Ceiling (honest scope)
+
+**Not caught:**
+
+- architectural debt with a time lag (the code is correct now, the problem
+  appears after N sprints);
+- business-logic errors under a wrong specification;
+- scalability without load testing;
+- emergent behavior of compositions;
+- UX.
+
+Theoretically: the halting problem, Rice's theorem, the model↔code gap.
+
+**Partially caught:**
+
+- formalized architectural antipatterns as cells (cyclic dependencies, layer
+  violations);
+- performance regressions through A/B baselines in CI;
+- security debt through SCA.
+
+**Complementary processes outside the system:** architecture review, load
+testing, domain acceptance, integration tests, chaos. The system does not
+replace them; it removes routine work and hands them artifacts.
+
+## 10. Building blocks already in hand
+
+| Block | What transfers | Status in this document |
+| --- | --- | --- |
+| agent-guard | broker/default-deny, taint/provenance, egress + approval with one-shot grants, hash-chain audit, mutation matrices, BEFORE/AFTER format | open (C-14): needs a "repository + path/commit" pointer |
+| Citadel / MODEL.md | manual code→event tracing as the extractor specification; guard grammar (roles, levels, equalities, TTL); "requirements registry → goals → invariants" pipeline; experience with `probcli` and counterexamples | open (C-14): needs a pointer |
+| Skills | `invariant-first-code` — cell content; `negative-test-first` — fixtures and self-checking; `evidence-first-docs` — ledger and status ladder | reviewed (C-01) |
+| Financial-model discipline | a source registry for every number | reviewed as a practice; not yet applied to throughput numbers |
+
+This document does not confirm the external blocks. It records that they are
+needed and how they would fit, but evidence must come from their repositories.
+
+## 11. Novelty gap
+
+Preliminary survey: engines are fragmented, dashboards are consolidated, the
+closed loop is unowned. Predecessors closed pieces:
+
+- Tricorder / Error Prone — lesson → detector, reviewer feedback;
+- Springfield — fuzzing as a service in CI;
+- AWS Automated Reasoning — formal checks in CI for narrow domains;
+- SLSA / in-toto — build provenance;
+- Letta / MemGPT — hierarchical memory;
+- assurance-case tooling (GSN/SACM) — argument structure, but not an executable
+  merge gate.
+
+The claimed combination: **PR-level provenance taint + model regeneration from
+unannotated code as a merge gate with an extraction completeness gate +
+self-mutation of the conveyor as a release condition + a top-down knowledge base
+with a bounded audit surface + verification throughput as the unit of product**.
+
+Status is `open` (C-15). Before external publication a systematic prior-art
+sweep is needed, not this paragraph.
+
+## 12. Roadmap
+
+**Phase 0 — knowledge layer (this directory).**
+
+- Concept with a claim registry.
+- Cell registry schema and seed set.
+- Guard grammar specification and its limits.
+- `cell_lint` and adversarial cases are the next step, not part of phase 0.
+
+**Phase 1.** L0+L1 on our own repositories: AST extractor, SARIF adapters for
+two or three engines, security taxonomy from the `invariant-first` categories,
+verdict registry.
+
+**Phase 2.** Guard grammar + slice regeneration on the pilot (L2), extraction
+completeness gate, extractor mutation set, knowledge-base router with an
+`unroutable` bucket.
+
+**Phase 3.** Conveyor self-mutation with an external judge, held-out suites,
+learning channel (retrieval of contrastive pairs at the moment of writing).
+
+**Phase 4.** Configurations as a product with a coverage matrix instead of a
+price list; certification module for critical infrastructure; VC path over the C
+layer (SeaHorn/Frama-C).
+
+## 13. Open questions and next evidence
+
+1. **Pilot.** Not chosen. Candidate: Citadel/rbac_pg, which already has a role
+   DSL, a requirements pipeline, and `probcli` experience. Without a pilot
+   C-07…C-12 remain hypotheses.
+2. **Verdict anchor.** Rekor/SCITT, in-toto+Sigstore, or an append-only
+   repository. Needs a threat model and operating cost.
+3. **Self-mutation judge.** Who accepts that a defective PR was caught, and by
+   what criterion.
+4. **Taxonomy calibration.** How many cells are actually used, what share is
+   `unroutable`, how long the quarterly review takes.
+5. **Economics.** Baseline review time, false-positive rate, latency. Publish a
+   distribution, not an average.
+6. **Prior-art sweep.** A systematic review before external publication of
+   C-15.
+7. **Extractor qualification.** Mutation set, vacuity check, limits of
+   applicability.
+8. **Risk classifier.** Masquerade cases and misroute audit quotas.
+
+## Appendix A. Relation to repository artifacts
+
+| Artifact | Role in the concept |
+| --- | --- |
+| `skills/invariant-first-code/` | Cell content: invariant categories, enforcement points, fail-closed |
+| `skills/negative-test-first/` | Detector fixtures and verifier self-checking |
+| `skills/evidence-first-docs/` | Verdict format and status ladder |
+| `schemas/claim-ledger.schema.json` | Prototype of the verdict registry |
+| `tools/claim_lint.py` | Checks L1–L5 that `cell_lint` will reuse |
+| `tools/status_diff.py` | Ban on status escalation without new evidence |
+| `evals/linter/` | Example adversarial set for detectors |
+| `spec/conveyor/cell-registry.schema.json` | Machine-readable cell |
+| `spec/conveyor/guard-grammar.en.md` | Limits of L2 |
+
+This document is not a certification, an audit, or a coverage promise. It
+records intent, limits, and the next evidence.

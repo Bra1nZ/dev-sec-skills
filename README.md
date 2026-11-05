@@ -73,6 +73,26 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 Скачанные свободно доступные документы и ссылки на платные ISO — в
 [`references/standards/SOURCES.md`](references/standards/SOURCES.md).
 
+## Концепт: конвейер верификации
+
+Каталог [`spec/`](spec/README.md) — знаниевый слой системы, которая собирает
+эти скилы в конвейер: default deny на merge, provenance как taint, таксономия
+ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
+
+- [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
+  утверждений C-01…C-16; английская версия —
+  [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
+- [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
+  — машиночитаемая ячейка.
+- [`spec/conveyor/cells.seed.yaml`](spec/conveyor/cells.seed.yaml) — 12
+  сид-ячеек из шести категорий инвариантов, все `open`.
+- [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — что L2
+  может и чего не может проверять; английская версия —
+  [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+
+Статус фазы 0: документ и схема, без линтера и без пилота. Числа вроде «~200
+ячеек» и «45 → 15 минут» помечены `open` — это design intent, а не измерение.
+
 ## Структура
 
 ```text
@@ -128,6 +148,15 @@ evals/
     cases/
   iteration-3/
     RESULTS.md
+spec/
+  README.md
+  conveyor/
+    CONCEPT.md
+    CONCEPT.en.md
+    cell-registry.schema.json
+    cells.seed.yaml
+    guard-grammar.md
+    guard-grammar.en.md
 ```
 
 ## Установка
@@ -168,8 +197,9 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 
 ## Статус
 
-Это версия `0.1`: три скила, crosswalk, шаблоны evidence и три eval-набора.
-Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
+Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три eval-набора и
+каталог `spec/` с концептом конвейера. Результаты — в
+[`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md) и
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md).
 

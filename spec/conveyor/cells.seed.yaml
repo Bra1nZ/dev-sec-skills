@@ -1,0 +1,175 @@
+# Seed cell registry.
+#
+# Every cell is open: no detector has exercised it, no pilot has calibrated it.
+# The seed exists to fix the shape of the taxonomy, not to claim coverage.
+# Calibration (how many cells a real repository uses) is an open item in
+# CONCEPT.md, claim C-11.
+
+project: dev-sec-skills/conveyor-seed
+generated: "2026-11-05"
+
+taxonomy:
+  name: invariant-first-code
+  version: "1"
+  classes:
+    - security
+    - correctness
+    - maintainability
+    - performance
+
+cells:
+  - id: CELL-001
+    title: A role-less or outsider session cannot write tenant data through any supported entry point.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points: [http, batch, import, admin, migration, background-job]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: Platform-level refusal can mask a missing application guard; superuser and DBA are outside the model.
+    limitations: No extractor and no detector yet; needs a pilot, a negative test per entry point, and a refusal-classification assertion.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-002
+    title: Object-level authorization denies a neighboring tenant or a non-owner even when the route is reachable.
+    taxonomy_class: security
+    failure_class: object-level-authorization
+    entry_points: [http, graphql, batch, import, admin]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: A route-level check can pass while the object-level check is missing.
+    limitations: Needs an IDOR negative test against a second tenant and a check that the refusal leaves no partial state.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-003
+    title: A refused operation leaves no partial write, charge, count, or half-applied state.
+    taxonomy_class: correctness
+    failure_class: partial-write-on-refusal
+    entry_points: [http, batch, import, migration, recovery]
+    failure_mode: rollback
+    coverage_status: open
+    detectors: []
+    residual_risk: Side effects outside the transaction (emails, queues, files) can survive a rollback.
+    limitations: Needs a post-refusal world-state assertion and a second evidence channel that survives the rollback.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-004
+    title: Retry, duplicate delivery, and replay do not double-apply an operation.
+    taxonomy_class: correctness
+    failure_class: non-idempotent-retry
+    entry_points: [http, queue-consumer, batch, recovery]
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: At-least-once delivery is the protocol reality; exactly-once is a design claim until tested.
+    limitations: Needs a stable idempotency key, a duplicate-delivery test, and a stale-message replay test.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-005
+    title: Two concurrent writers cannot violate a data constraint through check-then-act.
+    taxonomy_class: correctness
+    failure_class: check-then-act
+    entry_points: [http, background-job, batch]
+    failure_mode: abort
+    coverage_status: open
+    detectors: []
+    residual_risk: Application-level locks can be bypassed by another entry point or a second service instance.
+    limitations: Needs a database constraint or row lock, a parallel-writer test, and a statement of the serialization mechanism.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-006
+    title: A stale worker or an expired lease cannot commit after losing ownership.
+    taxonomy_class: correctness
+    failure_class: stale-worker
+    entry_points: [background-job, queue-consumer, recovery]
+    failure_mode: abort
+    coverage_status: open
+    detectors: []
+    residual_risk: A worker paused between check and write can commit unless a fencing token is checked at the write.
+    limitations: Needs a fencing token or monotonic epoch and a test that pauses the worker between check and write.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-007
+    title: Cleanup runs on success, error, cancellation, and timeout, and secrets are not left in memory or logs.
+    taxonomy_class: correctness
+    failure_class: lifecycle-cleanup
+    entry_points: [http, background-job, shutdown, error-path]
+    failure_mode: safe-degrade
+    coverage_status: open
+    detectors: []
+    residual_risk: Garbage collection is not zeroization; platform limits can leave buffers reachable.
+    limitations: Needs a cleanup test per exit path and a secret-in-log negative test.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-008
+    title: Rotation invalidates an old credential within the stated window.
+    taxonomy_class: security
+    failure_class: stale-credential
+    entry_points: [authentication, background-job, admin]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: Cached sessions and long-lived tokens can outlive the rotation window.
+    limitations: Needs a stated rotation window, a stale-credential negative test, and a check of every credential cache.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-009
+    title: The error contract names the rejected input class, the code, the layer, and whether state changed, without leaking secrets.
+    taxonomy_class: correctness
+    failure_class: error-contract
+    entry_points: [http, api, cli, batch]
+    failure_mode: abort
+    coverage_status: open
+    detectors: []
+    residual_risk: A generic 500 can hide whether the rule ran or a dependency failed.
+    limitations: Needs one negative test per rejected input class and a scan of error payloads for secrets and internal paths.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-010
+    title: Batch, bulk, and import paths apply the same validation and authorization as the single-item path.
+    taxonomy_class: security
+    failure_class: batch-bypass
+    entry_points: [batch, bulk-api, import, admin]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: A single-item check duplicated in handlers drifts from the batch path.
+    limitations: Needs one shared choke point and a negative test that exercises the batch path directly.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-011
+    title: Build inputs are pinned and the release artifact carries provenance and an SBOM.
+    taxonomy_class: security
+    failure_class: supply-chain-integrity
+    entry_points: [build, release, dependency-update]
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: A pinned dependency can still be malicious; provenance shows origin, not safety.
+    limitations: Needs lockfile and toolchain pinning, SBOM generation, provenance verification, and a secret scan of artifacts.
+    owner: unassigned
+    last_seen: "2026-11-05"
+
+  - id: CELL-012
+    title: Release artifacts contain no default credentials, debug endpoints, or permissive CORS.
+    taxonomy_class: security
+    failure_class: insecure-defaults
+    entry_points: [build, release, configuration]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: A configuration that is safe in staging can be unsafe in production.
+    limitations: Needs artifact scanning, a configuration-diff check, and a test that the production profile fails closed.
+    owner: unassigned
+    last_seen: "2026-11-05"

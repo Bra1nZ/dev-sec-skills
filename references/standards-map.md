@@ -36,6 +36,10 @@ not clause numbers.
 | ISO/IEC 15408 (Common Criteria) | Security evaluation; protection profiles, assurance levels | Paywalled |
 | CWE / SARIF | Weakness taxonomy / analysis-result exchange | Public |
 | SLSA / SPDX / CycloneDX | Build provenance / SBOM formats | Public |
+| in-toto | Supply-chain layout and attestations | Public |
+| SCITT / Rekor | Transparency logs; signed, append-only statements | Public specifications |
+| OMG SACM / GSN | Assurance-case structure and argument notation | Public / community |
+| OSCAL (NIST) | Machine-readable control and assessment descriptions | Public |
 | RFC 2119 / RFC 8174 | Normative requirement keywords | Public |
 | Diátaxis; Google and Microsoft style guides | Documentation structure and controlled language | Public |
 
@@ -91,6 +95,25 @@ See `standards/SOURCES.md` for URLs, licenses, and local copies.
 | Memory clearing and lifecycle | ФСТЭК 64 (memory clearing), ФСТЭК 76 (lifecycle) | OWASP ASVS V6/V8; CWE-226, CWE-316 | Wipe sensitive buffers; cleanup on every exit path |
 | Supply chain and build | ГОСТ 56939 (secure build/composition) | NIST SSDF PS.2/PS.3; SLSA; SPDX/CycloneDX | Pin inputs, SBOM, provenance, secret scanning |
 | Platform contract | ФСТЭК 76 (supported environment), ФСТЭК 64 (DBMS environment) | NIST SP 800-160; OWASP ASVS | Declare versions/privileges; test each supported platform |
+
+### Conveyor artifacts (`spec/`)
+
+The crosswalk below maps the phase-0 artifacts to standards. It is a design
+mapping: none of these rows is evidence that the conveyor exists or that a
+verdict is trustworthy.
+
+| Conveyor artifact | FSTEC / GOST | International analogue | Action and status |
+| --- | --- | --- | --- |
+| Verdict registry: append-only, hash-chained, externally anchored | ФСТЭК 55 (evidence pack, change control), ГОСТ 56939 (release evidence) | in-toto attestations; SLSA provenance; SCITT / Rekor transparency log; NIST SSDF PS.2/PS.3 | Name the anchor before claiming integrity; record commit, extractor hash, verifier versions, model hash, result. Status `open` (C-13) |
+| Cell taxonomy bounded to failure classes | ФСТЭК 76 (security model, test coverage), ГОСТ 56939 (requirements and testing) | NIST SP 800-160; ISO/IEC/IEEE 29119; CWE | Map cells to CWE classes where one exists; an `unroutable` finding is a coverage gap, not a new cell. Status `open` (C-11) |
+| Provenance as taint, not trust | ФСТЭК 76 (development environment, configuration management) | SLSA provenance; in-toto layout | Provenance routes checks; it does not weaken or replace them. A provenance label is not a safety statement |
+| Guard grammar and extraction completeness gate | ФСТЭК 76 (no bypass, security model), ГОСТ 56939 (static analysis, testing) | ISO/IEC/IEEE 29119; NIST SP 800-115; CWE-285/CWE-862/CWE-863 | State the expressible subset and exclude concurrency, transactions, and supply chain. Extraction soundness is `open` until the mutation set passes (C-09) |
+| Self-mutation with an external judge | ГОСТ 71207 (qualification tests, repeatability), ГОСТ 56939 (test quality) | Mutation testing; NIST SP 800-115 | The judge must be outside the conveyor. A held-out suite alone is not acceptance criteria (C-10) |
+| Machine-readable assurance claims | ФСТЭК 55/76 (evidence and design docs) | OMG SACM / GSN; OSCAL | Export the ledger to an assurance-case or OSCAL form; the export does not turn an `open` claim into evidence |
+
+SACM/GSN describes the structure of an argument; it does not execute a merge
+gate. OSCAL describes controls and assessment results; it does not verify code.
+Neither substitutes for a verdict produced by a mechanism.
 
 ### Russian-specific notes
 
