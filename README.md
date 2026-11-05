@@ -90,7 +90,8 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
   может и чего не может проверять; английская версия —
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — пилотный реестр на
-  29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4.
+  29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 5 из 27 детекторов
+  есть mutation fixture ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
 
 Статус фазы 0: документ, схема, `cell_lint` и один пилотный реестр. Реестра
 для production нет. Числа вроде «~200 ячеек» и «45 → 15 минут» помечены
@@ -172,6 +173,10 @@ spec/
     rbac_pg/
       cells.yaml
       README.md
+      mutations/
+        mutations.yaml
+        run_mutations.py
+        README.md
 ```
 
 ## Установка
@@ -235,10 +240,11 @@ evidence, трассировка, таксономия, гейт эскалац�
 доказательство чистоты production-реестра.
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
-29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Он же показывает главный
-разрыв: 0 из 27 детекторов имеют mutation fixture, а claim-леджер rbac_pg
-покрывает 7 из 29 ячеек. Чистый lint означает внутреннюю согласованность, а не
-истинность свойств.
+29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 5 из 27 детекторов
+есть mutation fixture: названный suite падает ровно на предсказанных тестах,
+когда механизм удалён. Остальные 22 детектора пока проверены только зелёным
+baseline, а claim-леджер rbac_pg покрывает 7 из 29 ячеек. Чистый lint означает
+внутреннюю согласованность, а не истинность свойств.
 
 Пока это дисциплина и документация, а не сертификат и не замена аудиту.
 

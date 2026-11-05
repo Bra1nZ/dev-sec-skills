@@ -1,0 +1,201 @@
+# Mutation fixtures for the rbac_pg pilot.
+#
+# Each fixture mutates ONE source artifact in a throw-away copy of the
+# repository, runs the detector that is supposed to catch the property, and
+# asserts that the detector fails EXACTLY on the predicted tests. This is the
+# "verify the verifier" step: it proves the detector can fail at all.
+#
+# Contract:
+#   - The target repository is never modified. The runner copies setup/ and
+#     sql/ into a work dir and edits the copy.
+#   - Every anchor must occur exactly once; a drifted source fails the run
+#     instead of silently mutating nothing.
+#   - source_sha256 pins the artifact. If the artifact changes, the fixture
+#     must be reviewed, not silently reused.
+#   - `expect_failures` is the full set of failing test names. Extra or
+#     missing failures fail the fixture: a mutation that also breaks unrelated
+#     tests is not a clean proof of sensitivity.
+#
+# Results recorded below were produced on 2026-11-05 on a fresh stand:
+#   PostgreSQL 15.17 (Debian 15.17-astra.se2.3r2), port 55433, trust auth,
+#   extension roles pre-created (see README.md).
+#
+# Run:
+#   python3 spec/pilots/rbac_pg/mutations/run_mutations.py \
+#       --target /home/admini/projects/rbac_pg \
+#       --dsn "postgresql://postgres@127.0.0.1:55433/postgres" \
+#       --ensure-roles
+
+version: 1
+project: rbac_pg
+generated: "2026-11-05"
+baseline_commit: "492f23c"
+environment:
+  postgres: "15.17 (Debian 15.17-astra.se2.3r2)"
+  cluster: "fresh tools/stand.sh, port 55433, trust auth"
+  note: >-
+    test_fstek.py installs via CREATE EXTENSION, so it uses the extension files
+    installed in pg_config --sharedir. Those files were byte-identical to the
+    working tree at baseline_commit (sha256 compared for 1.9 and 1.9.1). The
+    other fixtures deploy sql/ directly from the copied tree.
+
+fixtures:
+  - id: MUT-001
+    cell: CELL-018
+    detector: D-V191-F1
+    property: >-
+      refresh_session() takes identity and the absolute deadline only from the
+      signed context blob, never from client-settable GUCs.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_v191_fixes.py
+    baseline_expect: "22 OK, 0 FAIL"
+    observed: "19 OK, 3 FAIL"
+    rationale: >-
+      Reintroduces the 1.9 defect: read app.user_id and app.ctx_abs_deadline
+      from GUCs. A detector that cannot see identity substitution is not a
+      context-tampering detector.
+    mutations:
+      - anchor: "    v_user_id    := nullif(v_blob_json->>'u', '')::INT;\n"
+        replacement: "    v_user_id    := nullif(current_setting('app.user_id', true), '')::INT;\n"
+        note: "identity from a client-settable GUC"
+      - anchor: "    v_abs_deadline := nullif(v_blob_json->>'ad', '')::BIGINT;\n"
+        replacement: "    v_abs_deadline := nullif(current_setting('app.ctx_abs_deadline', true), '')::BIGINT;\n"
+        note: "absolute deadline from a client-settable GUC"
+    expect_failures:
+      - "F1a подмена app.user_id + refresh -> личность осталась alice"
+      - "F1b подмена app.ctx_abs_deadline='0' не убивает сессию (дедлайн из блоба)"
+      - "F1c честный refresh_session работает"
+    note: >-
+      F1c also fails because the forged identity survives into the honest
+      refresh control. The fixture records the whole cascade rather than
+      narrowing the expected set to the first assertion.
+
+  - id: MUT-002
+    cell: CELL-019
+    detector: D-V191-F3
+    property: >-
+      The DDL guard stays fail-closed on comment-separated and ONLY forms of
+      protection-stripping ALTER TABLE.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_v191_fixes.py
+    baseline_expect: "22 OK, 0 FAIL"
+    observed: "20 OK, 2 FAIL"
+    rationale: >-
+      Removes DISABLE ROW LEVEL SECURITY from the dangerous-subcommand list
+      while leaving DISABLE TRIGGER in place. This isolates CELL-019 from
+      CELL-020: a mutation of the shared fail-closed branch would break F3 and
+      F4 together.
+    mutations:
+      - anchor: |-
+          (disable\s+row\s+level\s+security|no\s+force\s+row\s+level\s+security|disable\s+trigger|disable\s+all|rename|set\s+schema)
+        replacement: |-
+          (no\s+force\s+row\s+level\s+security|disable\s+trigger|disable\s+all|rename|set\s+schema)
+        note: "DISABLE RLS no longer recognized as protection-stripping"
+    expect_failures:
+      - "F3a комментарий между токенами + DISABLE RLS -> 42501"
+      - "F3b ONLY-форма + DISABLE RLS -> 42501"
+    note: >-
+      F3c/F3d (safe controls) still pass, so the fixture is not simply
+      breaking every DDL statement.
+
+  - id: MUT-003
+    cell: CELL-020
+    detector: D-V191-F4
+    property: >-
+      DISABLE TRIGGER and DISABLE TRIGGER ALL on a protected table are refused,
+      and tamper-evidence still detects an added trigger.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_v191_fixes.py
+    baseline_expect: "22 OK, 0 FAIL"
+    observed: "20 OK, 2 FAIL"
+    rationale: >-
+      Removes DISABLE TRIGGER / DISABLE ALL from the dangerous-subcommand list.
+      F4c-F4e (digest and _internal_on controls) must still pass: this fixture
+      proves the F4a/F4b refusals depend on the listed subcommand, not on a
+      blanket ALTER TABLE rejection.
+    mutations:
+      - anchor: |-
+          (disable\s+row\s+level\s+security|no\s+force\s+row\s+level\s+security|disable\s+trigger|disable\s+all|rename|set\s+schema)
+        replacement: |-
+          (disable\s+row\s+level\s+security|no\s+force\s+row\s+level\s+security|rename|set\s+schema)
+        note: "DISABLE TRIGGER / DISABLE ALL no longer recognized"
+    expect_failures:
+      - "F4a DISABLE TRIGGER на защищённой таблице -> 42501"
+      - "F4b DISABLE TRIGGER ALL -> 42501"
+    note: >-
+      F4c-F4e (digest baseline, added-trigger violation, removal) still pass.
+
+  - id: MUT-004
+    cell: CELL-015
+    detector: D-V16-GUARDS
+    property: >-
+      TRUNCATE on a protected table is refused to an application role and to
+      the owner without the internal flag, including a forged internal GUC.
+    artifact: sql/rbac--1.6.sql
+    source_sha256: bca6ae2104c18e245872303d5c011bb2c62ea73433109d226b8633cc5537fb6f
+    suite: setup/test_v16_guards.py
+    baseline_expect: "45 OK, 0 FAIL"
+    observed: "42 OK, 3 FAIL"
+    rationale: >-
+      Disables guard_truncate(). The M-series migration case (1.5.1 -> 1.6)
+      still passes because it installs guard_truncate from the migration
+      script, which this fixture does not mutate. The fixture therefore proves
+      the fresh-install G1 detector is falsifiable, not the migration path.
+    mutations:
+      - anchor: |
+          BEGIN
+              IF rbac._is_internal_call() THEN
+                  RETURN NULL;
+              END IF;
+              RAISE LOG 'RBAC: TRUNCATE blocked on protected table %.% (user=%)',
+        replacement: |
+          BEGIN
+              -- MUTATION MUT-004: guard_truncate disabled
+              RETURN NULL;
+              RAISE LOG 'RBAC: TRUNCATE blocked on protected table %.% (user=%)',
+        note: "guard_truncate returns instead of raising"
+    expect_failures:
+      - "TRUNCATE приложением -> 42501"
+      - "TRUNCATE владельцем без флага -> 42501"
+      - "подделка GUC rbac._internal приложением -> 42501"
+    note: >-
+      The internal-flag positive control still passes because it expects
+      success; only the three refusal assertions flip.
+
+  - id: MUT-005
+    cell: CELL-012
+    detector: D-V17-E1
+    property: >-
+      rbac.security_events refuses UPDATE, DELETE and TRUNCATE (append-only),
+      in addition to the closed event/severity list.
+    artifact: sql/rbac--1.8.sql
+    source_sha256: 18d18ac02b42086aad1ba9faf61344b333463f8d37bcb5237aa436f1d215414c
+    suite: setup/test_v17_events.py
+    baseline_expect: "54 OK, 0 FAIL"
+    observed: "51 OK, 3 FAIL"
+    rationale: >-
+      Makes security_events_append_only() a no-op. The closed-list checks and
+      the REVOKE checks must still pass, so the fixture isolates the
+      append-only half of E1 from the input-validation half.
+    mutations:
+      - anchor: |
+          CREATE OR REPLACE FUNCTION rbac.security_events_append_only() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+          BEGIN
+              RAISE EXCEPTION 'RBAC_ERROR: rbac.security_events is append-only; % is not permitted', TG_OP;
+          END; $$;
+        replacement: |
+          CREATE OR REPLACE FUNCTION rbac.security_events_append_only() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+          BEGIN
+              -- MUTATION MUT-005: append-only disabled
+              RETURN NULL;
+          END; $$;
+        note: "append-only trigger returns instead of raising"
+    expect_failures:
+      - "UPDATE журнала событий запрещён (append-only)"
+      - "DELETE журнала событий запрещён (append-only)"
+      - "TRUNCATE журнала событий запрещён (append-only)"
+    note: >-
+      The closed-list, CHECK and REVOKE assertions still pass.

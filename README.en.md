@@ -90,7 +90,8 @@ registry, and an explicit promise boundary for L2.
   can and cannot check; English derivative:
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — pilot registry with
-  29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors.
+  29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors. Five of 27 detectors
+  have a mutation fixture ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
 
 Phase 0 status: document, schema, `cell_lint`, and one pilot registry. There is
 no production registry. Numbers such as "~200 cells" and "45 → 15 minutes" are
@@ -161,6 +162,10 @@ spec/
     rbac_pg/
       cells.yaml
       README.md
+      mutations/
+        mutations.yaml
+        run_mutations.py
+        README.md
 ```
 
 ## Install
@@ -218,9 +223,11 @@ production registry is clean.
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,
-3 open, 0 CL1/CL3/CL4 errors. It also shows the main gap: 0 of 27 detectors
-have a mutation fixture, and the rbac_pg claim ledger covers 7 of 29 cells. A
-clean lint means internal consistency, not that a property holds.
+3 open, 0 CL1/CL3/CL4 errors. Five of 27 detectors have a mutation fixture: the
+named suite fails exactly on the predicted tests when the mechanism is removed.
+The other 22 are still backed by a green baseline only, and the rbac_pg claim
+ledger covers 7 of 29 cells. A clean lint means internal consistency, not that
+a property holds.
 
 For now this is discipline and documentation, not a certificate or a substitute
 for an audit.

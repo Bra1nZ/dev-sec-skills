@@ -1,8 +1,9 @@
 # Pilot cell registry — `rbac_pg` ("Цитадель")
 
-Date: 2026-11-05. Target: `/home/admini/projects/rbac_pg`, HEAD `492f23c`
+Date: 2026-11-06. Target: `/home/admini/projects/rbac_pg`, HEAD `492f23c`
 (working tree has untracked model and documentation files; see Limitations).
 Registry: [`cells.yaml`](cells.yaml). Linter: `tools/cell_lint.py` (CL1–CL6).
+Mutation fixtures: [`mutations/`](mutations/README.md).
 
 This is the first registry built against a real repository. The point is
 calibration: how many cells one repository actually uses, how many resolve to
@@ -34,14 +35,17 @@ residual risk. No cell was invented to fill a taxonomy class.
 
 ### Evidence policy
 
-`tested` means a test detector exists and the suite has a recorded passing
-baseline in `TESTING.md`. The pilot did **not** re-run the suites: they need a
-live PostgreSQL 15+ cluster and application roles. `last_verified` is the date
-of the recorded baseline (2026-10-30 for suites whose last commit is
-`2e120b6`/`29977b2`; the baseline table was updated on 2026-10-30), not the
-date of this review. `reviewed` means a review artifact, not an executable
-detector. `open` means either no detector exists or the recorded run shows the
-property failing.
+`tested` means a test detector exists and its suite has a recorded passing
+baseline. Of the 27 detectors, 5 test detectors now also have a mutation fixture
+showing that the detector fails when the mechanism is removed. The other 22
+(21 test, 1 review) have none, and CL2 keeps warning that they are not
+verified. On 2026-11-06 four suites were re-run on a fresh PostgreSQL 15.17
+stand: `test_fstek.py` 57 OK, `test_v191_fixes.py` 22 OK,
+`test_v16_guards.py` 45 OK, `test_v17_events.py` 54 OK. The other suites were
+not re-run; their `last_verified` remains the recorded baseline date
+(2026-10-30). `reviewed` means a review artifact, not an executable detector.
+`open` means either no detector exists or the recorded run shows the property
+failing.
 
 ## Lint result
 
@@ -53,17 +57,19 @@ $ python3 tools/cell_lint.py \
 
 registry: spec/pilots/rbac_pg/cells.yaml | cells: 29
   CL1 structure     OK
-  CL2 coverage      0 error(s), 27 warning(s), 0 info
+  CL2 coverage      0 error(s), 22 warning(s), 0 info
   CL3 evidence      OK
   CL4 traceability  0 error(s), 0 warning(s), 22 info
   CL5 taxonomy      0 error(s), 0 warning(s), 3 info
-total: 0 error(s), 27 warning(s), 25 info
+total: 0 error(s), 22 warning(s), 25 info
 ```
 
 CL1, CL3 and CL4 errors are zero: every required field is present, every
 artifact path resolves on disk, every linked claim exists, and no cell claims
-more than its strongest detector or its linked claim. The registry also
-validates against `spec/conveyor/cell-registry.schema.json` with `jsonschema`.
+more than its strongest detector or its linked claim. The 22 CL2 warnings are
+exactly the 22 test detectors that still have no mutation fixture; the other 5
+now do. The registry also validates against
+`spec/conveyor/cell-registry.schema.json` with `jsonschema`.
 
 ### Negative control
 
@@ -73,11 +79,11 @@ an error and exit code 1:
 ```text
 # missing artifact
 [CL3] error CELL-001 detector 'D-FSTEC-F2F3' artifact not found: setup/missing_suite.py
-total: 1 error(s), 27 warning(s), 25 info
+total: 1 error(s), 22 warning(s), 25 info
 
 # cell claims proven, detector is only tested
 [CL2] error CELL-001 cell claims proven but its strongest detector is tested
-total: 1 error(s), 28 warning(s), 25 info
+total: 1 error(s), 23 warning(s), 25 info
 ```
 
 The first control proves CL3 reads the filesystem, not just the YAML. The
@@ -92,7 +98,7 @@ mutation was added to the repository; both were run on temporary copies.
 | Non-open cells | 26 (25 `tested`, 1 `reviewed`) |
 | Open cells | 3 |
 | Detectors | 27 (26 `test`, 1 `review`) |
-| Detectors with a mutation fixture | **0 / 27** |
+| Detectors with a mutation fixture | **5 / 27** (CELL-012, 015, 018, 019, 020) |
 | Cells linked to a claim | 7 / 29 |
 | Cells with no claim | 22 / 29 |
 | Claim ledger entries | 7 (C-01…C-07; C-07 is `open`) |
@@ -153,23 +159,42 @@ Entry-point prefixes: `sql:` 51 occurrences, `admin` 23, `import` 2,
 
 ## Findings
 
-### 1. The verify-the-verifier gap is total, and the linter says so
+### 1. The verify-the-verifier gap is now partial, and the linter says so
 
-All 27 detectors have no `mutation_fixture`, so CL2 marks every one of them
-"not verified". This is the honest headline of the pilot: the registry can show
-that a detector exists and passed, but not that it would fail if the property
-were removed.
+Five detectors now have a mutation fixture: CELL-012, CELL-015, CELL-018,
+CELL-019 and CELL-020. Each fixture mutates one artifact in a copy of the
+repository and requires the named suite to fail exactly on the predicted tests:
 
-Partial exceptions are visible only inside some suites:
+| Fixture | Cell | Mutation | Detector result |
+| --- | --- | --- | --- |
+| MUT-001 | CELL-018 | identity and deadline from GUCs | F1a, F1b, F1c fail |
+| MUT-002 | CELL-019 | `DISABLE RLS` not dangerous | F3a, F3b fail |
+| MUT-003 | CELL-020 | `DISABLE TRIGGER` not dangerous | F4a, F4b fail |
+| MUT-004 | CELL-015 | `guard_truncate()` disabled | 3 TRUNCATE refusals fail |
+| MUT-005 | CELL-012 | append-only trigger disabled | UPDATE/DELETE/TRUNCATE fail |
 
-- `setup/test_v191_fixes.py` M1 reproduces the 1.9 vulnerability before the
-  fix, and F2d/F3c/F3d are positive controls;
-- `setup/test_v16_guards.py` G9 checks the internal channel still passes;
-- `setup/test_perf_envelope.py` has both a threshold and a regression history.
+Unmutated controls on the same stand stayed green (22, 45 and 54 OK), so the
+mutations, not the environment, caused the failures. The remaining 22 detectors
+still have no fixture, and CL2 warns about each one. Do not raise a cell above
+`tested` on the strength of a baseline alone.
 
-Those are real controls, but they are not per-cell mutation fixtures and the
-linter cannot attribute them. Do not raise a cell above `tested` on their
-strength.
+Two findings limit how far these fixtures generalise:
+
+- **CELL-002 is not mutation-testable at the repository layer.** F8 passes
+  because the Astra/PP1C platform refuses the grant before the extension guard
+  runs. On true vanilla PostgreSQL 15 the platform allows it, so the same
+  detector should fail with no code change. The cell keeps the limitation and
+  no fixture.
+- **F3 and F4 share one fail-closed branch.** Removing the branch makes F3a,
+  F3b, F4a and F4b fail together. The fixtures therefore mutate the
+  dangerous-subcommand list to separate CELL-019 from CELL-020. The two cells
+  are not independently falsifiable through the branch they share.
+
+Partial exceptions inside some suites are still not per-cell fixtures:
+`test_v191_fixes.py` M1 reproduces the 1.9 vulnerability, F2d/F3c/F3d are
+positive controls, `test_v16_guards.py` G9 checks the internal channel, and
+`test_perf_envelope.py` carries a regression history. The linter cannot
+attribute them to a cell.
 
 ### 2. The claim ledger is not a coverage map
 
@@ -255,12 +280,19 @@ same class of overclaim the `evidence-first-docs` skill exists to remove.
   under a second on 29 cells).
 - The two independent checks agree on traceability: `claim_lint` L1–L4 clean,
   `cell_lint` CL4 with no errors (22 infos are the unlinked cells).
+- Five detectors are falsifiable: the named suites fail exactly on the
+  predicted tests when the mechanism is removed, and stay green otherwise.
+- Four suites reproduce their recorded baselines on a fresh PostgreSQL 15.17
+  stand: FSTEC 57 OK, v1.9.1 fixes 22 OK, v1.6 guards 45 OK, v1.7 events 54 OK.
 
 ## What this does not prove
 
-- That any security property holds. The suites were not re-run; `tested` rests
-  on recorded baselines in `TESTING.md`, dated 2026-10-30.
-- That any detector can fail. 0 of 27 detectors has a mutation fixture.
+- That any security property holds in production. Four suites were re-run on
+  one stand; `tested` still rests on tests, not on a proof.
+- That the remaining 22 detectors can fail. Only 5 of 27 have a mutation
+  fixture.
+- That the mutation fixtures are complete. Each fixture shows sensitivity to
+  one mutation, not the absence of other bypasses.
 - That the registry is complete. It covers the detectors that exist; a missing
   detector produces no cell, and this pilot did not hunt for missing cells
   beyond the recorded GAPs.
@@ -282,23 +314,43 @@ cd /home/admini/projects/rbac_pg
 python3 tools/claim_lint.py --no-vale --root . --suite-glob "setup/*.py" docs/claims.yaml
 
 # the test suites themselves need a stand:
-export ADMIN_DATABASE_URL="postgresql://postgres:<password>@127.0.0.1:5432/postgres"
+cd /home/admini/projects/rbac_pg
+CITADEL_STAND_DIR=/tmp/opencode/stand-mut \
+CITADEL_STAND_PORT=55433 tools/stand.sh up
+export ADMIN_DATABASE_URL="postgresql://postgres@127.0.0.1:55433/postgres"
 python3 setup/test_fstek.py
 python3 setup/test_v191_fixes.py
 python3 setup/test_v16_guards.py
 python3 setup/test_v17_events.py
+
+# mutation fixtures: mutate a copy, run the detector, require the predicted
+# failures; the target repository is not modified
+cd /home/admini/projects/dev-sec-skills
+python3 spec/pilots/rbac_pg/mutations/run_mutations.py \
+  --target /home/admini/projects/rbac_pg \
+  --dsn "$ADMIN_DATABASE_URL" --ensure-roles
 ```
+
+`--ensure-roles` is required on a fresh cluster: `test_v191_fixes.py` creates
+login roles `IN ROLE rbac_admin` before it installs the SQL, so the extension's
+global roles must already exist.
 
 ## Next evidence, in priority order
 
-1. Add per-cell mutation fixtures for the highest-consequence cells:
-   CELL-002 (membership), CELL-015/019 (DDL guard), CELL-012 (append-only),
-   CELL-018 (context tampering). A fixture must make the named detector fail.
-2. Re-run the suites on a stand and replace the recorded `last_verified` dates
-   with the run dates.
-3. Either extend `docs/claims.yaml` to the 22 unlinked cells or record that the
+1. Extend mutation coverage to the remaining 22 detectors. Highest-consequence
+   next targets: CELL-002 (blocked at the repository layer, see Finding 1),
+   CELL-009 (audit attribution), CELL-014 (replay), CELL-021 (idempotency),
+   CELL-027/029 (side channels).
+2. Re-run the remaining six suites on the same stand and replace their
+   recorded `last_verified` dates: `test_side_channels.py`,
+   `test_v15_idempotency.py`, `test_v151_ranges.py`, `test_perf_envelope.py`,
+   `test_v15_security.py`, `test_v15_ceiling_trigger.py`. Performance needs a
+   quiet stand.
+3. Add migration-path mutation fixtures: the `test_fstek.py` M-series,
+   `test_v16_guards.py` M1, and `test_v17_events.py` M1–M4.
+4. Either extend `docs/claims.yaml` to the 22 unlinked cells or record that the
    ledger is a FSTEC-matrix artifact, not a coverage map.
-4. Decide CELL-028 (the closable side-channel contract gap) and record CELL-026
+5. Decide CELL-028 (the closable side-channel contract gap) and record CELL-026
    (core oracle) and CELL-029 (configuration control) as residual risk.
 
 ## Limitations
@@ -308,7 +360,8 @@ python3 setup/test_v17_events.py
   The registry cites only tracked test artifacts except where a path is
   explicitly a documentation artifact.
 - The recorded baselines were produced on two clusters (ЗСУБД and PP1C) on
-  2026-10-30. The pilot did not reproduce them.
+  2026-10-30. Four of them were reproduced on a third, fresh 15.17 stand on
+  2026-11-06; the other six were not.
 - `cell_lint` checks internal consistency, not truth. A cell can be `tested`
   and wrong if the test asserts the wrong thing.
 - The registry is a snapshot. A change to a suite changes the detector's

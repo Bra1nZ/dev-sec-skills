@@ -19,6 +19,10 @@ spec/
     rbac_pg/
       cells.yaml                  # 29 cells derived from rbac_pg detectors
       README.md                   # calibration, findings, limits
+      mutations/
+        mutations.yaml            # 5 mutation fixtures, pinned by sha256
+        run_mutations.py          # verifies each detector fails as predicted
+        README.md                 # what a fixture proves, results, gaps
 ```
 
 ## Status
@@ -26,7 +30,9 @@ spec/
 Phase 0: documents, schema, seed registry, `cell_lint` (CL1–CL6, 18/18
 synthetic adversarial cases, see `evals/iteration-4/RESULTS.md`), and one
 pilot registry on `rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4
-errors, C-18). There is no production registry and no claim that the conveyor
+errors, C-18). Five of the pilot's 27 detectors are mutation-verified: each
+named suite fails exactly on the predicted tests when its mechanism is
+removed. There is no production registry and no claim that the conveyor
 exists. Every material statement in `CONCEPT.md` carries a status from the
 evidence-first ladder; design intents are `open` and carry limitations.
 

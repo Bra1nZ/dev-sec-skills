@@ -23,7 +23,7 @@
 #     spec/pilots/rbac_pg/cells.yaml
 
 project: rbac_pg
-generated: "2026-11-05"
+generated: "2026-11-06"
 
 taxonomy:
   name: invariant-first-code
@@ -49,11 +49,11 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F2, F3, F3a. Recorded baseline 57 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F2, F3, F3a. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: [C-01]
     residual_risk: A superuser or the extension owner bypasses the check; rbac_admin is allowed to change the matrix by design.
-    limitations: The suite needs a live PostgreSQL 15+ cluster; the pilot consumed the recorded baseline.
+    limitations: The suite needs a live PostgreSQL 15+ cluster; it was re-run on one 15.17 stand, not on the ЗСУБД/PP1C clusters where the original baseline was recorded.
     owner: rbac_pg maintainer
     last_seen: "2026-11-05"
 
@@ -70,11 +70,11 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F8a, F8b, F8c, F8d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F8a, F8b, F8c, F8d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL. F8b reported the platform branch: the refusal came from Astra/PP1C membership semantics, not from the extension guard."
     claim_ids: [C-02]
-    residual_risk: On true vanilla PostgreSQL 15 an implicit ADMIN OPTION remains (ROLES.md 2.2); the superuser is outside the model.
-    limitations: The refusal is platform membership semantics on the tested clusters, not a portable application guard.
+    residual_risk: On true vanilla PostgreSQL 15 an implicit ADMIN OPTION remains (ROLES.md 2.2); the superuser is outside the model. On such a cluster the same suite should fail F8a with no code change.
+    limitations: "The refusal is platform membership semantics on the tested clusters, not a portable application guard. It has no repository-level mutation fixture: mutating extension SQL does not change the platform decision, and the ddl_guard GRANT/REVOKE branch does not fire for global role objects on PG15."
     owner: rbac_pg maintainer
     last_seen: "2026-11-05"
 
@@ -91,8 +91,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F5a-F5d, F9a, F9b. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F5a-F5d, F9a, F9b. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: [C-03]
     residual_risk: The append-only trigger can be disabled by the extension owner; the superuser is outside the model.
     limitations: Read denial is tested; write denial is covered by CELL-012, not by this cell.
@@ -112,8 +112,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F11a-F11d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F11a-F11d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: [C-04]
     residual_risk: An application can lock any account by design, which is denial of service rather than privilege escalation (ROLES.md 1.1).
     limitations: The lockout counter and unlock path are tested; distributed or out-of-band login paths are not.
@@ -133,8 +133,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F12a-F12d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F12a-F12d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: [C-05]
     residual_risk: A faulty policy file is caught by the trigger, but the extension owner can disable the trigger; the superuser is outside the model.
     limitations: The invariants cover the mapping table, not the upstream directory content that feeds it.
@@ -154,8 +154,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F15a, F15b. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F15a, F15b. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: [C-06]
     residual_risk: The baseline is opt-in and must be recorded by the superuser after each policy change; an unrecorded baseline detects nothing.
     limitations: The digest covers configuration rows, not the extension binary or the PostgreSQL server.
@@ -175,8 +175,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F4. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F4. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: A superuser can still grant LOGIN; NOLOGIN is not a cryptographic restriction.
     limitations: No claim in docs/claims.yaml covers this property; the cell is linked to no claim.
@@ -196,8 +196,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F7a-F7f. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F7a-F7f. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: rbac_admin keeps DDL rights by design; SECURITY DEFINER functions created by the extension owner are outside the tested path.
     limitations: The guard is tested through the tested SQL forms; an unmodelled CREATE form remains a parser-bypass risk (see CELL-019).
@@ -218,8 +218,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F10a-F10c and M4. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F10a-F10c and M4. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Attribution relies on SESSION_USER; a connection proxy that changes the login is out of scope.
     limitations: The test checks the recorded subject, not the integrity of the logging pipeline after the row is written.
@@ -239,8 +239,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F13a-F13d. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F13a-F13d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: The channel is warning-only; an operator who ignores the log still applies the mapping.
     limitations: The test checks the warning and the summary, not downstream consumption of the warning.
@@ -260,8 +260,8 @@ cells:
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F14a. Recorded baseline 57 OK / 0 FAIL; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "F14a. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30)."
       - id: D-V15-CEILING
         kind: test
         artifact: setup/test_v15_ceiling_trigger.py
@@ -288,8 +288,9 @@ cells:
         artifact: setup/test_v17_events.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "E1. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-005"
+        note: "E1. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 54 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-005 makes the append-only trigger a no-op and fails exactly the UPDATE/DELETE/TRUNCATE assertions."
     claim_ids: []
     residual_risk: A table owner or the extension owner can disable the append-only triggers; the superuser is outside the model.
     limitations: Append-only is enforced by trigger and privilege, not by an immutable storage layer.
@@ -309,8 +310,8 @@ cells:
         artifact: setup/test_v17_events.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "E2. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "E2. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 54 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: The second channel depends on PostgreSQL log collection and retention outside the extension.
     limitations: The test reads conn.notices; it does not prove that a deployed log shipper persists the record.
@@ -330,8 +331,8 @@ cells:
         artifact: setup/test_v17_events.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v17_events.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "J1. Recorded baseline 54 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        note: "J1. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 54 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: jti consumption is transactional; a failed first use rolls the consumption back, which is safe because that token did not authenticate.
     limitations: Concurrent first uses and multi-node clock skew are not exercised.
@@ -352,8 +353,9 @@ cells:
         artifact: setup/test_v16_guards.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v16_guards.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "G1, G4, G5, G7, G8. Recorded baseline 45 OK / 0 FAIL in TESTING.md; not re-run by the pilot."
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-004"
+        note: "G1, G4, G5, G7, G8. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 45 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-004 disables guard_truncate() and fails the three G1 refusals only; the M1 migration path is not mutated."
     claim_ids: []
     residual_risk: DROP TABLE of a protected table is allowed by design for cleanup; the extension owner can disable the guard triggers.
     limitations: The guard is a SQL-text parser; a form it does not model can pass. CELL-019 covers comment and ONLY forms only.
@@ -394,8 +396,8 @@ cells:
         artifact: setup/test_v191_fixes.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F2a-F2d, with a positive control. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        note: "F2a-F2d, with a positive control. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 22 OK / 0 FAIL (recorded baseline 2026-10-30)."
     claim_ids: []
     residual_risk: Registering a trap table as rbac_admin is allowed by design (case-2); only the label write is refused.
     limitations: The test covers the registered-table path; an unregistered table owned by an attacker is a different path.
@@ -415,8 +417,9 @@ cells:
         artifact: setup/test_v191_fixes.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F1a-F1c. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-001"
+        note: "F1a-F1c. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 22 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-001 breaks the blob-only identity path and fails F1a-F1c."
     claim_ids: []
     residual_risk: A stolen signing secret or a superuser write to the session blob is outside the model.
     limitations: The test tampers with GUCs; a compromised backend process is not modelled.
@@ -436,8 +439,9 @@ cells:
         artifact: setup/test_v191_fixes.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F3a-F3d, including safe controls. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-002"
+        note: "F3a-F3d, including safe controls. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 22 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-002 removes DISABLE RLS from the dangerous-subcommand list and fails F3a/F3b only."
     claim_ids: []
     residual_risk: The guard parses SQL text, not the PostgreSQL AST; any form it does not model is a residual bypass.
     limitations: The tested forms are representative, not exhaustive; no fuzzing of the guard grammar is recorded.
@@ -457,8 +461,9 @@ cells:
         artifact: setup/test_v191_fixes.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_v191_fixes.py"
         status: tested
-        last_verified: "2026-10-30"
-        note: "F4c-F4e, plus the _internal_on() probe. Recorded baseline 22 OK / 0 FAIL in TESTING.md."
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-003"
+        note: "F4c-F4e, plus the _internal_on() probe. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 22 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-003 removes DISABLE TRIGGER / DISABLE ALL from the dangerous-subcommand list and fails F4a/F4b only."
     claim_ids: []
     residual_risk: The extension owner can still disable triggers; the internal probe deliberately bypasses the guard.
     limitations: "Tamper-evidence is detection, not prevention: a change made and reverted before a digest check is invisible."
