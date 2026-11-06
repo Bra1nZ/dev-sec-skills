@@ -7,6 +7,10 @@ ledger. The gate rule: a claim may not escalate on the status ladder
 not have. Evidence identity is (kind, commit, artifact, command, tests,
 date); a re-run with a newer date counts as new evidence.
 
+Fail-closed base handling: a missing ref, a missing base ledger, or a base
+ledger with no claims is an error. Pass --first-release to allow a repository
+with no prior release; the escalation gate is then skipped explicitly.
+
 Transitions:
   escalation  (rank up, e.g. open -> tested): error without new evidence
   downgrade   (rank down, e.g. tested -> open): warning, allowed but noted
@@ -21,8 +25,8 @@ Modes:
   git ref:    status_diff.py --repo DIR --ledger docs/claims.yaml --git-ref v1.3
 
 Usage:
-    python3 tools/status_diff.py [--max-age-days N] BASE TARGET
-    python3 tools/status_diff.py --repo PATH --ledger REL --git-ref REF
+    python3 tools/status_diff.py [--first-release] BASE TARGET
+    python3 tools/status_diff.py --repo PATH --ledger REL --git-ref REF [--first-release]
 """
 
 import argparse
@@ -53,12 +57,20 @@ def load_ledger_path(path):
     return yaml.safe_load(text) or {}
 
 
-def load_ledger_ref(repo, ref, rel):
-    """Load the ledger as it existed at a git ref; None if absent.
+def ref_exists(repo, ref):
+    r = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "%s^{commit}" % ref],
+                       cwd=repo, capture_output=True)
+    return r.returncode == 0
 
-    Absence of the ledger at the base ref is not a violation: the first
-    release has nothing to diff. The caller prints a note and exits 0.
+
+def load_ledger_ref(repo, ref, rel):
+    """Load the ledger as it existed at a git ref; None if absent there.
+
+    A ref that does not resolve raises LookupError: a typo, a missing tag, or
+    a shallow clone must not silently disable the escalation gate.
     """
+    if not ref_exists(repo, ref):
+        raise LookupError("base ref not found: %s" % ref)
     r = subprocess.run(["git", "show", "%s:%s" % (ref, rel)],
                        cwd=repo, capture_output=True, text=True)
     if r.returncode != 0:
@@ -90,6 +102,8 @@ def main():
     ap.add_argument("--repo", help="repository root (git-ref mode)")
     ap.add_argument("--ledger", help="repo-relative ledger path (git-ref mode)")
     ap.add_argument("--git-ref", help="base git ref, e.g. a release tag (git-ref mode)")
+    ap.add_argument("--first-release", action="store_true",
+                    help="allow a missing base ref or ledger; the escalation gate is skipped")
     args = ap.parse_args()
 
     if args.git_ref:
@@ -100,15 +114,35 @@ def main():
             print("target ledger not found: %s" % os.path.join(args.repo, args.ledger),
                   file=sys.stderr)
             return 2
-        base = load_ledger_ref(args.repo, args.git_ref, args.ledger)
+        try:
+            base = load_ledger_ref(args.repo, args.git_ref, args.ledger)
+        except LookupError as e:
+            if args.first_release:
+                print("status diff: %s; first release, gate skipped" % e)
+                return 0
+            print("status diff: %s" % e, file=sys.stderr)
+            return 1
         if base is None:
-            print("status diff: no ledger at %s:%s; nothing to diff" % (args.git_ref, args.ledger))
-            return 0
-        target = load_ledger_path(os.path.join(args.repo, args.ledger))
+            if args.first_release:
+                print("status diff: no ledger at %s:%s; first release, gate skipped"
+                      % (args.git_ref, args.ledger))
+                return 0
+            print("status diff: no ledger at %s:%s; set --first-release if this is "
+                  "the first release" % (args.git_ref, args.ledger), file=sys.stderr)
+            return 1
+        try:
+            target = load_ledger_path(os.path.join(args.repo, args.ledger))
+        except (OSError, ValueError) as e:
+            print("cannot read ledger: %s" % e, file=sys.stderr)
+            return 2
         label = "%s@%s -> worktree" % (args.ledger, args.git_ref)
     elif args.base and args.target:
-        base = load_ledger_path(args.base)
-        target = load_ledger_path(args.target)
+        try:
+            base = load_ledger_path(args.base)
+            target = load_ledger_path(args.target)
+        except (OSError, ValueError) as e:
+            print("cannot read ledger: %s" % e, file=sys.stderr)
+            return 2
         label = "%s -> %s" % (args.base, args.target)
     else:
         print("use either BASE TARGET or --repo/--ledger/--git-ref", file=sys.stderr)
@@ -117,8 +151,13 @@ def main():
     base_claims = claims_of(base)
     target_claims = claims_of(target)
     if not base_claims:
-        print("base ledger has no resolvable claims; nothing to diff (%s)" % label)
-        return 0
+        if args.first_release:
+            print("status diff: base ledger has no claims; first release, gate skipped (%s)"
+                  % label)
+            return 0
+        print("status diff: base ledger has no resolvable claims; set --first-release "
+              "if this is the first release (%s)" % label, file=sys.stderr)
+        return 1
 
     errors, warnings, infos = [], [], []
     for cid in sorted(set(base_claims) | set(target_claims)):

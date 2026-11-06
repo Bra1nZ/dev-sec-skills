@@ -451,9 +451,15 @@ def main():
                     help="claim ledger used to resolve claim_ids")
     ap.add_argument("--base", default=None,
                     help="base registry for the status-escalation gate")
+    ap.add_argument("--require-base", action="store_true",
+                    help="fail when --base is absent (use only for the first release)")
     ap.add_argument("--max-age-days", type=int, default=90)
     args = ap.parse_args()
 
+    if args.require_base and not args.base:
+        print("base registry required: pass --base, or omit --require-base only for "
+              "the first release", file=sys.stderr)
+        return 2
     if not os.path.isfile(args.registry):
         print("registry not found: %s" % args.registry, file=sys.stderr)
         return 2

@@ -11,6 +11,7 @@ env:
   REGISTRY: spec/cells.yaml
   LEDGER: docs/claims.yaml
   BASE_REF: v1.3   # base ref for the status-escalation gate; last release tag
+  FIRST_RELEASE: "0"  # set to "1" only before the first release tag exists
 
 jobs:
   cell-lint:
@@ -33,7 +34,10 @@ jobs:
           if [ -f "$LEDGER" ]; then ARGS+=(--ledger "$LEDGER"); fi
           if git show "$BASE_REF:$REGISTRY" > /tmp/cells.base.yaml 2>/dev/null; then
             ARGS+=(--base /tmp/cells.base.yaml)
+          elif [ "${FIRST_RELEASE:-0}" = "1" ]; then
+            echo "First release: no $REGISTRY at $BASE_REF; escalation gate skipped."
           else
-            echo "No $REGISTRY at $BASE_REF; running without the escalation gate."
+            echo "::error::No $REGISTRY at $BASE_REF; set FIRST_RELEASE=1 only for the first release." >&2
+            ARGS+=(--require-base)
           fi
           python3 tools/cell_lint.py "${ARGS[@]}" "$REGISTRY"

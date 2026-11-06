@@ -32,6 +32,8 @@ evals/
   cell-lint/
     run_evals.py
     cases/
+  status-diff/
+    run_evals.py        # fail-closed base handling; one recorded known gap
 ```
 
 ## Prompts
@@ -64,15 +66,19 @@ whether a claim ledger is honest or whether a test can actually fail.
 ## Executable linters
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
-`tools/cell_lint.py`. Reproduce both:
+`tools/cell_lint.py`. The status-diff evals cover fail-closed base handling.
+Reproduce all three:
 
 ```bash
 python3 evals/linter/run_evals.py
 python3 evals/cell-lint/run_evals.py
+python3 evals/status-diff/run_evals.py
 ```
 
-Both runners need PyYAML. A passing run means the contract holds on synthetic
+All runners need PyYAML. A passing run means the contract holds on synthetic
 adversarial fixtures, not that a production ledger or registry is clean.
+`status-diff` prints `GAP` for the re-dating scenario while that hole remains
+open.
 
 ## Reproduce
 

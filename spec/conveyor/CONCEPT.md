@@ -396,8 +396,8 @@ prior-art sweep, а не этот абзац.
 
 - [ ] V2-01. Схема run-record: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps.
 - [ ] V2-02. `claim_lint`: проверять run-record (хэши, исполненные ID, exit_code) вместо строкового evidence.
-- [ ] V2-03. `status_diff`: отсутствующий или неизвестный base-ref → error; исключение только `--first-release`.
-- [ ] V2-04. `cell_lint`: отсутствующий base registry → error, а не запуск без гейта.
+- [x] V2-03. `status_diff`: отсутствующий или неизвестный base-ref → error; исключение только `--first-release`.
+- [x] V2-04. `cell_lint`: отсутствующий base registry → error через `--require-base`, а не запуск без гейта.
 - [ ] V2-05. Удалённый claim или cell → error либо обязательное `retired:` с причиной.
 - [ ] V2-06. CL2: отсутствие mutation_fixture → error для классов security и correctness.
 - [ ] V2-07. Diff-покрытие: изменённые choke-point пути и символы обязаны отображаться на claim.

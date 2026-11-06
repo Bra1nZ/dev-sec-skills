@@ -403,8 +403,8 @@ Not commitments and not status: a task closes only with evidence.
 
 - [ ] V2-01. Run-record schema: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps.
 - [ ] V2-02. `claim_lint`: verify the run record (hashes, executed IDs, exit_code) instead of string evidence.
-- [ ] V2-03. `status_diff`: missing or unknown base ref → error; only `--first-release` is exempt.
-- [ ] V2-04. `cell_lint`: missing base registry → error, not a gate-less run.
+- [x] V2-03. `status_diff`: missing or unknown base ref → error; only `--first-release` is exempt.
+- [x] V2-04. `cell_lint`: missing base registry → error via `--require-base`, not a gate-less run.
 - [ ] V2-05. Removed claim or cell → error, or a mandatory `retired:` with a reason.
 - [ ] V2-06. CL2: missing mutation_fixture → error for security and correctness classes.
 - [ ] V2-07. Diff coverage: changed choke-point paths and symbols must map to a claim.

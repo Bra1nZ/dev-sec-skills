@@ -1,0 +1,33 @@
+# Synthetic fixture — not evidence about any real project.
+name: required-base-missing
+description: >
+  --require-base without --base must fail closed (exit 2) instead of silently
+  running without the escalation gate. A first release opts out explicitly by
+  omitting --require-base.
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A role-less session cannot write tenant data.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points:
+    - http
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: Platform bypass is outside the model.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+args:
+- --require-base
+- --max-age-days
+- '3650'
+exit: 2

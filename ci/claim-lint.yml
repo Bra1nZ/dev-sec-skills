@@ -13,6 +13,7 @@ env:
   LEDGER: docs/claims.yaml
   SUITE_GLOB: "setup/*.py"
   RELEASE_REF: v1.3   # base ref for the status diff; set to your last release tag
+  FIRST_RELEASE: "0"  # set to "1" only before the first release tag exists
 
 jobs:
   claim-lint:
@@ -41,4 +42,7 @@ jobs:
         run: python3 tools/claim_lint.py --root . --suite-glob "$SUITE_GLOB" "$LEDGER"
 
       - name: Status diff vs previous release
-        run: python3 tools/status_diff.py --repo . --ledger "$LEDGER" --git-ref "$RELEASE_REF"
+        run: |
+          ARGS=(--repo . --ledger "$LEDGER" --git-ref "$RELEASE_REF")
+          if [ "${FIRST_RELEASE:-0}" = "1" ]; then ARGS+=(--first-release); fi
+          python3 tools/status_diff.py "${ARGS[@]}"
