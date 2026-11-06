@@ -417,7 +417,7 @@ Not commitments and not status: a task closes only with evidence.
 - [ ] V2-11. `run_mutations.py` in CI for changed cells.
 - [ ] V2-12. Assert that the predicted IDs failed, not just any test.
 - [ ] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled.
-- [ ] V2-14. Mutation fixtures for the remaining 22 pilot detectors.
+- [x] V2-14. Mutation fixtures for the remaining pilot detectors — 25 fixtures, 24 detectors with a fixture and 3 with a documented `mutation_exemption`; all 25 matched (`spec/pilots/rbac_pg/mutations/README.md`).
 - [ ] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell.
 - [ ] V2-16. A "runtime enforcement" evidence kind with a mandatory negative test.
 

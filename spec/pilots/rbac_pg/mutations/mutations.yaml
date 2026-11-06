@@ -16,28 +16,30 @@
 #     missing failures fail the fixture: a mutation that also breaks unrelated
 #     tests is not a clean proof of sensitivity.
 #
-# Results recorded below were produced on 2026-11-05 on a fresh stand:
-#   PostgreSQL 15.17 (Debian 15.17-astra.se2.3r2), port 55433, trust auth,
-#   extension roles pre-created (see README.md).
+# Results recorded below were produced on 2026-11-06 on a fresh relocated
+# stand:
+#   PostgreSQL 15.17 (Debian 15.17-astra.se2.3r2), port 55434, trust auth,
+#   prefix /tmp/opencode/pgmut, extension roles pre-created (see README.md).
 #
 # Run:
 #   python3 spec/pilots/rbac_pg/mutations/run_mutations.py \
 #       --target /home/admini/projects/rbac_pg \
-#       --dsn "postgresql://postgres@127.0.0.1:55433/postgres" \
-#       --ensure-roles
+#       --dsn "postgresql://postgres@127.0.0.1:55434/postgres" \
+#       --ensure-roles \
+#       --sharedir /tmp/opencode/pgmut/usr/share/postgresql/15/extension
 
 version: 1
 project: rbac_pg
-generated: "2026-11-05"
+generated: "2026-11-06"
 baseline_commit: "492f23c"
 environment:
   postgres: "15.17 (Debian 15.17-astra.se2.3r2)"
-  cluster: "fresh tools/stand.sh, port 55433, trust auth"
+  cluster: "relocated tools/stand.sh prefix, port 55434, trust auth"
   note: >-
     test_fstek.py installs via CREATE EXTENSION, so it uses the extension files
-    installed in pg_config --sharedir. Those files were byte-identical to the
-    working tree at baseline_commit (sha256 compared for 1.9 and 1.9.1). The
-    other fixtures deploy sql/ directly from the copied tree.
+    installed in pg_config --sharedir. The fixture deploys the mutated copy into
+    a writable sharedir and restores the previous bytes in a finally block.
+    The other fixtures deploy sql/ directly from the copied tree.
 
 fixtures:
   - id: MUT-001
@@ -199,3 +201,623 @@ fixtures:
       - "TRUNCATE журнала событий запрещён (append-only)"
     note: >-
       The closed-list, CHECK and REVOKE assertions still pass.
+
+  - id: MUT-006
+    cell: CELL-007
+    detector: D-FSTEC-F4
+    property: >-
+      The extension never provisions a LOGIN administration role:
+      rbac_label_admin and rbac_auditor stay NOLOGIN.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Changes the provisioning of rbac_label_admin to LOGIN. Roles are
+      cluster-wide and the install creates them with IF NOT EXISTS, so the
+      CREATE ROLE change alone is invisible on a cluster where the role already
+      exists; the fixture also issues ALTER ROLE so the property is violated in
+      both the fresh-role and existing-role cases. post_sql restores NOLOGIN,
+      otherwise later fixtures inherit a LOGIN administration role.
+    mutations:
+      - anchor: "    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'rbac_label_admin') THEN\n        CREATE ROLE rbac_label_admin NOLOGIN NOINHERIT;\n    END IF;\n"
+        replacement: "    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'rbac_label_admin') THEN\n        CREATE ROLE rbac_label_admin LOGIN NOINHERIT;\n    END IF;\n    ALTER ROLE rbac_label_admin LOGIN;\n"
+        note: "administration role provisioned (and reconciled) as LOGIN"
+    post_sql:
+      - "ALTER ROLE rbac_label_admin NOLOGIN NOINHERIT"
+    expect_failures:
+      - "F4 rbac_label_admin/rbac_auditor NOLOGIN"
+    note: >-
+      Only the F4 attribute assertion flips. The fixture does not prove the
+      extension reconciles drift in general: CREATE ROLE ... IF NOT EXISTS
+      leaves an already-LOGIN role untouched unless an explicit ALTER is
+      present, which is why the mutated script carries one.
+
+  - id: MUT-007
+    cell: CELL-001
+    detector: D-FSTEC-F2F3
+    property: >-
+      Only rbac_admin executes apply_policy_document; application roles and
+      role-less logins receive 42501.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Grants EXECUTE to rbac_readwrite, the role every application login holds.
+      The function is SECURITY DEFINER, so the application role can now rewrite
+      the policy matrix. The role-less login still has no membership, which
+      keeps F3a green and isolates the privilege half of the detector.
+    mutations:
+      - anchor: "GRANT EXECUTE ON FUNCTION rbac.apply_policy_document(JSONB, BOOLEAN) TO rbac_admin;"
+        replacement: "GRANT EXECUTE ON FUNCTION rbac.apply_policy_document(JSONB, BOOLEAN) TO rbac_admin, rbac_readwrite;"
+        note: "application role receives the policy-control plane"
+    expect_failures:
+      - "F3 apply_policy_document под прикладной ролью отвергнут"
+    note: >-
+      F2 (rbac_admin succeeds) and F3a (role-less login refused) still pass.
+
+  - id: MUT-008
+    cell: CELL-003
+    detector: D-FSTEC-F5F9
+    property: >-
+      Journal-reading functions are SECURITY INVOKER and executable by
+      rbac_auditor/rbac_admin only, so an application role cannot read
+      audit_log or security_events through them.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "55 OK, 2 FAIL"
+    rationale: >-
+      Turns both reader functions into SECURITY DEFINER and grants EXECUTE to
+      rbac_readwrite. Granting EXECUTE alone would not be observable because
+      the functions are SECURITY INVOKER and the application role still lacks
+      table SELECT; both halves of the regression are needed.
+    mutations:
+      - anchor: "RETURNS SETOF rbac.audit_log\nLANGUAGE sql STABLE\nSET search_path = pg_catalog, rbac"
+        replacement: "RETURNS SETOF rbac.audit_log\nLANGUAGE sql STABLE SECURITY DEFINER\nSET search_path = pg_catalog, rbac"
+        note: "audit reader runs with the definer's table rights"
+      - anchor: "RETURNS SETOF rbac.security_events\nLANGUAGE sql STABLE\nSET search_path = pg_catalog, rbac"
+        replacement: "RETURNS SETOF rbac.security_events\nLANGUAGE sql STABLE SECURITY DEFINER\nSET search_path = pg_catalog, rbac"
+        note: "security-event reader runs with the definer's table rights"
+      - anchor: "GRANT EXECUTE ON FUNCTION rbac.read_audit_log(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, TEXT, INT) TO rbac_auditor, rbac_admin;"
+        replacement: "GRANT EXECUTE ON FUNCTION rbac.read_audit_log(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, TEXT, INT) TO rbac_auditor, rbac_admin, rbac_readwrite;"
+        note: "application role may call the audit reader"
+      - anchor: "GRANT EXECUTE ON FUNCTION rbac.read_security_events(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, TEXT, INT) TO rbac_auditor, rbac_admin;"
+        replacement: "GRANT EXECUTE ON FUNCTION rbac.read_security_events(TIMESTAMPTZ, TIMESTAMPTZ, TEXT, TEXT, INT) TO rbac_auditor, rbac_admin, rbac_readwrite;"
+        note: "application role may call the security-event reader"
+    expect_failures:
+      - "F9a read_audit_log под прикладной ролью -> 42501"
+      - "F9b read_security_events под прикладной ролью -> 42501"
+    note: >-
+      The auditor-access half (F5a-F5d) still passes. The fixture proves the
+      refusal half of the detector; it does not prove the detector would catch
+      a revoked auditor grant.
+
+  - id: MUT-009
+    cell: CELL-008
+    detector: D-FSTEC-F7
+    property: >-
+      CREATE FUNCTION and CREATE PROCEDURE are refused to application and
+      role-less logins, while rbac_admin may create.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "53 OK, 4 FAIL"
+    rationale: >-
+      Removes the routine-DDL authorization check from guard_ddl. The
+      application role then reaches PostgreSQL's own "permission denied for
+      schema public" error, so the refusal no longer carries RBAC_ERROR and
+      the server-side ACCESS_DENIED event disappears.
+    mutations:
+      - anchor: "        IF NOT rbac._is_internal_call()\n           AND NOT EXISTS (\n                SELECT 1 FROM pg_catalog.pg_roles pr\n                 WHERE pr.rolname = session_user\n                   AND pr.rolsuper)\n           AND NOT pg_catalog.pg_has_role(session_user, 'rbac_admin', 'member') THEN"
+        replacement: "        IF false THEN"
+        note: "routine DDL authorization removed"
+    expect_failures:
+      - "F7a CREATE FUNCTION прикладной ролью -> 42501 RBAC_ERROR"
+      - "F7b CREATE PROCEDURE прикладной ролью -> 42501 RBAC_ERROR"
+      - "F7c CREATE FUNCTION логином без ролей -> 42501"
+      - "F7f канал 2: RBAC_SECURITY_EVENT (ACCESS_DENIED) в серверном логе"
+    note: >-
+      F7d still passes because PostgreSQL's own schema privilege, not the
+      extension guard, stops the creation. The expected set records that
+      coupling honestly: the detector requires RBAC_ERROR and the log channel,
+      not merely any 42501.
+
+  - id: MUT-010
+    cell: CELL-009
+    detector: D-FSTEC-F10
+    property: >-
+      Audit and security-event records name the real database login
+      (session_user) as db_user, not the SECURITY DEFINER owner.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "55 OK, 2 FAIL"
+    rationale: >-
+      Restores the v1.9 C1 defect in both write paths: the audit_log default
+      and the explicit security-event insert become current_user, which inside
+      a SECURITY DEFINER function is the extension owner.
+    mutations:
+      - anchor: "    db_user TEXT DEFAULT session_user,"
+        replacement: "    db_user TEXT DEFAULT current_user,"
+        note: "audit_log default loses the real session login"
+      - anchor: "    INSERT INTO rbac.security_events (event_type, severity, details, db_user)\n    VALUES (p_type, p_severity, p_details, session_user);"
+        replacement: "    INSERT INTO rbac.security_events (event_type, severity, details, db_user)\n    VALUES (p_type, p_severity, p_details, current_user);"
+        note: "security event insert loses the real session login"
+    expect_failures:
+      - "F10a db_user = fstek_admin (не владелец расширения)"
+      - "F10c db_user события синхронизации = fstek_admin"
+    note: >-
+      F10b (result/severity shape) still passes: the row is written, only its
+      subject is wrong. The migration-path assertion M4 is unaffected because
+      this fixture mutates 1.9.1 while the migration installs 1.9.
+
+  - id: MUT-011
+    cell: CELL-004
+    detector: D-FSTEC-F11
+    property: >-
+      Five failed logins lock the account; only rbac_admin can unlock it.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Grants unlock_user() to rbac_readwrite, the role application logins hold.
+      An application role can then clear a lockout, so the unlock step is no
+      longer an rbac_admin-only operation.
+    mutations:
+      - anchor: "GRANT EXECUTE ON FUNCTION rbac.unlock_user(TEXT) TO rbac_admin;"
+        replacement: "GRANT EXECUTE ON FUNCTION rbac.unlock_user(TEXT) TO rbac_admin, rbac_readwrite;"
+        note: "application role receives the unlock control plane"
+    expect_failures:
+      - "F11b unlock_user под прикладной ролью -> 42501"
+    note: >-
+      The lockout-threshold half cannot be falsified cleanly with this
+      detector: when the lock is absent, F11a's init_session succeeds and
+      leaves a session-level context (set_config(..., false)); the rollback
+      does not clear it, and the unguarded F11d control then raises "session
+      already active". A threshold mutation therefore crashes the suite
+      instead of producing an exact failure set. Recorded as a detector
+      limitation; this fixture covers the unlock-isolation half only.
+
+  - id: MUT-012
+    cell: CELL-005
+    detector: D-FSTEC-F12
+    property: >-
+      A directory mapping must target an anchored application role (I1), and a
+      role referenced by a mapping cannot change its anchor or pg_role (I2).
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "52 OK, 5 FAIL"
+    rationale: >-
+      Disables both SoD triggers: the I1 target guard and the I2 anchor guard.
+      The I2 cascade is expected and recorded: after F12b/F12c the manager role
+      loses its anchor and becomes an administrative pg_role, so directory
+      resolution stops yielding it (F13c) and the ceiling trigger finds no
+      active assignment to bump (F14a). The I3 detector still passes.
+    mutations:
+      - anchor: "BEGIN\n    SELECT r.pg_role, r.external_id, r.is_system\n      INTO v_pg_role, v_ext_id, v_is_sys\n      FROM rbac.roles r WHERE r.role_id = NEW.role_id;"
+        replacement: "BEGIN\n    RETURN NEW;  -- MUTATION MUT-012: I1 mapping target guard disabled\n    SELECT r.pg_role, r.external_id, r.is_system\n      INTO v_pg_role, v_ext_id, v_is_sys\n      FROM rbac.roles r WHERE r.role_id = NEW.role_id;"
+        note: "I1 target guard returns before validating the role"
+      - anchor: "CREATE OR REPLACE FUNCTION rbac.guard_roles_mapping_anchor() RETURNS TRIGGER\nLANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, rbac AS $$\nBEGIN\n    IF TG_OP = 'DELETE' THEN"
+        replacement: "CREATE OR REPLACE FUNCTION rbac.guard_roles_mapping_anchor() RETURNS TRIGGER\nLANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, rbac AS $$\nBEGIN\n    RETURN NEW;  -- MUTATION MUT-012: I2 anchor guard disabled\n    IF TG_OP = 'DELETE' THEN"
+        note: "I2 anchor guard returns before checking pg_role/external_id"
+    expect_failures:
+      - "F12a I1: маппинг в системную роль (без якоря/pg_role) отвергнут"
+      - "F12b I2: снятие якоря занятой маппингом роли отвергнуто"
+      - "F12c I2: перевод занятой роли в админ-pg_role отвергнут"
+      - "F13c выжимка: прямая manager + унаследованный economist"
+      - "F14a auth_epoch инкрементирован"
+    note: >-
+      The last two failures are the recorded cascade, not a second mutation:
+      once the anchor guard is gone, the role under test really is
+      re-profiled. F12d (manual assignments survive a sync) still passes.
+
+  - id: MUT-013
+    cell: CELL-010
+    detector: D-FSTEC-F13
+    property: >-
+      A SID-style anchor raises RSID_FORMAT_WARNING without rejecting the
+      operation, while a valid RSID stays quiet.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Disables the soft RSID-format check. The operation is still accepted, but
+      the warning row that makes the anchor drift visible disappears.
+    mutations:
+      - anchor: "    IF NEW.external_id IS NOT NULL\n       AND NEW.external_id !~ '^R-[0-9A-Za-z-]+$' THEN"
+        replacement: "    IF false THEN"
+        note: "RSID format warning disabled"
+    expect_failures:
+      - "F13b SID-якорь: WARNING в журнале, операция НЕ отклонена"
+    note: >-
+      F13a (valid RSID quiet) still passes trivially, and F13c/F13d (effective
+      roles, unknown user) are unrelated to the format trigger.
+
+  - id: MUT-014
+    cell: CELL-011
+    detector: D-FSTEC-F14
+    property: >-
+      Changing a role's MAC/MIC ceiling increments auth_epoch and revokes live
+      sessions.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Makes the ceiling trigger return early for every UPDATE, so a ceiling
+      change no longer walks rbac.users and bumps auth_epoch.
+    mutations:
+      - anchor: "    IF TG_OP = 'UPDATE'\n       AND NEW.max_mac_level IS NOT DISTINCT FROM OLD.max_mac_level\n       AND NEW.max_mic_level IS NOT DISTINCT FROM OLD.max_mic_level THEN"
+        replacement: "    IF TG_OP = 'UPDATE' THEN"
+        note: "ceiling change no longer bumps auth_epoch"
+    expect_failures:
+      - "F14a auth_epoch инкрементирован"
+    note: >-
+      This fixture targets the FSTEC detector. The separate
+      D-V15-CEILING suite (branch coverage of the trigger) keeps its own
+      mutation fixture.
+
+  - id: MUT-015
+    cell: CELL-006
+    detector: D-FSTEC-F15
+    property: >-
+      Substituting protection rules after a recorded baseline makes
+      assert_integrity() return false and records INTEGRITY_VIOLATION.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_fstek.py
+    deploy: sharedir
+    baseline_expect: "57 OK, 0 FAIL"
+    observed: "56 OK, 1 FAIL"
+    rationale: >-
+      Keeps the digest comparison and the security event but returns true on a
+      mismatch. An integrity detector that always reports "intact" is the exact
+      failure mode the assertion exists to catch.
+    mutations:
+      - anchor: "    PERFORM rbac.log_security_event('INTEGRITY_VIOLATION', 'critical',\n        jsonb_build_object('expected', v_baseline, 'actual', v_digest));\n    RETURN false;"
+        replacement: "    PERFORM rbac.log_security_event('INTEGRITY_VIOLATION', 'critical',\n        jsonb_build_object('expected', v_baseline, 'actual', v_digest));\n    RETURN true;"
+        note: "mismatch reported as intact"
+    expect_failures:
+      - "F15a подмена правил -> assert_integrity() = false"
+    note: >-
+      F15b still passes because the event is still written. The fixture shows
+      the return value is coupled to the digest comparison; it does not show
+      the event type or severity is checked, which F15b does not assert.
+
+  - id: MUT-016
+    cell: CELL-011
+    detector: D-V15-CEILING
+    property: >-
+      Changing a role's MAC/MIC ceiling increments auth_epoch and revokes live
+      sessions, while an unrelated description edit does not.
+    artifact: sql/rbac--1.5.sql
+    source_sha256: 62b19c3e8f6c84fcefae7e85da57d882d3335104ef4601f0df18d6b9371fc2b7
+    suite: setup/test_v15_ceiling_trigger.py
+    baseline_expect: "20 OK, 0 FAIL"
+    observed: "15 OK, 5 FAIL"
+    rationale: >-
+      Makes the branch-coverage trigger return early for every UPDATE. The
+      C1/C1b early-return cases still pass, while every case that must bump
+      auth_epoch (changed MAC, changed MIC, value to NULL, unrelated role)
+      goes stale. INSERT and DELETE still take the bump path.
+    mutations:
+      - anchor: "    IF TG_OP = 'UPDATE'\n       AND NEW.max_mac_level IS NOT DISTINCT FROM OLD.max_mac_level\n       AND NEW.max_mic_level IS NOT DISTINCT FROM OLD.max_mic_level THEN\n        RETURN NEW;   -- потолки не менялись - отзывать нечего\n    END IF;"
+        replacement: "    IF TG_OP = 'UPDATE' THEN\n        RETURN NEW;   -- MUTATION MUT-016: any UPDATE returns early\n    END IF;"
+        note: "ceiling changes no longer bump auth_epoch"
+    expect_failures:
+      - "alice (активная роль): epoch +1"
+      - "живая сессия alice отозвана"
+      - "IF = FALSE по 3-му конъюнкту: epoch +1"
+      - "IF = FALSE (32 IS DISTINCT FROM NULL): epoch +1"
+      - "epoch +1 у пользователя ЧУЖОЙ роли (потолок = min по всем)"
+    note: >-
+      This is the branch-coverage detector for the trigger itself. MUT-014
+      applies the same property to the FSTEC F14 assertion on 1.9.1.
+
+  - id: MUT-017
+    cell: CELL-013
+    detector: D-V17-E2
+    property: >-
+      A refused session writes AUTH_FAILURE to the server log channel even when
+      the table row rolls back with the transaction.
+    artifact: sql/rbac--1.8.sql
+    source_sha256: 18d18ac02b42086aad1ba9faf61344b333463f8d37bcb5237aa436f1d215414c
+    suite: setup/test_v17_events.py
+    baseline_expect: "54 OK, 0 FAIL"
+    observed: "48 OK, 6 FAIL"
+    rationale: >-
+      Removes the RAISE LOG half of the two-channel event writer. The table
+      half still writes and still rolls back with the refused transaction, so
+      the assertion that checks the rolled-back row stays green. The LOG
+      channel is shared with TOKEN_REPLAY, hence the recorded J1 cascade.
+    mutations:
+      - anchor: "    RAISE LOG 'RBAC_SECURITY_EVENT: %', v_json;"
+        replacement: "    PERFORM v_json;  -- MUTATION MUT-017: log channel removed"
+        note: "structured server-log record no longer emitted"
+    expect_failures:
+      - "RAISE LOG RBAC_SECURITY_EVENT пережил откат"
+      - "формат записи структурирован (JSON с severity)"
+      - "все причины зафиксированы сервером"
+      - "причина user_disabled зафиксирована"
+      - "TOKEN_REPLAY (critical) в LOG-канале пережил откат"
+      - "блокировка оставила INTEGRITY_VIOLATION в LOG-канале"
+    note: >-
+      The J1 and integrity failures are the same missing channel, not a second
+      defect: TOKEN_REPLAY and the INTEGRITY_VIOLATION refusal both write only
+      through log_security_event(). The table-channel assertions and the
+      "successful login writes no LOG line" control stay green.
+
+  - id: MUT-018
+    cell: CELL-014
+    detector: D-V17-J1
+    property: >-
+      A replayed single-use token is refused before the role check and raises
+      TOKEN_REPLAY at critical severity.
+    artifact: sql/rbac--1.8.sql
+    source_sha256: 18d18ac02b42086aad1ba9faf61344b333463f8d37bcb5237aa436f1d215414c
+    suite: setup/test_v17_events.py
+    baseline_expect: "54 OK, 0 FAIL"
+    observed: "51 OK, 3 FAIL"
+    rationale: >-
+      Turns the replay-consuming INSERT into an upsert. A duplicate jti now
+      updates the row instead of doing nothing, so FOUND is true and the
+      replay branch is skipped; the second presentation of the same token is
+      accepted as a fresh session.
+    mutations:
+      - anchor: "        ON CONFLICT (j) DO NOTHING;"
+        replacement: "        ON CONFLICT (j) DO UPDATE SET exp = EXCLUDED.exp;  -- MUTATION MUT-018: replay accepted"
+        note: "duplicate jti updates instead of reporting a conflict"
+    expect_failures:
+      - "повторное предъявление -> 28000"
+      - "TOKEN_REPLAY (critical) в LOG-канале пережил откат"
+      - "replay-проверка раньше проверок прав (28000, не смена личности)"
+    note: >-
+      The first-consumption assertion and the "TOKEN_REPLAY row rolled back"
+      assertion stay green: no row is inserted for the replay, so there is
+      nothing to roll back. The last failure shows the replay check is no
+      longer before the role/identity switch.
+
+  - id: MUT-019
+    cell: CELL-016
+    detector: D-V15-SEC
+    property: >-
+      A session sees only rows of its tenant and at or below its effective MAC
+      ceiling.
+    artifact: sql/rbac--1.5.sql
+    source_sha256: 62b19c3e8f6c84fcefae7e85da57d882d3335104ef4601f0df18d6b9371fc2b7
+    suite: setup/test_v15_security.py
+    baseline_expect: "17 OK, 0 FAIL"
+    observed: "15 OK, 2 FAIL"
+    rationale: >-
+      Replaces the MAC SELECT predicate with true, keeping only the category
+      containment half. The row at MAC 90 then passes a ceiling of 64, so both
+      the P0 visibility assertion and the end-to-end tenant/ceiling regression
+      fail. The tampered-context case still returns no rows because an invalid
+      context yields an empty category set.
+    mutations:
+      - anchor: "'CREATE POLICY citadel_mac_select ON %I.%I AS RESTRICTIVE FOR SELECT USING (%I <= (SELECT rbac.get_mac_level()) AND coalesce"
+        replacement: "'CREATE POLICY citadel_mac_select ON %I.%I AS RESTRICTIVE FOR SELECT USING ((true OR %I <= (SELECT rbac.get_mac_level())) AND coalesce"
+        note: "MAC read ceiling neutralised inside the generated policy"
+    expect_failures:
+      - "видны только строки с меткой <= потолка (10 и 50, не 90)"
+      - "alice видит только строки своего тенанта и ниже потолка"
+    note: >-
+      The fixture falsifies the MAC half only. The suite seeds tenant 1 rows
+      only, so removing the tenant predicate would leave every assertion green:
+      the tenant half of this detector is not actually exercised. Recorded as a
+      detector gap in mutations/README.md; the suite is in the target repo and
+      was not modified.
+
+  - id: MUT-020
+    cell: CELL-017
+    detector: D-V191-F2
+    property: >-
+      set_object_label refuses a foreign trap table without firing its trigger,
+      while a legitimate owner table is labelled.
+    artifact: sql/rbac--1.9.1.sql
+    source_sha256: d5452f515171b72a174e1af81dfb3c30c5d68761faa7ef1c928cf8c036a2019a
+    suite: setup/test_v191_fixes.py
+    baseline_expect: "22 OK, 0 FAIL"
+    observed: "21 OK, 1 FAIL"
+    rationale: >-
+      Returns from _assert_table_owned before either ownership case is checked.
+      set_object_label then updates the rbac_admin-owned trap table, its BEFORE
+      UPDATE trigger fires as the SECURITY DEFINER owner, and the trigger
+      creates the evil policy on the protected table.
+    mutations:
+      - anchor: "    IF v_owner = v_ext_owner THEN RETURN; END IF;\n    IF v_owner = session_user THEN RETURN; END IF;\n\n    RAISE EXCEPTION"
+        replacement: "    RETURN;  -- MUTATION MUT-020: ownership check disabled\n    IF v_owner = v_ext_owner THEN RETURN; END IF;\n    IF v_owner = session_user THEN RETURN; END IF;\n\n    RAISE EXCEPTION"
+        note: "foreign-table refusal bypassed"
+    expect_failures:
+      - "F2b set_object_label на чужой таблице ловушки -> 42501"
+    note: >-
+      F2a (registering the attacker's own table) and F2d (the legitimate
+      owner-table control) still pass. F2c stays green vacuously: the trap
+      table has no row, so set_object_label fails earlier with "Object ...
+      key=1 not found" (P0001) and the row-level BEFORE UPDATE trigger never
+      fires. The fixture proves the confused-deputy refusal, not the
+      unregistered-table path named in the cell limitation; both gaps are
+      recorded in mutations/README.md.
+
+  - id: MUT-021
+    cell: CELL-021
+    detector: D-V15-IDEMPOTENCY
+    property: >-
+      Repeated apply_policy_document runs do not change auth_epoch, recreate
+      policies, or duplicate role links.
+    artifact: sql/rbac--1.5.sql
+    source_sha256: 62b19c3e8f6c84fcefae7e85da57d882d3335104ef4601f0df18d6b9371fc2b7
+    suite: setup/test_v15_idempotency.py
+    baseline_expect: "20 OK, 0 FAIL"
+    observed: "19 OK, 1 FAIL"
+    rationale: >-
+      Removes the "permission already matches" short-circuit from step 2c.
+      Every documented permission now takes the UPDATE branch, its table enters
+      v_affected_tables, and the trailing secure_table() drops and recreates
+      the policies on a no-op run - the v1.4 behaviour this detector exists to
+      reject. The role upsert and hierarchy diff are left intact.
+    mutations:
+      - anchor: "            IF EXISTS (\n                SELECT 1 FROM rbac.permissions p\n                 WHERE p.role_id = v_role_id\n                   AND p.resource = v_res_key\n                   AND p.operation = v_perm->>'operation'\n                   AND p.row_scope IS NOT DISTINCT FROM coalesce(v_perm->>'row_scope', 'tenant')\n            ) THEN\n                -- запись уже есть и совпадает - ничего не делаем\n                CONTINUE;\n            END IF;"
+        replacement: "            -- MUTATION MUT-021: the \"already matches\" short-circuit is gone,\n            -- so every documented permission is rewritten on every run."
+        note: "no-op permission diff short-circuit removed"
+    expect_failures:
+      - "политики НЕ пересозданы (oid совпадают) - нет AccessExclusiveLock"
+    note: >-
+      The other idempotency assertions stay green, and that is the useful
+      result: the role-epoch (I1/I7) guarantee is enforced independently by the
+      role upsert WHERE and the trigger value comparison. Removing the upsert
+      guard alone does not revoke live sessions because the trigger still sees
+      equal values. This fixture therefore falsifies the "no policy recreation"
+      half of the cell. The
+      rewritten permissions still carry the same row_scope, so the catalog
+      contents remain correct - only the AccessExclusiveLock side effect shows
+      up.
+
+  - id: MUT-022
+    cell: CELL-022
+    detector: D-V151-RANGES
+    property: >-
+      Labels outside MAC 0..63 and MIC 0..3 are refused, and migration clamps
+      existing values with LABEL_RANGE_CLAMP.
+    artifact: sql/rbac--1.5.1.sql
+    source_sha256: 688b8976c7ccb1acee096be63a3deff0688ac006402df3f03760638b86492872
+    suite: setup/test_v151_ranges.py
+    baseline_expect: "25 OK, 0 FAIL"
+    observed: "22 OK, 3 FAIL"
+    rationale: >-
+      Disables the users label CHECK while leaving label_is_valid() and the
+      role-ceiling CHECKs in place. Direct INSERTs outside the model are then
+      accepted, while set_user_label() still rejects through its own call.
+    mutations:
+      - anchor: "    CONSTRAINT chk_users_label CHECK (\n        rbac.label_is_valid(mac_level, mac_categories, mic_level, mic_categories)\n    )"
+        replacement: "    CONSTRAINT chk_users_label CHECK (true)  -- MUTATION MUT-022: label range disabled"
+        note: "users MAC/MIC/category CHECK always satisfied"
+    expect_failures:
+      - "МРД 64 -> 23514"
+      - "МКЦ 4 -> 23514"
+      - "категория 64 -> 23514"
+    note: >-
+      The fresh-install half only. MUT-023 covers the 1.5 -> 1.5.1 migration.
+
+  - id: MUT-023
+    cell: CELL-022
+    detector: D-V151-RANGES
+    property: >-
+      Labels outside MAC 0..63 and MIC 0..3 are refused, and migration clamps
+      existing values with LABEL_RANGE_CLAMP.
+    artifact: sql/rbac--1.5--1.5.1.sql
+    source_sha256: 549a9ae7460e881bcd488b4ca46cff4af1babf5ca12046887cc455bdd6de82ab
+    suite: setup/test_v151_ranges.py
+    baseline_expect: "25 OK, 0 FAIL"
+    observed: "22 OK, 3 FAIL"
+    rationale: >-
+      Clamps migrated MAC labels to 62 instead of the documented maximum 63.
+      The migration still succeeds (62 satisfies the new CHECK) but the
+      recorded post-migration values are wrong, including the effective MAC
+      level after re-authentication.
+    mutations:
+      - anchor: "UPDATE rbac.users SET mac_level = 63 WHERE mac_level > 63;"
+        replacement: "UPDATE rbac.users SET mac_level = 62 WHERE mac_level > 63;  -- MUTATION MUT-023: off-by-one clamp"
+        note: "migration clamps MAC labels one step too low"
+    expect_failures:
+      - "carol МРД 100 -> 63"
+      - "dora МРД 500 -> 63"
+      - "перевыпуск: eff МРД = min(63, потолок 63) = 63"
+    note: >-
+      The third failure is the recorded cascade: the re-issued session now has
+      an effective ceiling of 62. The role-ceiling clamp, the new CHECKs, the
+      DEFAULTs and the LABEL_RANGE_CLAMP record still pass.
+
+  - id: MUT-024
+    cell: CELL-023
+    detector: D-PERF-ENVELOPE
+    property: >-
+      The enforcement layer stays inside its measured envelope for _ctx_valid,
+      has_role, point SELECT, and row INSERT.
+    artifact: sql/rbac--1.9.sql
+    source_sha256: f57ba25446afb3bd335b9cb8ddf95bab59178b2e75fa83177607147ed7b5286c
+    suite: setup/test_perf_envelope.py
+    baseline_expect: "9 OK, 0 FAIL"
+    observed: "5 OK, 4 FAIL"
+    failure_detail_sep: " -- "
+    rationale: >-
+      Injects a fixed 2 ms delay into _ctx_valid, the function every RLS
+      policy calls through its InitPlan. Repeating the HMAC alone was measured
+      as ineffective: one pgcrypto HMAC costs ~0.6 us, so eleven of them stay
+      under the 300 us threshold. The injected delay models an order-of-
+      magnitude hot-path regression (the class the envelope exists to catch)
+      and must trip all four assertions.
+    mutations:
+      - anchor: "    RETURN v_sig = rbac._app_hmac(\n        v_blob,\n        (SELECT secret FROM rbac._session_secret WHERE id = 1)\n    );"
+        replacement: "    PERFORM pg_sleep(0.002);  -- MUTATION MUT-024: hot-path latency regression\n    RETURN v_sig = rbac._app_hmac(\n        v_blob,\n        (SELECT secret FROM rbac._session_secret WHERE id = 1)\n    );"
+        note: "2 ms added to every context validation"
+    expect_failures:
+      - "_ctx_valid() <= 300 мкс (было ~700)"
+      - "has_role() <= 500 мкс (было ~830-950)"
+      - "накладные точечного SELECT <= 2000 мкс"
+      - "накладные INSERT <= 3200 мкс/строку"
+    note: >-
+      The failure detail records the measured value, so the fixture shows the
+      threshold and the measurement, not only the verdict. The migration
+      scenario F5 is unaffected by design: it deploys 1.7 plus the migration,
+      not this artifact. The fixture proves the envelope is live; it does not
+      reproduce the exact v1.7 payload rebuild, which the smaller HMAC-only
+      mutation showed to be below the envelope.
+
+  - id: MUT-025
+    cell: CELL-024
+    detector: D-CLAIM-LEDGER
+    property: >-
+      Every FSTEC claim names a mechanism, an artifact, a commit, test IDs, and
+      a residual limitation.
+    artifact: docs/claims.yaml
+    source_sha256: 92f8ceaa6163a61d45e386477d1a4cdaa9f8bf9a2db796abca77f8b560f2c4dd
+    mode: command
+    copy_dirs: [docs, tools]
+    command:
+      - "python3"
+      - "tools/claim_lint.py"
+      - "--root"
+      - "{target}"
+      - "--suite-glob"
+      - "setup/*.py"
+      - "--no-vale"
+      - "docs/claims.yaml"
+    baseline_expect_exit: 0
+    expect_exit: 1
+    expect_stdout_contains: ["[L3] error", "F3x"]
+    rationale: >-
+      Replaces one existing test ID in C-01 with an ID the suite does not
+      contain. L3 traceability and L4 consistency must both reject the ledger;
+      the rest of the ledger is untouched.
+    mutations:
+      - anchor: "        tests: [F2, F3, F3a]"
+        replacement: "        tests: [F2, F3, F3x]  # MUTATION MUT-025: unknown test ID"
+        note: "C-01 cites a test that does not exist"
+    note: >-
+      The copied ledger is linted against the original repository root, so
+      artifact paths and evidence commits still resolve. The tree has no .git
+      and the runner never edits the target.

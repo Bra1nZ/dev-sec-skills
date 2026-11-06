@@ -410,7 +410,7 @@ prior-art sweep, а не этот абзац.
 - [ ] V2-11. `run_mutations.py` в CI для изменённых cell'ов.
 - [ ] V2-12. Проверять, что упали именно предсказанные ID, а не любой тест.
 - [ ] V2-13. Negative control для `tested` в security: записанный прогон с отключённым guard'ом.
-- [ ] V2-14. Mutation fixtures для оставшихся 22 детекторов пилота.
+- [x] V2-14. Mutation fixtures для оставшихся детекторов пилота — 25 фикстур, 24 детектора с фикстурой и 3 с `mutation_exemption`; все 25 совпали (`spec/pilots/rbac_pg/mutations/README.md`).
 - [ ] V2-15. Поля `enforced_at`, `oracle`, `violation_response` в ячейке.
 - [ ] V2-16. Evidence-kind «runtime enforcement» с обязательным негативным тестом.
 

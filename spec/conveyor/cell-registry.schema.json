@@ -72,6 +72,10 @@
           "type": "string",
           "description": "Fixture or mutation that must make this detector fail. A detector without one has not been verified."
         },
+        "mutation_exemption": {
+          "type": "string",
+          "description": "Why no repository source mutation can falsify this detector (platform semantics, a configuration control, or a core-engine property). A documented exemption is reported as info by CL2 instead of an unverified warning."
+        },
         "status": { "$ref": "#/definitions/coverage_status" },
         "last_verified": {
           "type": "string",

@@ -193,6 +193,16 @@ def check_structure(doc, findings):
             if det.get("kind") == "test" and not (det.get("artifact") or det.get("command")):
                 findings.append(Finding("CL1", "error",
                                         "test detector %r needs artifact or command" % did, who))
+            if "mutation_exemption" in det:
+                exemption = det.get("mutation_exemption")
+                if not isinstance(exemption, str) or not exemption.strip():
+                    findings.append(Finding("CL1", "error",
+                                            "detector %r mutation_exemption must be a non-empty string"
+                                            % did, who))
+                if det.get("mutation_fixture"):
+                    findings.append(Finding("CL1", "warning",
+                                            "detector %r has both mutation_fixture and mutation_exemption"
+                                            % did, who))
 
         for j, claim_id in enumerate(cell.get("claim_ids") or []):
             if not CLAIM_ID_RE.match(str(claim_id)):
@@ -231,9 +241,15 @@ def check_coverage(cells, findings):
                                             "detector %r kind=%s cannot claim %s"
                                             % (did, kind, det_status), who))
             if det_status != "open" and not det.get("mutation_fixture"):
-                findings.append(Finding("CL2", "warning",
-                                        "detector %r has no mutation_fixture; it is not verified" % did,
-                                        who))
+                exemption = det.get("mutation_exemption")
+                if isinstance(exemption, str) and exemption.strip():
+                    findings.append(Finding("CL2", "info",
+                                            "detector %r is exempt from a mutation fixture: %s"
+                                            % (did, exemption), who))
+                else:
+                    findings.append(Finding("CL2", "warning",
+                                            "detector %r has no mutation_fixture; it is not verified" % did,
+                                            who))
 
         if status == "open" and detectors:
             findings.append(Finding("CL2", "warning",

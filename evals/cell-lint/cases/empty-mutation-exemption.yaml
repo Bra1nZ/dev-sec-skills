@@ -1,0 +1,36 @@
+# Synthetic fixture — not evidence about any real project.
+name: empty-mutation-exemption
+description: 'An empty exemption string is a CL1 error, not a silent pass.'
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A login cannot grant membership in an administrative role.
+    taxonomy_class: security
+    failure_class: privilege-escalation
+    entry_points: [admin]
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+    - id: D-PLATFORM-F8
+      kind: test
+      command: "true"
+      status: tested
+      last_verified: '2026-11-05'
+      mutation_exemption: "   "
+    residual_risk: A vanilla cluster without the platform semantics is outside the model.
+    limitations: The empty exemption documents nothing.
+    owner: synthetic
+    last_seen: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: error
+exit: 1
