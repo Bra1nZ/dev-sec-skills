@@ -202,6 +202,27 @@ loading.
   fails when the guard is removed.
 - After an incident: add a named lesson to a test, not only to a comment.
 
+## Checks
+
+Every static gate runs with one command (V2-08):
+
+```bash
+make verify
+```
+
+It runs the adversarial suites (`evals/`), CL1–CL6 over the seed registry and
+over the pilot registry together with its claim ledger, L1–L5 over the pilot
+ledger, and the status-escalation gate. The pilot is located by `PILOT_ROOT`
+(defaults to `../rbac_pg`); if it is missing, the command fails instead of
+skipping the gate.
+
+Mutation runs need a live PostgreSQL with the built extension, so they are
+separate: `make mutations` (or both, `make verify-all`).
+
+`make verify` proves internal consistency of the registries, ledgers, and evals,
+not that any property holds and not that a production registry is clean. One
+known gap is recorded in `evals/status-diff` (re-dating).
+
 ## Languages
 
 - `SKILL.md` is English so the skill works in multilingual agents.
@@ -213,7 +234,7 @@ loading.
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, two linter suites, and the `spec/` directory with the conveyor concept.
+evals, three linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -223,16 +244,15 @@ executable checks for static analysis and trigger evals.
 The executable part also includes `tools/cell_lint.py` (CL1–CL6: structure,
 coverage, evidence, traceability, taxonomy, status-escalation gate) and the
 `ci/cell-lint.yml` template. Its cases are in
-[`evals/cell-lint/`](evals/cell-lint/) with results in
-[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, with a
-runner negative control. These are synthetic fixtures, not proof that any
-production registry is clean.
+[`evals/cell-lint/`](evals/cell-lint/): 26/26, with a runner negative control.
+These are synthetic fixtures, not proof that any production registry is clean.
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,
-3 open, 0 CL1/CL3/CL4 errors. Five of 27 detectors have a mutation fixture: the
-named suite fails exactly on the predicted tests when the mechanism is removed.
-The other 22 are still backed by a green baseline only, and the rbac_pg claim
+3 open, 0 CL1/CL3/CL4 errors when run with the claim ledger. 24 of 27 detectors
+have a mutation fixture: the named suite fails exactly on the predicted tests
+when the mechanism is removed; the other 3 carry a documented
+`mutation_exemption` because no mutation can break them. The rbac_pg claim
 ledger covers 7 of 29 cells. A clean lint means internal consistency, not that
 a property holds.
 

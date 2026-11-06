@@ -1,5 +1,9 @@
 # Skill Evaluations
 
+Run every suite with `make verify` (add `make mutations` for the mutation
+suites, which need a live stand). Each suite exits non-zero on a failing case;
+the status-diff suite reports one recorded known gap and still exits 0.
+
 These are direct application tests, not trigger-rate tests. Each prompt was
 given to an independent agent with the skill loaded (`with_skill`) and to
 another agent without the skill (`without_skill`). The point is to check
@@ -25,7 +29,7 @@ evals/
   iteration-3/
     RESULTS.md          # claim_lint: 12 adversarial cases
   iteration-4/
-    RESULTS.md          # cell_lint: 18 adversarial cases
+    RESULTS.md          # cell_lint: 26 adversarial cases
   linter/
     run_evals.py
     cases/

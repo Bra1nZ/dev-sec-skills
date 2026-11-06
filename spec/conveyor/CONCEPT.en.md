@@ -32,7 +32,7 @@
 | C-14 | The agent-guard and Citadel building blocks transfer to the code supply chain | Broker/default-deny, taint, one-shot grants, hash-chain audit | No pointers in this repository | External repositories | open | This document does not confirm them; each block needs a "repository + path/commit" pointer |
 | C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
 | C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
-| C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 18/18 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
+| C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 26/26 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
 | C-18 | The cell registry instantiates on a real repository, rbac_pg | 29 cells; every non-open cell links to an existing suite or the claim ledger, open cells link to recorded gaps in their limitations; artifacts resolve; CL1/CL3/CL4 have no errors | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; command `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | One repository, rbac_pg at HEAD `492f23c` | tested | The cell-to-test meaning was checked by review, not by machine; all 10 suites were re-run on a fresh stand on 2026-11-06 (57/22/45/54/20/25/17/20/9 OK and 5 OK/2 GAP); 5/27 detectors have a mutation fixture, 22 do not; 22/29 cells have no claim; lint proves internal consistency, not that a property holds |
 
 Registry rules:
@@ -373,7 +373,7 @@ sweep is needed, not this paragraph.
 - Concept with a claim registry.
 - Cell registry schema and seed set.
 - Guard grammar specification and its limits.
-- `cell_lint` and adversarial cases: CL1–CL6, 18/18 (C-17).
+- `cell_lint` and adversarial cases: CL1–CL6, 26/26 (C-17).
 - Pilot registry for rbac_pg: 29 cells, 26 non-open, 3 open, 0
   CL1/CL3/CL4 errors (C-18).
 - Mutation fixtures for 5 of 27 pilot detectors, with reproduced baselines and
@@ -408,7 +408,7 @@ Not commitments and not status: a task closes only with evidence.
 - [ ] V2-05. Removed claim or cell → error, or a mandatory `retired:` with a reason.
 - [x] V2-06. CL2: missing mutation_fixture → error for security and correctness classes — warning for the other classes, and a documented `mutation_exemption` stays info (`tools/cell_lint.py`, `evals/cell-lint/cases/mutation-required-*.yaml`).
 - [ ] V2-07. Diff coverage: changed choke-point paths and symbols must map to a claim.
-- [ ] V2-08. `make verify` as the single local entry point for all gates.
+- [x] V2-08. `make verify` as the single local entry point for all static gates: evals, the seed registry, the pilot registry with its claim ledger, the pilot ledger itself, and the status diff (`Makefile`). Mutation runs need a live stand and are `make mutations`.
 - [ ] V2-09. Negative controls in `evals/linter`: stub test, re-dating, unrelated commit, empty model.
 - [ ] V2-10. `model-checked` and `proven`: require tool output, not artifact existence.
 
@@ -489,6 +489,7 @@ Not commitments and not status: a task closes only with evidence.
 | `spec/pilots/rbac_pg/` | Pilot registry: 29 cells on a real repository |
 | `spec/conveyor/guard-grammar.en.md` | Limits of L2 |
 | `spec/conveyor/product-trials.en.md` | Product-trial boundary: entry criteria, metrics and measurement protocol (draft) |
+| `Makefile` | `make verify` as the single entry point for static gates (V2-08); `make mutations` for the mutation suites on a live stand |
 
 This document is not a certification, an audit, or a coverage promise. It
 records intent, limits, and the next evidence.

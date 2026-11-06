@@ -29,13 +29,16 @@ spec/
 
 ## Status
 
-Phase 0: documents, schema, seed registry, `cell_lint` (CL1–CL6, 25
+Phase 0: documents, schema, seed registry, `cell_lint` (CL1–CL6, 26
 synthetic adversarial cases, see `evals/cell-lint/`), and one pilot registry on
-`rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4 errors, C-18). 24 of
-the pilot's 27 detectors are mutation-verified: each named suite fails
+`rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4 errors, C-18). All static
+gates run with `make verify` (V2-08): the evals, the seed registry, the pilot
+registry with its claim ledger, the pilot ledger itself, and the status diff.
+24 of the pilot's 27 detectors are mutation-verified: each named suite fails
 exactly on the predicted tests when its mechanism is removed; the other three
 carry a documented `mutation_exemption` because no repository-level mutation can
-flip them. There is no production registry and no claim that the conveyor
+flip them. Mutation runs need a live stand and are the separate
+`make mutations`. There is no production registry and no claim that the conveyor
 exists. Every material statement in `CONCEPT.md` carries a status from the
 evidence-first ladder; design intents are `open` and carry limitations.
 
@@ -56,6 +59,8 @@ statistics until that boundary is filled.
    its cases are in `../../evals/cell-lint/`.
 7. `pilots/rbac_pg/README.md` — what a real registry looks like and what it
    still cannot prove.
+8. `../../Makefile` — `make verify`, the single entry point for every static
+   gate.
 
 ## What this is not
 

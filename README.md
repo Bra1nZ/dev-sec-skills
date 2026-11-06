@@ -214,6 +214,26 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 - При разборе инцидента: добавьте именованный урок в тест, а не только в
   комментарий.
 
+## Проверки
+
+Все статические гейты запускаются одной командой (V2-08):
+
+```bash
+make verify
+```
+
+Она прогоняет адверсариальные наборы (`evals/`), CL1–CL6 по сид-реестру и по
+пилотному реестру вместе с его claim-леджером, L1–L5 по пилотному леджеру и
+гейт эскалации статусов. Пилот ищется по `PILOT_ROOT` (по умолчанию
+`../rbac_pg`); если его нет, команда падает, а не пропускает гейт.
+
+Mutation-прогоны требуют живого PostgreSQL с собранным расширением, поэтому
+они вынесены: `make mutations` (или всё вместе — `make verify-all`).
+
+`make verify` доказывает внутреннюю согласованность реестров, леджеров и
+evals, а не истинность свойств и не чистоту production-реестра. Один известный
+пробел зафиксирован в `evals/status-diff` (пере-датировка).
+
 ## Языки
 
 - `SKILL.md` — английский, чтобы скил работал в мультиязычных агентах.
@@ -225,7 +245,7 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, два набора для линтеров и каталог `spec/` с концептом конвейера.
+скилов, три набора для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -241,17 +261,17 @@ cp -r dev-sec-skills/skills/invariant-first-code ~/.config/opencode/skills/
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
 evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон
-`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/) и
-[`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md): 18/18, тоже с
-негативным контролем runner'а. Это синтетические fixtures, а не
+`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 26/26,
+тоже с негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
-29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 5 из 27 детекторов
-есть mutation fixture: названный suite падает ровно на предсказанных тестах,
-когда механизм удалён. Остальные 22 детектора пока проверены только зелёным
-baseline, а claim-леджер rbac_pg покрывает 7 из 29 ячеек. Чистый lint означает
-внутреннюю согласованность, а не истинность свойств.
+29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.
+Для 24 из 27 детекторов есть mutation fixture: названный suite падает ровно на
+предсказанных тестах, когда механизм удалён; ещё 3 — документированный
+`mutation_exemption`, потому что мутацией их не сломать. Claim-леджер rbac_pg
+покрывает 7 из 29 ячеек. Чистый lint означает внутреннюю согласованность, а не
+истинность свойств.
 
 Пока это дисциплина и документация, а не сертификат и не замена аудиту.
 

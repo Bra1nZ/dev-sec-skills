@@ -30,13 +30,13 @@ it is not "met by default".
 
 | # | Criterion | Check | Threshold | Threshold status |
 |---|---|---|---|---|
-| 1 | All gates run by one command | `make verify` (V2-08) | exit 0 | not met: no `Makefile` yet |
+| 1 | All gates run by one command | `make verify` (V2-08) | exit 0 | measured 2026-11-06: exit 0 |
 | 2 | The `rbac_pg` pilot is clean | `cell_lint` | 0 error | measured 2026-11-06: 0 error / 0 warning |
 | 3 | A second pilot on non-RBAC code | V2-24 | 0 CL1–CL6 errors | to-measure: pilot not started |
 | 4 | Mutation coverage of security detectors | `run_mutations.py` + registry (§2.1) | ≥ N | to-measure: N fixed after V2-32 |
 | 5 | Every `tested` security detector has either a mutation fixture or a documented `mutation_exemption` | fixture or exemption | 100 % accounted for; exemptions are listed and count as debt | measured 2026-11-06 on `rbac_pg`: 24 fixtures + 3 exemptions |
 | 6 | `unroutable` share in the taxonomy | V2-25 | ≤ U | to-measure: U fixed after V2-32 |
-| 7 | `claim_lint`, `status_diff`, evals | repository commands | 0 error | run 2026-11-06: `claim_lint` 0 error, `cell-lint` 25/25, `linter` 12/12, `status-diff` 8 + 1 known GAP |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-06: `claim_lint` 0 error (1 L5 warning), `cell-lint` 26/26, `linter` 12/12, `status-diff` 8 + 1 known GAP; the pilot escalation gate is still in first-release mode because the ledger is newer than `v1.3.1` |
 
 Fixing rule: N or U enters the table only with a reference to the measurement
 artifact. The artifact must be recorded **before** the first product run. If the
@@ -130,7 +130,9 @@ sprint opens.
 ## 6. Current state (2026-11-06)
 
 - `rbac_pg`: 24 detectors with a mutation fixture and 3 with a documented
-  `mutation_exemption`; `cell_lint` — 0 error / 0 warning.
+  `mutation_exemption`; `make verify` — exit 0: `cell_lint` 0 error / 0 warning,
+  `claim_lint` 0 error, evals 26/26 and 12/12. The pilot escalation gate is
+  still in first-release mode: the ledger is newer than `v1.3.1`.
 - The second pilot on non-RBAC code has not started.
 - The `unroutable` share has not been measured.
 - Thresholds N and U are not fixed.

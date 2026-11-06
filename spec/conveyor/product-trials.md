@@ -28,13 +28,13 @@
 
 | № | Критерий | Как проверяется | Порог | Статус порога |
 |---|---|---|---|---|
-| 1 | Все гейты запускаются одной командой | `make verify` (V2-08) | exit 0 | не выполнен: `Makefile` ещё нет |
+| 1 | Все гейты запускаются одной командой | `make verify` (V2-08) | exit 0 | измерено 2026-11-06: exit 0 |
 | 2 | Пилот `rbac_pg` чист | `cell_lint` | 0 error | измерено 2026-11-06: 0 error / 0 warning |
 | 3 | Второй пилот на не-RBAC коде | V2-24 | 0 error CL1–CL6 | to-measure: пилот не начат |
 | 4 | Mutation-покрытие security-детекторов | `run_mutations.py` + реестр (§2.1) | ≥ N | to-measure: N фиксируется после V2-32 |
 | 5 | Для каждого `tested` в security есть либо mutation fixture, либо документированный `mutation_exemption` | фикстура или exemption | 100 % учтено; exemptions перечислены и считаются долгом | измерено 2026-11-06 на `rbac_pg`: 24 фикстуры + 3 exemption |
 | 6 | Доля `unroutable` в таксономии | V2-25 | ≤ U | to-measure: U фиксируется после V2-32 |
-| 7 | `claim_lint`, `status_diff`, evals | команды из репозитория | 0 error | прогнано 2026-11-06: `claim_lint` 0 error, `cell-lint` 25/25, `linter` 12/12, `status-diff` 8 + 1 известный GAP |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | прогнано 2026-11-06: `claim_lint` 0 error (1 L5-warning), `cell-lint` 26/26, `linter` 12/12, `status-diff` 8 + 1 известный GAP; гейт эскалации пилота пока в режиме first-release, потому что леджер новее `v1.3.1` |
 
 Правило фиксации: значение N или U попадает в таблицу только вместе со ссылкой
 на артефакт измерения. Артефакт должен быть записан **до** первого продуктового
@@ -125,7 +125,9 @@ Baseline записывается до применения решения: то
 ## 6. Текущее состояние (2026-11-06)
 
 - `rbac_pg`: 24 детектора с mutation fixture, 3 с документированным
-  `mutation_exemption`; `cell_lint` — 0 error / 0 warning.
+  `mutation_exemption`; `make verify` — exit 0: `cell_lint` 0 error / 0 warning,
+  `claim_lint` 0 error, evals 26/26 и 12/12. Гейт эскалации пилота пока в
+  режиме first-release: леджер новее `v1.3.1`.
 - Второй пилот на не-RBAC коде не начат.
 - Доля `unroutable` не измерена.
 - Пороги N и U не зафиксированы.

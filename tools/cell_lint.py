@@ -15,7 +15,8 @@ spec/conveyor/cell-registry.schema.json):
                       future, and within the freshness window
   CL4  traceability:  claim IDs resolve in the claim ledger, a non-open cell
                       has an owner and residual risk, the cell does not claim
-                      more than its linked claims
+                      more than its linked claims; cells that reference claims
+                      without a ledger make traceability unchecked (warning)
   CL5  taxonomy:      classes are declared, IDs and titles are unique, unused
                       classes and duplicate failure classes are visible
   CL6  escalation:    with --base, a cell may not rise on the status ladder
@@ -313,6 +314,12 @@ def check_evidence(doc, cells, root, max_age_days, findings):
 
 def check_traceability(cells, ledger_path, findings):
     claim_status = {}
+    if not ledger_path:
+        linked = sum(1 for c in cells if c.get("claim_ids"))
+        if linked:
+            findings.append(Finding("CL4", "warning",
+                                    "%d cell(s) reference claim IDs but no --ledger was "
+                                    "given; traceability was not checked" % linked))
     if ledger_path:
         try:
             ledger = load_doc(ledger_path)
@@ -476,7 +483,9 @@ def main():
     ap.add_argument("--ledger", default=None,
                     help="claim ledger used to resolve claim_ids")
     ap.add_argument("--base", default=None,
-                    help="base registry for the status-escalation gate")
+                    help="base registry for the status-escalation gate; the "
+                         ".yaml/.yml extension selects the YAML parser, "
+                         "anything else is parsed as JSON")
     ap.add_argument("--require-base", action="store_true",
                     help="fail when --base is absent (use only for the first release)")
     ap.add_argument("--max-age-days", type=int, default=90)
