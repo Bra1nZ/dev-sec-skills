@@ -89,9 +89,14 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 - [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — что L2
   может и чего не может проверять; английская версия —
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+- [`spec/conveyor/product-trials.md`](spec/conveyor/product-trials.md) — граница
+  продуктовых испытаний: критерии входа, метрики и протокол замера; английская
+  версия — [`product-trials.en.md`](spec/conveyor/product-trials.en.md).
+  Испытания пока не открыты.
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — пилотный реестр на
-  29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 5 из 27 детекторов
-  есть mutation fixture ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
+  29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 24 из 27 детекторов
+  есть mutation fixture, ещё 3 — документированный `mutation_exemption`
+  ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
 
 Статус фазы 0: документ, схема, `cell_lint` и один пилотный реестр. Реестра
 для production нет. Числа вроде «~200 ячеек» и «45 → 15 минут» помечены
@@ -169,6 +174,8 @@ spec/
     cells.seed.yaml
     guard-grammar.md
     guard-grammar.en.md
+    product-trials.md
+    product-trials.en.md
   pilots/
     rbac_pg/
       cells.yaml

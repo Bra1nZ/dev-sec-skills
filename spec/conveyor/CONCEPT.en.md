@@ -406,7 +406,7 @@ Not commitments and not status: a task closes only with evidence.
 - [x] V2-03. `status_diff`: missing or unknown base ref → error; only `--first-release` is exempt.
 - [x] V2-04. `cell_lint`: missing base registry → error via `--require-base`, not a gate-less run.
 - [ ] V2-05. Removed claim or cell → error, or a mandatory `retired:` with a reason.
-- [ ] V2-06. CL2: missing mutation_fixture → error for security and correctness classes.
+- [x] V2-06. CL2: missing mutation_fixture → error for security and correctness classes — warning for the other classes, and a documented `mutation_exemption` stays info (`tools/cell_lint.py`, `evals/cell-lint/cases/mutation-required-*.yaml`).
 - [ ] V2-07. Diff coverage: changed choke-point paths and symbols must map to a claim.
 - [ ] V2-08. `make verify` as the single local entry point for all gates.
 - [ ] V2-09. Negative controls in `evals/linter`: stub test, re-dating, unrelated commit, empty model.
@@ -416,7 +416,7 @@ Not commitments and not status: a task closes only with evidence.
 
 - [ ] V2-11. `run_mutations.py` in CI for changed cells.
 - [ ] V2-12. Assert that the predicted IDs failed, not just any test.
-- [ ] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled.
+- [x] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled — closed by the mutation fixtures: every tested security detector has a predicted failing run or an exemption (`spec/pilots/rbac_pg/mutations/README.md`).
 - [x] V2-14. Mutation fixtures for the remaining pilot detectors — 25 fixtures, 24 detectors with a fixture and 3 with a documented `mutation_exemption`; all 25 matched (`spec/pilots/rbac_pg/mutations/README.md`).
 - [ ] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell.
 - [ ] V2-16. A "runtime enforcement" evidence kind with a mandatory negative test.
@@ -444,14 +444,20 @@ Not commitments and not status: a task closes only with evidence.
 - [ ] V2-29. Proofs (`proven`) are event-driven: the trigger is a changed choke point or model, not every PR.
 - [ ] V2-30. Model-sync budget: the cost of maintaining the slice per PR as a degradation metric.
 
+**Product-trial boundary**
+
+- [ ] V2-31. Fix the boundary in `spec/conveyor/product-trials.en.md`: entry criteria and the measurement protocol; numbers only after measurement.
+- [ ] V2-32. Measure the threshold inputs (the `unroutable` share of the pilots, mutation coverage) and record the numbers in `product-trials.en.md` with the measurement artifact.
+- [ ] V2-33. Fill the boundary checklist when the first product sprint opens; product runs before that do not count as statistics.
+
 ## 13. Open questions and next evidence
 
 1. **Pilot.** rbac_pg is chosen; the pilot registry is built (C-18): 29
    cells, 0 CL1/CL3/CL4 errors. All ten suites were re-run on a fresh stand on
-   2026-11-06, and 5 of 27 detectors now have a mutation fixture. Still
-   missing: fixtures for the other 22 detectors, and a decision on whether the
-   claim ledger covers more than the FSTEC matrix. Without those, C-07…C-12
-   remain hypotheses.
+   2026-11-06; 24 of 27 detectors have a mutation fixture and 3 more have a
+   documented `mutation_exemption`; CL2 has no warnings. Still open: whether
+   the claim ledger covers more than the FSTEC matrix. Without that,
+   C-07…C-12 remain hypotheses.
 2. **Verdict anchor.** Rekor/SCITT, in-toto+Sigstore, or an append-only
    repository. Needs a threat model and operating cost.
 3. **Self-mutation judge.** Who accepts that a defective PR was caught, and by
@@ -482,6 +488,7 @@ Not commitments and not status: a task closes only with evidence.
 | `spec/conveyor/cell-registry.schema.json` | Machine-readable cell |
 | `spec/pilots/rbac_pg/` | Pilot registry: 29 cells on a real repository |
 | `spec/conveyor/guard-grammar.en.md` | Limits of L2 |
+| `spec/conveyor/product-trials.en.md` | Product-trial boundary: entry criteria, metrics and measurement protocol (draft) |
 
 This document is not a certification, an audit, or a coverage promise. It
 records intent, limits, and the next evidence.

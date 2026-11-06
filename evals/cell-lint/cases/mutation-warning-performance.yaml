@@ -1,0 +1,35 @@
+# Synthetic fixture — not evidence about any real project.
+name: mutation-warning-performance
+description: 'A performance detector without a fixture stays a warning and exits 0.'
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - performance
+  cells:
+  - id: CELL-001
+    title: The enforcement layer stays inside its measured envelope.
+    taxonomy_class: performance
+    failure_class: performance-regression
+    entry_points: [sql]
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+    - id: D-NO-FIXTURE
+      kind: test
+      command: "true"
+      status: tested
+      last_verified: '2026-11-05'
+    residual_risk: Thresholds are hardware-dependent.
+    limitations: The detector has only a green run.
+    owner: synthetic
+    last_seen: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL2: warning
+exit: 0

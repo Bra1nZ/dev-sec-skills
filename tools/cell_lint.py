@@ -9,7 +9,8 @@ spec/conveyor/cell-registry.schema.json):
   CL2  coverage:      a non-open cell needs a detector; a cell may not claim
                       more than its strongest detector; a detector may not
                       claim more than its kind allows; a detector without a
-                      mutation fixture is not verified
+                      mutation fixture is an error for security and correctness
+                      cells and a warning otherwise
   CL3  evidence:      detector artifacts exist, dates are valid, not in the
                       future, and within the freshness window
   CL4  traceability:  claim IDs resolve in the claim ledger, a non-open cell
@@ -51,6 +52,7 @@ KIND_MAX_RANK = {
     "proof": STATUS_RANK["proven"],
 }
 TAXONOMY_CLASSES = {"security", "correctness", "maintainability", "performance"}
+MUTATION_REQUIRED_CLASSES = {"security", "correctness"}
 FAILURE_MODES = {"deny", "abort", "rollback", "safe-degrade", "detect"}
 CELL_ID_RE = re.compile(r"^CELL-[0-9]{3,}$")
 DETECTOR_ID_RE = re.compile(r"^D-[A-Za-z0-9._-]+$")
@@ -218,6 +220,7 @@ def check_coverage(cells, findings):
     for cell in cells:
         who = cell.get("id", "-")
         status = cell.get("coverage_status")
+        taxonomy_class = cell.get("taxonomy_class")
         detectors = [d for d in (cell.get("detectors") or []) if isinstance(d, dict)]
 
         if status in STATUSES and status != "open" and not detectors:
@@ -246,6 +249,13 @@ def check_coverage(cells, findings):
                     findings.append(Finding("CL2", "info",
                                             "detector %r is exempt from a mutation fixture: %s"
                                             % (did, exemption), who))
+                elif taxonomy_class in MUTATION_REQUIRED_CLASSES:
+                    findings.append(Finding("CL2", "error",
+                                            "detector %r (%s) has no mutation_fixture and no "
+                                            "mutation_exemption; add a fixture to mutations.yaml "
+                                            "or a documented exemption - %s detectors must be "
+                                            "shown to fail"
+                                            % (did, taxonomy_class, taxonomy_class), who))
                 else:
                     findings.append(Finding("CL2", "warning",
                                             "detector %r has no mutation_fixture; it is not verified" % did,

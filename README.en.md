@@ -89,9 +89,14 @@ registry, and an explicit promise boundary for L2.
 - [`spec/conveyor/guard-grammar.md`](spec/conveyor/guard-grammar.md) — what L2
   can and cannot check; English derivative:
   [`guard-grammar.en.md`](spec/conveyor/guard-grammar.en.md).
+- [`spec/conveyor/product-trials.md`](spec/conveyor/product-trials.md) — the
+  product-trial boundary: entry criteria, metrics and measurement protocol;
+  English derivative: [`product-trials.en.md`](spec/conveyor/product-trials.en.md).
+  Trials are not open yet.
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — pilot registry with
-  29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors. Five of 27 detectors
-  have a mutation fixture ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
+  29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors. 24 of 27 detectors have a
+  mutation fixture and 3 more carry a documented `mutation_exemption`
+  ([`mutations/`](spec/pilots/rbac_pg/mutations/README.md)).
 
 Phase 0 status: document, schema, `cell_lint`, and one pilot registry. There is
 no production registry. Numbers such as "~200 cells" and "45 → 15 minutes" are
@@ -158,6 +163,8 @@ spec/
     cells.seed.yaml
     guard-grammar.md
     guard-grammar.en.md
+    product-trials.md
+    product-trials.en.md
   pilots/
     rbac_pg/
       cells.yaml

@@ -1,0 +1,34 @@
+# Synthetic fixture — not evidence about any real project.
+name: mutation-open-no-detector
+description: 'An open security cell with no detectors is not asked for a fixture.'
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A side channel that leaks existence without returning rows is closed.
+    taxonomy_class: security
+    failure_class: existence-oracle
+    entry_points: [sql]
+    failure_mode: deny
+    coverage_status: open
+    detectors: []
+    residual_risk: The channel is measured, not yet closed.
+    limitations: No detector exercises the property.
+    owner: synthetic
+    last_seen: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: none
+  CL2: none
+  CL3: none
+  CL4: none
+  CL5: none
+exit: 0
