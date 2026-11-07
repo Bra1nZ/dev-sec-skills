@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/tool-output.schema.json",
+  "title": "Tool output",
+  "description": "A machine-checkable record of one model checker's or prover's own run (V2-10). A status of model-checked or proven needs the tool's output and exit code, not only the existence of an artifact: a model file proves that a model exists, while this record proves that a tool ran over it and what it said. It does not prove the tool's semantics or the soundness of the encoding; a forger can rewrite the record and its output together without an external anchor (C-13).",
+  "type": "object",
+  "required": ["tool", "command", "output", "output_sha256", "exit_code",
+               "finished_at"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tool that produced the verdict, e.g. 'TLC', 'Alloy', 'Apalache', 'Z3', 'Rodin'."
+    },
+    "version": {
+      "type": "string",
+      "description": "Tool version. The verdict means little without it; a version upgrade can change the answer."
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact command, including the bound, configuration or model path."
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$",
+      "description": "Commit the run executed at. Must equal the evidence commit when the evidence names one."
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Process exit code. A non-zero code cannot support a non-open status."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset."
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset. Its local date must equal the evidence date."
+    },
+    "output": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the captured tool output, relative to --tool-output-root (default: the project root at --root), or a URL, in which case the hash is not checked."
+    },
+    "output_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the output bytes. Lint check L2 verifies it."
+    },
+    "verdict": {
+      "type": "string",
+      "description": "The tool's own result line, quoted: e.g. 'No error has been found', 'no counterexample within bound 8'. L2 does not parse it; it exists so a reviewer can compare the claim with what the tool said."
+    },
+    "bound": {
+      "type": "string",
+      "description": "State-space or depth bound for a bounded check. model-checked claims must state theirs, otherwise the status overstates what was explored."
+    }
+  }
+}

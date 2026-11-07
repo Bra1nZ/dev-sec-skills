@@ -75,6 +75,10 @@
           "$ref": "run-record.schema.json",
           "description": "Machine-checkable record of the executed run (V2-01). Optional, but a kind=test record without one gets an L2 warning; with one, L2 checks the log and artifact hashes, the exit code, and that every cited test appears in the log."
         },
+        "tool_output": {
+          "$ref": "tool-output.schema.json",
+          "description": "The model checker's or prover's own run (V2-10). A status of model-checked or proven needs one; an artifact alone proves only that a model exists. L2 checks the output hash and the exit code, L4 rejects a model-checked or proven claim without a tool_output."
+        },
         "note": { "type": "string" }
       },
       "allOf": [

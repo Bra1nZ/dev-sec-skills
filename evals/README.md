@@ -71,14 +71,16 @@ whether a claim ledger is honest or whether a test can actually fail.
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
 `tools/cell_lint.py`. The live suites have grown beyond those iterations:
-`evals/linter/` runs 28 cases, including 8 `run-record-*` cases (valid record,
+`evals/linter/` runs 35 cases, including 8 `run-record-*` cases (valid record,
 artifact hash, log hash, unexecuted test, non-zero exit, missing record, date
 mismatch, count mismatch), two V2-09 controls — `unrelated-commit` and
-`empty-claims` — and three V2-05 tombstone cases; `evals/cell-lint/` runs 34
-cases, including the `other` + `routing_note` escape hatch and four V2-05 cases
-(removal without a tombstone, removal with one, a dropped tombstone, a tombstone
-with no reason). The status-diff evals cover fail-closed base handling and 13
-scenarios in total, five of them for V2-05. Reproduce all three:
+`empty-claims` — three V2-05 tombstone cases, and seven V2-10 `tool-output-*`
+cases (valid record, hash mismatch, missing output, non-zero exit, date
+mismatch, no `tool_output` for a model-checked claim, no bound); `evals/cell-lint/`
+runs 34 cases, including the `other` + `routing_note` escape hatch and four V2-05
+cases (removal without a tombstone, removal with one, a dropped tombstone, a
+tombstone with no reason). The status-diff evals cover fail-closed base handling
+and 13 scenarios in total, five of them for V2-05. Reproduce all three:
 
 ```bash
 python3 evals/linter/run_evals.py

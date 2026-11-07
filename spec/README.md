@@ -62,8 +62,17 @@ Run-record evidence (V2-01/V2-02) is part of the contract: `claim_lint` L1
 checks the record's shape and commit/command agreement, L2 recomputes the log
 and artifact SHA-256, matches the run date to the evidence date, and requires
 every cited test ID in the log. The seven `craft-i18n` test claims carry one
-(`pilots/craft-i18n/runs/`); the `rbac_pg` ledger has none and gets 7 visible
+(`pilots/craft-i18n/runs/`); the `rbac_pg` ledger has none and gets 6 visible
 L2 warnings.
+
+Tool output (V2-10) closes the model-checked/proven gap: an artifact proves that
+a model exists, not that a checker ran over it. `evidence[].tool_output` names
+the tool and its command, the captured output and its SHA-256, the exit code,
+and the bound; `claim_lint` L1 checks the shape, L2 recomputes the output hash,
+ties `finished_at` to the evidence date and rejects a non-zero exit for a
+non-open claim, and L4 rejects a `model-checked` or `proven` claim without one.
+A `model-checked` claim must also state its bound. The record does not check the
+tool's semantics or the soundness of the encoding.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and
@@ -85,7 +94,7 @@ is checked even without a base.
 1. `CONCEPT.md` — thesis, trust policy, layers, taxonomy, verdicts, ceiling.
 2. `cell-registry.schema.json` — the machine-readable shape of a cell.
 3. `cells.seed.yaml` — uncalibrated seed cells, all `open`.
-4. `guard-grammar.md` — what L2 can and cannot model. `../../schemas/run-record.schema.json` — the shape of one executed run.
+4. `guard-grammar.md` — what L2 can and cannot model. `../../schemas/run-record.schema.json` and `../../schemas/tool-output.schema.json` — the shape of one executed run and of one tool verdict.
 5. `product-trials.md` — when the solution may leave the pilot, and how an
    improvement is measured.
 6. `../../tools/cell_lint.py` — the executable subset of the cell contract;

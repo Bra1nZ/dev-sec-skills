@@ -1,0 +1,65 @@
+# Synthetic fixture — not evidence about any real project.
+name: tool-output-hash-mismatch
+description: "The record cites a TLC log but output_sha256 is not the hash of the bytes\n      on disk.\
+  \ The run may be real, yet the captured output the record commits to\n      is not the one present;\
+  \ L2 must error instead of accepting the record.\n"
+files:
+  spec/AuthGate.tla: '---- MODULE AuthGate ----
+
+    EXTENDS Naturals
+
+    \* A role-less session cannot write tenant data.
+
+    ====
+
+    '
+  reports/tlc.log: 'TLC2 Version 2.19 of 08 August 2024 (rev: 6a1c8)
+
+    Running breadth-first search Model-Checking with fp 109 and seed 1 with 1 worker.
+
+    Starting workers...
+
+    Finished computing initial states: 1 distinct state generated.
+
+    Model checking completed. No error has been found.
+
+    '
+  docs/README.md: 'The auth gate rejects a write with no session.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: A role-less session cannot write tenant data.
+    mechanism: The write action is enabled only with a live session and a tenant role.
+    evidence:
+    - kind: model-check
+      command: java -jar tla2tools.jar -config AuthGate.cfg AuthGate.tla
+      artifact: spec/AuthGate.tla
+      tool_output:
+        tool: TLC
+        version: '2.19'
+        command: java -jar tla2tools.jar -config AuthGate.cfg AuthGate.tla
+        exit_code: 0
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:09+03:00'
+        output: reports/tlc.log
+        output_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+        verdict: Model checking completed. No error has been found.
+        bound: all reachable states (no depth bound)
+      date: '2026-11-01'
+    scope:
+      platforms:
+      - TLA+ model, synthetic fixture
+      assumptions:
+      - The .tla model matches the write path it abstracts.
+    status: model-checked
+    limitations: Unbounded TLC run over a hand-written model; the model itself is not proved sound.
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: error
+  L4: none
+exit: 1

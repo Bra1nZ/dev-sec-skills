@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-22; английская версия —
+  утверждений C-01…C-23; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -260,18 +260,21 @@ evals, а не истинность свойств и не чистоту produc
 Исполняемая часть: `tools/claim_lint.py` (L1–L5 над claim-леджером, Vale-first
 для прозы, встроенный сканер как fallback; L2 проверяет run-record — хэши лога и
 артефакта, exit code, дату, исполненные ID — и сверяет артефакт с его блобом на
-процитированном коммите), `tools/status_diff.py` (гейт эскалации статусов между
+процитированном коммите; tool-output для `model-checked`/`proven` — хэш вывода,
+exit code, дату и bound), `tools/status_diff.py` (гейт эскалации статусов между
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
-Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 28/28
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 35/35
 проходят, включая негативный контроль самого runner'а, кейсы для Rust
 `#[test] fn`, 8 кейсов run-record (валидный, хэш артефакта, хэш лога,
 неисполненный ID, ненулевой exit, отсутствие записи, несовпадение даты,
-несовпадение счётчиков) и два кейса V2-09: `unrelated-commit` (коммит
+несовпадение счётчиков), два кейса V2-09: `unrelated-commit` (коммит
 резолвится, но артефакт с тех пор изменился) и `empty-claims` (пустой леджер
-обязан упасть, а не пройти вакуумно). Исторический прогон из 12 кейсов —
-`evals/iteration-3/RESULTS.md`.
+обязан упасть, а не пройти вакуумно), и семь кейсов V2-10 `tool-output-*`
+(валидная запись, хэш вывода, отсутствующий вывод, ненулевой exit, дата,
+`model-checked` без вывода, `model-checked` без bound). Исторический прогон из
+12 кейсов — `evals/iteration-3/RESULTS.md`.
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
 evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон

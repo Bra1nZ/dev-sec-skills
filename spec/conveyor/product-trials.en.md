@@ -36,7 +36,7 @@ it is not "met by default".
 | 4 | Mutation coverage of security detectors | `run_mutations.py` + registry (§2.1) | ≥ N = 87.5 % | fixed 2026-11-07: 21/24 = 87.5 %; artifact — `spec/pilots/*/cells.yaml` and `spec/pilots/*/mutations/README.md` at the measurement commit, recorded before the first product run |
 | 5 | Every `tested` security detector has either a mutation fixture or a documented `mutation_exemption` | fixture or exemption | 100 % accounted for; exemptions are listed and count as debt | measured 2026-11-06: `rbac_pg` 24 fixtures + 3 exemptions; `craft-i18n` 1 fixture, 0 exemptions |
 | 6 | `unroutable` share in the taxonomy | V2-25 | ≤ U = 0.0 % | fixed 2026-11-07: 0/43; the escape hatch (`taxonomy_class`/`failure_mode` = `other` + `routing_note`) exists and is measured by `tools/unroutable.py --max-share 0`; before the hatch, 0 was structural, see §2.1 |
-| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-07: `claim_lint` 0 error (1 L5 and 7 L2 warnings on `rbac_pg` — the ledger has no run_record; 0 warnings on `craft-i18n`), `cell-lint` 34/34 and 14/14 cases, `linter` 28/28, `status-diff` 13 + 1 known GAP: `status_diff` alone cannot see re-dating, and a run_record catches it only when present; without an external anchor (C-13) a consistent forgery passes |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-07: `claim_lint` 0 error (1 L5 and 6 L2 warnings on `rbac_pg` — the ledger has no run_record; 0 warnings on `craft-i18n`), `cell-lint` 34/34 and 14/14 cases, `linter` 35/35, `status-diff` 13 + 1 known GAP: `status_diff` alone cannot see re-dating, and a run_record catches it only when present; without an external anchor (C-13) a consistent forgery passes |
 
 Fixing rule: N or U enters the table only with a reference to the measurement
 artifact. The artifact must be recorded **before** the first product run. If the
@@ -161,7 +161,7 @@ sprint opens.
 
 - `rbac_pg`: 29 cells; 24 detectors with a mutation fixture and 3 with a
   documented `mutation_exemption`; `cell_lint` 0 error / 0 warning,
-  `claim_lint` 0 error and 7 L2 warnings — the ledger lives in the target
+  `claim_lint` 0 error and 6 L2 warnings — the ledger lives in the target
   repository, has no run_record, and is not modified by this repository. The
   escalation gate is in first-release mode: the ledger is newer than `v1.3.1`.
 - `craft-i18n`: 14 cells; 12 fixtures and 1 exemption; `cell_lint` 0 error,
@@ -169,7 +169,7 @@ sprint opens.
   (`spec/pilots/craft-i18n/runs/`): log and artifact hashes, exit code and
   executed IDs are checked on every run.
 - N = 87.5 % (21/24) and U = 0.0 % (0/43) are fixed in §2.1 with artifacts from
-  2026-11-07. `make verify` — exit 0, including evals 34/34 + 28/28 + 13 with
+  2026-11-07. `make verify` — exit 0, including evals 34/34 + 35/35 + 13 with
   one known GAP.
 
 Consequence: **the boundary is filled, but product trials are not open yet.**

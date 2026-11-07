@@ -7,15 +7,18 @@ schemas/claim-ledger.schema.json):
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
                      status=open requires limitations, run_record shape,
-                     retired tombstones (reason present, never also active)
+                     tool_output shape, retired tombstones (reason present,
+                     never also active)
   L2  evidence:      artifact paths exist, commits resolvable, the artifact
                      matches its blob at the cited commit, dates within the
                      freshness window, run_record log and artifact hashes
                      match, the run exited 0 for a non-open claim, every cited
-                     test appears in the captured log with a status
+                     test appears in the captured log with a status,
+                     tool_output.output matches its hash and finished_at date
   L3  traceability:  every test ID in kind=test evidence exists in the suite
   L4  consistency:   status matches the strongest evidence channel; stronger
-                     evidence than the status is a warning
+                     evidence than the status is a warning; model-checked and
+                     proven need a tool_output, model-checked needs a bound
   L5  prose:         unqualified absolutes in .md documents. Engine order:
                      Vale (if installed; styles/RussianAbsolutes package),
                      fallback to the built-in line scanner.
@@ -26,6 +29,13 @@ ran stay invisible. With one, L2 hashes the log and the artifact and checks
 that the cited test IDs appear in the log. This detects re-dating and edited
 logs only if the forger does not also rewrite the record; without an external
 anchor (C-13) a consistent forgery passes.
+
+A tool_output (schemas/tool-output.schema.json) is required for a claim whose
+status is model-checked or proven: an artifact says a model exists, the record
+says a tool ran over it and what it answered. L1 checks the shape, L2 hashes
+the captured output and ties finished_at to the evidence date. It does not
+check the tool's semantics or the soundness of the encoding; without an
+external anchor a consistent forgery passes, as with run records.
 
 Commits are anchored too, not just resolved: when the root is a git work tree,
 the artifact must exist at the cited commit (the run record's commit when the
@@ -39,7 +49,8 @@ Exit codes: 0 clean (warnings allowed), 1 errors found, 2 tool/usage error.
 Usage:
     python3 tools/claim_lint.py [--root PATH] [--suite-glob GLOB]
                                 [--max-age-days N] [--docs-glob GLOB]
-                                [--run-log-root PATH] [--no-vale]
+                                [--run-log-root PATH] [--tool-output-root PATH]
+                                [--no-vale]
                                 ledger.json|yaml
 """
 
@@ -85,6 +96,11 @@ RUST_TEST_RE = re.compile(
 # Run record (V2-01/V2-02, schemas/run-record.schema.json).
 RUN_RECORD_FIELDS = ("runner", "command", "commit", "exit_code", "started_at",
                      "finished_at", "log", "log_sha256", "tests_run", "tests_passed")
+# Tool output (V2-10, schemas/tool-output.schema.json): the model checker's or
+# prover's own run. Required fields mirror the schema's `required` list.
+TOOL_OUTPUT_FIELDS = ("tool", "command", "output", "output_sha256",
+                      "exit_code", "finished_at")
+TOOL_STATUSES = ("model-checked", "proven")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 URL_RE = re.compile(r"^[a-z]+://")
 # Summary lines the run-record cross-check understands. cargo prints one per
@@ -374,6 +390,63 @@ def check_run_records_schema(claims, findings):
                                             "run_record %s is not an ISO 8601 timestamp" % field, c["id"]))
 
 
+def check_tool_outputs_schema(claims, findings):
+    """L1 shape for evidence.tool_output (V2-10).
+
+    An artifact says a model exists; this record says a tool ran over it and
+    what it answered. The shape has to hold before the run can be trusted, so
+    every field the schema requires is checked here, before L2 looks at the
+    files.
+    """
+    for c in claims:
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("tool_output") is None:
+                continue
+            to = ev.get("tool_output")
+            cid = c["id"]
+            if not isinstance(to, dict):
+                findings.append(Finding("L1", "error", "tool_output is not an object", cid))
+                continue
+            missing = [f for f in TOOL_OUTPUT_FIELDS if f not in to]
+            if missing:
+                findings.append(Finding("L1", "error",
+                                        "tool_output missing %s" % ", ".join(missing), cid))
+            for field in ("tool", "command", "output"):
+                value = to.get(field)
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    findings.append(Finding("L1", "error",
+                                            "tool_output %s must be a non-empty string" % field, cid))
+            if to.get("output_sha256") is not None and not SHA256_RE.match(str(to.get("output_sha256"))):
+                findings.append(Finding("L1", "error",
+                                        "tool_output output_sha256 is not a sha256 hex digest", cid))
+            if not isinstance(to.get("exit_code"), int):
+                findings.append(Finding("L1", "error",
+                                        "tool_output exit_code must be an integer", cid))
+            for field in ("started_at", "finished_at"):
+                value = to.get(field)
+                if value is not None and _parse_iso(value) is None:
+                    findings.append(Finding("L1", "error",
+                                            "tool_output %s is not an ISO 8601 timestamp" % field, cid))
+            for field in ("version", "verdict", "bound"):
+                value = to.get(field)
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    findings.append(Finding("L1", "error",
+                                            "tool_output %s must be a non-empty string" % field, cid))
+            commit, ev_commit = to.get("commit"), ev.get("commit")
+            rr = ev.get("run_record") if isinstance(ev.get("run_record"), dict) else {}
+            cited = ev_commit or rr.get("commit")
+            if commit is not None and not re.match(r"^[0-9a-f]{7,64}$", str(commit)):
+                findings.append(Finding("L1", "error",
+                                        "tool_output commit is not a git commit hash", cid))
+            elif commit and cited and str(commit) != str(cited):
+                findings.append(Finding("L1", "error",
+                                        "tool_output commit %s does not match evidence commit %s"
+                                        % (commit, cited), cid))
+            if to.get("command") and ev.get("command") and to["command"] != ev["command"]:
+                findings.append(Finding("L1", "error",
+                                        "tool_output command does not match evidence command", cid))
+
+
 # ------------------------------------------------------- L2 evidence health
 
 def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
@@ -450,6 +523,46 @@ def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
                                         % (rc, failed), cid))
 
 
+def _check_tool_output(ev, to, claim, tool_output_root, findings):
+    """L2: the tool output exists, matches its hash, and supports the status."""
+    cid = claim["id"]
+    status = claim.get("status")
+
+    rc = to.get("exit_code")
+    if isinstance(rc, int) and rc != 0 and status != "open":
+        findings.append(Finding("L2", "error",
+                                "tool_output exit_code=%d cannot support status=%s"
+                                % (rc, status), cid))
+
+    start, end = _parse_iso(to.get("started_at")), _parse_iso(to.get("finished_at"))
+    if start and end:
+        if start > end:
+            findings.append(Finding("L2", "error",
+                                    "tool_output started_at is after finished_at", cid))
+        ev_date = ev.get("date")
+        if ev_date and DATE_RE.match(str(ev_date)) and end.date().isoformat() != str(ev_date):
+            findings.append(Finding("L2", "error",
+                                    "tool_output finished_at date %s does not match evidence date %s"
+                                    % (end.date().isoformat(), ev_date), cid))
+
+    output = to.get("output")
+    if not isinstance(output, str) or not output:
+        return
+    if URL_RE.match(output):
+        findings.append(Finding("L2", "info",
+                                "tool_output output is a URL; its hash is not checked", cid))
+        return
+    path = output if os.path.isabs(output) else os.path.join(tool_output_root, output)
+    if not os.path.exists(path):
+        findings.append(Finding("L2", "error",
+                                "tool_output output not found: %s" % output, cid))
+        return
+    actual = _sha256_file(path)
+    if actual != to.get("output_sha256"):
+        findings.append(Finding("L2", "error",
+                                "tool_output output_sha256 mismatch for %s" % output, cid))
+
+
 def _git(root, *args):
     return subprocess.run(["git"] + list(args), cwd=root, capture_output=True, text=True)
 
@@ -476,8 +589,10 @@ def _artifact_at_commit(root, commit, artifact):
     return "ok"
 
 
-def check_evidence(claims, root, max_age_days, findings, run_log_root=None):
+def check_evidence(claims, root, max_age_days, findings, run_log_root=None,
+                   tool_output_root=None):
     run_log_root = run_log_root or root
+    tool_output_root = tool_output_root or root
     today = date.today()
     log_cache = {}
     for c in claims:
@@ -527,6 +642,8 @@ def check_evidence(claims, root, max_age_days, findings, run_log_root=None):
             elif isinstance(ev.get("run_record"), dict):
                 _check_run_record(ev, ev["run_record"], c, root, run_log_root,
                                   log_cache, findings)
+            if isinstance(ev.get("tool_output"), dict):
+                _check_tool_output(ev, ev["tool_output"], c, tool_output_root, findings)
 
 
 # --------------------------------------------------------- L3 traceability
@@ -587,6 +704,21 @@ def check_consistency(claims, report_ids, def_names, findings):
         if "proof" in kinds and status != "proven":
             findings.append(Finding("L4", "warning",
                                     "proof evidence present but status=%s" % status, c["id"]))
+        # V2-10: a status that names a tool run needs the tool's own output. An
+        # artifact (a .tla or .als file) only proves that a model exists.
+        if status in TOOL_STATUSES:
+            tool_outputs = [ev.get("tool_output") for ev in c.get("evidence") or []
+                            if isinstance(ev, dict) and isinstance(ev.get("tool_output"), dict)]
+            if not tool_outputs:
+                findings.append(Finding("L4", "error",
+                                        "status=%s requires evidence with a tool_output (V2-10)"
+                                        % status, c["id"]))
+            elif status == "model-checked" and not any(
+                    isinstance(t.get("bound"), str) and t["bound"].strip()
+                    for t in tool_outputs):
+                findings.append(Finding("L4", "error",
+                                        "status=model-checked requires a tool_output that states "
+                                        "the bound (V2-10)", c["id"]))
 
 
 # ---------------------------------------------------------------- L5 prose
@@ -706,6 +838,9 @@ def main():
     ap.add_argument("--run-log-root", default=None,
                     help="directory that run_record.log paths are relative to "
                          "(default: --root)")
+    ap.add_argument("--tool-output-root", default=None,
+                    help="directory that tool_output.output paths are relative to "
+                         "(default: --root)")
     ap.add_argument("--no-vale", action="store_true",
                     help="skip Vale and use the built-in L5 scanner")
     args = ap.parse_args()
@@ -733,8 +868,11 @@ def main():
     check_retired(ledger or {}, claims, findings)
     if claims:
         check_run_records_schema(claims, findings)
+        check_tool_outputs_schema(claims, findings)
         run_log_root = args.run_log_root or root
-        check_evidence(claims, root, args.max_age_days, findings, run_log_root)
+        tool_output_root = args.tool_output_root or root
+        check_evidence(claims, root, args.max_age_days, findings, run_log_root,
+                       tool_output_root)
         report_ids, def_names = build_suite_index(root, args.suite_glob)
         check_traceability(claims, report_ids, def_names, findings)
         check_consistency(claims, report_ids, def_names, findings)

@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-22 (Russian source of truth); English derivative:
+  claims C-01…C-23 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -248,15 +248,18 @@ Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 executable checks for static analysis and trigger evals.
 
 The executable part also includes `tools/claim_lint.py` (L1–L5; L2 verifies
-run-record hashes, exit code, date and executed IDs, and compares the artifact
-with its blob at the cited commit), `tools/cell_lint.py` (CL1–CL6: structure,
+run-record hashes, exit code, date and executed IDs, compares the artifact with
+its blob at the cited commit, and checks tool-output hashes and bounds for
+`model-checked`/`proven`), `tools/cell_lint.py` (CL1–CL6: structure,
 coverage, evidence, traceability, taxonomy, status-escalation gate),
 `tools/unroutable.py` (the `unroutable` share) and the `ci/cell-lint.yml`
-template. The linter cases are in [`evals/linter/`](evals/linter/): 28/28,
-including 8 run-record cases and two V2-09 controls — `unrelated-commit` (the
+template. The linter cases are in [`evals/linter/`](evals/linter/): 35/35,
+including 8 run-record cases, two V2-09 controls — `unrelated-commit` (the
 commit resolves but the artifact changed after it) and `empty-claims` (an empty
-ledger must fail instead of passing vacuously). The historical 12-case run is
-`evals/iteration-3/RESULTS.md`. The cell-lint cases are in
+ledger must fail instead of passing vacuously) — and seven V2-10 `tool-output-*`
+cases (valid, output hash, missing output, non-zero exit, date, a model-checked
+claim with no output, a model-checked claim with no bound). The historical
+12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 34/34, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
 
