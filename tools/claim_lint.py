@@ -7,8 +7,8 @@ schemas/claim-ledger.schema.json):
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
                      status=open requires limitations, run_record shape,
-                     tool_output shape, retired tombstones (reason present,
-                     never also active)
+                     tool_output shape, sanitizer_runs shape, retired
+                     tombstones (reason present, never also active)
   L2  evidence:      artifact paths exist, commits resolvable, the artifact
                      matches its blob at the cited commit, dates within the
                      freshness window, run_record log and artifact hashes
@@ -16,7 +16,9 @@ schemas/claim-ledger.schema.json):
                      test appears in the captured log with a status,
                      tool_output.output matches its hash and finished_at date,
                      tool_output.status=completed is required for a non-open
-                     claim (V2-28)
+                     claim (V2-28), sanitizer_runs outputs match their hashes
+                     and a completed exit-0 run must not cite output that
+                     carries a sanitizer finding line
   L3  traceability:  every test ID in kind=test evidence exists in the suite
   L4  consistency:   status matches the strongest evidence channel; stronger
                      evidence than the status is a warning; model-checked and
@@ -45,6 +47,22 @@ the captured output and ties finished_at to the evidence date. L2 also requires
 `unverified` instead of passing with a truncated log (V2-28). It does not
 check the tool's semantics or the soundness of the encoding; without an
 external anchor a consistent forgery passes, as with run records.
+
+A sanitizer run (schemas/sanitizer-run.schema.json) is dynamic test evidence,
+so it is only valid on `kind: test`. A sanitizer can disprove a memory or
+undefined-behaviour claim, never prove its absence, so the useful question is
+whether the declared outcome agrees with the bytes the run printed. L1 checks
+the shape (tool, build_flags, command, output, hash, exit code, timestamps,
+status); L2 hashes the output, ties finished_at to the evidence date, requires
+`status: completed` for a non-open claim, and rejects a record that declares
+`completed` with exit 0 while its own output carries a finding line
+(`ERROR: AddressSanitizer:` and the equivalents other sanitizers print, plus
+`SUMMARY: ...Sanitizer:`). A bare mention of a sanitizer name in a test's
+expected string is not a finding. Recoverable UBSan diagnostics
+(`file:line: runtime error:`) are deliberately not matched, because they can
+accompany exit code 0. The record does not prove the build was instrumented,
+that the corpus exercised the claim, or that the sanitizer would have caught a
+different defect.
 
 Commits are anchored too, not just resolved: when the root is a git work tree,
 the artifact must exist at the cited commit (the run record's commit when the
@@ -111,6 +129,22 @@ TOOL_OUTPUT_FIELDS = ("tool", "command", "output", "output_sha256",
                       "exit_code", "finished_at", "status")
 TOOL_STATUSES = ("model-checked", "proven")
 TOOL_RUN_STATUSES = ("completed", "unverified", "failed", "error")
+# Sanitizer run (V2-35, schemas/sanitizer-run.schema.json). A sanitizer run is
+# dynamic test evidence, so it hangs off kind=test and carries the run's own
+# output instead of a tests list.
+SANITIZER_TOOLS = ("asan", "ubsan", "tsan", "msan", "lsan")
+SANITIZER_FIELDS = ("tool", "build_flags", "command", "output", "output_sha256",
+                    "exit_code", "started_at", "finished_at", "status")
+# Finding lines the major sanitizers print when they halt: ASan/LSan/TSan/MSan
+# and a non-recovering UBSan prefix the process id and say ERROR or WARNING.
+# A recoverable UBSan diagnostic ("file:line: runtime error:") is deliberately
+# not matched: with halt_on_error=0 it can accompany exit code 0, so a clean
+# record and such a line are not necessarily a contradiction.
+SANITIZER_FINDING_RE = re.compile(
+    r"^(?:==\d+==)?(?:ERROR|WARNING): "
+    r"(?:Address|Leak|UndefinedBehavior|Thread|Memory)Sanitizer:"
+    r"|^SUMMARY: (?:Address|Leak|UndefinedBehavior|Thread|Memory)Sanitizer:",
+    re.MULTILINE)
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 URL_RE = re.compile(r"^[a-z]+://")
 # Summary lines the run-record cross-check understands. cargo prints one per
@@ -531,6 +565,69 @@ def check_tool_outputs_schema(claims, findings):
                                         "tool_output command does not match evidence command", cid))
 
 
+def check_sanitizer_runs_schema(claims, findings):
+    """L1 shape for evidence.sanitizer_runs (V2-35).
+
+    A sanitizer run is dynamic test evidence attached to kind=test: it says
+    which sanitizer instrumented the build, with which flags, over which
+    captured output. The shape has to hold before L2 can hash the output and
+    compare it with what the record claims.
+    """
+    for c in claims:
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("sanitizer_runs") is None:
+                continue
+            cid = c["id"]
+            runs = ev.get("sanitizer_runs")
+            if ev.get("kind") != "test":
+                findings.append(Finding("L1", "error",
+                                        "sanitizer_runs is only valid on kind=test evidence", cid))
+                continue
+            if not isinstance(runs, list) or not runs:
+                findings.append(Finding("L1", "error",
+                                        "sanitizer_runs must be a non-empty list", cid))
+                continue
+            for k, run in enumerate(runs):
+                if not isinstance(run, dict):
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] is not an object" % k, cid))
+                    continue
+                missing = [f for f in SANITIZER_FIELDS if f not in run]
+                if missing:
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] missing %s"
+                                            % (k, ", ".join(missing)), cid))
+                if run.get("tool") not in SANITIZER_TOOLS:
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] tool %r is not one of %s"
+                                            % (k, run.get("tool"), "/".join(SANITIZER_TOOLS)), cid))
+                for field in ("build_flags", "command", "output"):
+                    value = run.get(field)
+                    if not isinstance(value, str) or not value.strip():
+                        findings.append(Finding("L1", "error",
+                                                "sanitizer_runs[%d] %s must be a non-empty string"
+                                                % (k, field), cid))
+                sha = run.get("output_sha256")
+                if not isinstance(sha, str) or not SHA256_RE.match(sha):
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] output_sha256 is not a sha256 "
+                                            "hex digest" % k, cid))
+                if not isinstance(run.get("exit_code"), int):
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] exit_code must be an integer" % k, cid))
+                for field in ("started_at", "finished_at"):
+                    value = run.get(field)
+                    if value is not None and _parse_iso(value) is None:
+                        findings.append(Finding("L1", "error",
+                                                "sanitizer_runs[%d] %s is not an ISO 8601 timestamp"
+                                                % (k, field), cid))
+                if run.get("status") not in TOOL_RUN_STATUSES:
+                    findings.append(Finding("L1", "error",
+                                            "sanitizer_runs[%d] status=%r is not one of %s"
+                                            % (k, run.get("status"),
+                                               ", ".join(TOOL_RUN_STATUSES)), cid))
+
+
 # ------------------------------------------------------- L2 evidence health
 
 def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
@@ -661,6 +758,72 @@ def _check_tool_output(ev, to, claim, tool_output_root, findings):
                                 "tool_output output_sha256 mismatch for %s" % output, cid))
 
 
+def _check_sanitizer_run(ev, run, claim, tool_output_root, index, findings):
+    """L2: the sanitizer's own captured output supports what the record says.
+
+    A sanitizer run is dynamic evidence: it can only disprove a claim about
+    memory or undefined behaviour. The record therefore has to show that the
+    instrumented build actually ran to completion, and its bytes must agree
+    with the declared outcome. The strongest local check is the contradiction
+    between a clean record (completed, exit 0) and a finding line in the
+    output it cites.
+    """
+    cid = claim["id"]
+    status = claim.get("status")
+    tag = "sanitizer_runs[%d]" % index
+
+    rc = run.get("exit_code")
+    if isinstance(rc, int) and rc != 0 and status != "open":
+        findings.append(Finding("L2", "error",
+                                "%s exit_code=%d cannot support status=%s"
+                                % (tag, rc, status), cid))
+
+    # Same vocabulary as tool_output (V2-28): only a completed run can support
+    # a non-open claim. A cut-short run is unverified, not a pass.
+    run_status = run.get("status")
+    if run_status in TOOL_RUN_STATUSES and run_status != "completed" \
+            and status != "open":
+        findings.append(Finding("L2", "error",
+                                "%s status=%s cannot support status=%s (V2-28)"
+                                % (tag, run_status, status), cid))
+
+    start, end = _parse_iso(run.get("started_at")), _parse_iso(run.get("finished_at"))
+    if start and end:
+        if start > end:
+            findings.append(Finding("L2", "error",
+                                    "%s started_at is after finished_at" % tag, cid))
+        ev_date = ev.get("date")
+        if ev_date and DATE_RE.match(str(ev_date)) and end.date().isoformat() != str(ev_date):
+            findings.append(Finding("L2", "error",
+                                    "%s finished_at date %s does not match evidence date %s"
+                                    % (tag, end.date().isoformat(), ev_date), cid))
+
+    output = run.get("output")
+    if not isinstance(output, str) or not output:
+        return
+    if URL_RE.match(output):
+        findings.append(Finding("L2", "info",
+                                "%s output is a URL; its hash is not checked" % tag, cid))
+        return
+    path = output if os.path.isabs(output) else os.path.join(tool_output_root, output)
+    if not os.path.exists(path):
+        findings.append(Finding("L2", "error",
+                                "%s output not found: %s" % (tag, output), cid))
+        return
+    if _sha256_file(path) != run.get("output_sha256"):
+        findings.append(Finding("L2", "error",
+                                "%s output_sha256 mismatch for %s" % (tag, output), cid))
+    with open(path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+    # A sanitizer that halts prints a finding line. A record that declares a
+    # clean run over such output contradicts the bytes it cites: either the run
+    # did not finish cleanly or the record hides the finding.
+    if run_status == "completed" and rc == 0 and SANITIZER_FINDING_RE.search(text):
+        findings.append(Finding("L2", "error",
+                                "%s declares a clean run (status=completed, exit_code=0) but "
+                                "its output carries a sanitizer finding line" % tag, cid))
+
+
 def _git(root, *args):
     return subprocess.run(["git"] + list(args), cwd=root, capture_output=True, text=True)
 
@@ -742,6 +905,10 @@ def check_evidence(claims, root, max_age_days, findings, run_log_root=None,
                                   log_cache, findings)
             if isinstance(ev.get("tool_output"), dict):
                 _check_tool_output(ev, ev["tool_output"], c, tool_output_root, findings)
+            if isinstance(ev.get("sanitizer_runs"), list):
+                for k, run in enumerate(ev["sanitizer_runs"]):
+                    if isinstance(run, dict):
+                        _check_sanitizer_run(ev, run, c, tool_output_root, k, findings)
 
 
 # --------------------------------------------------------- L3 traceability
@@ -1027,6 +1194,7 @@ def main():
     if claims:
         check_run_records_schema(claims, findings)
         check_tool_outputs_schema(claims, findings)
+        check_sanitizer_runs_schema(claims, findings)
         run_log_root = args.run_log_root or root
         tool_output_root = args.tool_output_root or root
         check_evidence(claims, root, args.max_age_days, findings, run_log_root,

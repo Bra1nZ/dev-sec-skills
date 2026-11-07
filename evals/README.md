@@ -97,19 +97,22 @@ whether a claim ledger is honest or whether a test can actually fail.
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
 `tools/cell_lint.py`. The live suites have grown beyond those iterations:
-`evals/linter/` runs 46 cases, including 8 `run-record-*` cases (valid record,
+`evals/linter/` runs 53 cases, including 8 `run-record-*` cases (valid record,
 artifact hash, log hash, unexecuted test, non-zero exit, missing record, date
 mismatch, count mismatch), two V2-09 controls — `unrelated-commit` and
 `empty-claims` — three V2-05 tombstone cases, seven V2-10 `tool-output-*`
 cases (valid record, hash mismatch, missing output, non-zero exit, date
-mismatch, no `tool_output` for a model-checked claim, no bound), and five
+mismatch, no `tool_output` for a model-checked claim, no bound), five
 V2-28 cases (`status: unverified` with exit 0, a wall-clock timeout with a
 truncated log, `timed_out` contradicting `status`, a record with no `status`,
-and an open claim that honestly keeps an `unverified` record), and six V2-34
+and an open claim that honestly keeps an `unverified` record), six V2-34
 `shared-*` cases (an undeclared shared test, declared sharing with no test of
 the claim's own, declared sharing with a test of its own, an id not cited by
 the evidence, an empty reason, and an open claim exempt from the own-test
-rule); `evals/cell-lint/`
+rule), and seven V2-35 `sanitizer-*` cases (a valid ASan record, a clean
+record whose output carries a finding line, a failed exit, `unverified` for a
+tested claim, a missing `status`, a hash mismatch, and `sanitizer_runs` on a
+non-test evidence item); `evals/cell-lint/`
 runs 40 cases, including the `other` + `routing_note` escape hatch, four V2-05
 cases (removal without a tombstone, removal with one, a dropped tombstone, a
 tombstone with no reason) and six V2-15/V2-16 cases (a valid runtime-enforcement

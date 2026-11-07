@@ -267,6 +267,7 @@ claims-pilot2:
 	  --root "$(PILOT2_ROOT)" \
 	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
 	  --run-log-root "$(CURDIR)" \
+	  --tool-output-root "$(CURDIR)" \
 	  $(CLAIM_LINT_ARGS) \
 	  "$(PILOT2_LEDGER)"
 
@@ -458,5 +459,5 @@ help:
 	@echo "  mutations-all   both mutation batches"
 	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
 	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
-	@echo "  red-team      attack the real pilot ledger/log/registry; 12 blocked, 1 recorded gap"
+	@echo "  red-team      attack the real pilot ledger/log/registry; 13 blocked, 1 recorded gap"
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-07-drills.json"

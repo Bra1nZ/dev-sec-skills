@@ -10,6 +10,9 @@ evidence-first contract. The ledger turns the prose discipline of
 - `run-record.schema.json` — JSON Schema (draft-07) for `evidence[].run_record`.
 - `tool-output.schema.json` — JSON Schema (draft-07) for `evidence[].tool_output`,
   written by `../tools/bounded_check.py` (V2-28).
+- `sanitizer-run.schema.json` — JSON Schema (draft-07) for
+  `evidence[].sanitizer_runs` (V2-35): one dynamic sanitizer run with its
+  instrumentation flags, captured output and outcome.
 - `fuzz-run.schema.json` — JSON Schema (draft-07) for a fuzz run record (V2-17),
   written by `../tools/fuzz_run.py`.
 - `fuzz-triage.schema.json` — JSON Schema (draft-07) for the triage of one fuzz
@@ -32,7 +35,7 @@ A ledger is a JSON or YAML document with a `claims` array. Each claim:
 | `id` | yes | stable ID, `C-<n>` |
 | `claim` | yes | falsifiable statement |
 | `mechanism` | yes | what makes the claim true |
-| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `shared_tests`, `run_record`, `tool_output`, `note` |
+| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `shared_tests`, `run_record`, `tool_output`, `sanitizer_runs`, `note` |
 | `scope` | yes | `platforms`, `actors_excluded`, `assumptions` |
 | `status` | yes | `proven` / `model-checked` / `tested` / `static-refinement` / `reviewed` / `open` |
 | `limitations` | open only | known limits, next to the claim |
@@ -147,6 +150,41 @@ anchor a consistent forgery passes, exactly as with run records. A `completed`
 run is not a proof: `verdict` stays the tool's own line in the log, and the
 supervisor does not paraphrase it.
 
+### Sanitizer run (V2-35)
+
+A sanitizer run is dynamic test evidence, so `evidence[].sanitizer_runs` is
+valid only on a `kind=test` item. Each run records `tool`
+(`asan`/`ubsan`/`tsan`/`msan`/`lsan`), `build_flags`, `command`, `output`,
+`output_sha256`, `exit_code`, `started_at`, `finished_at` and `status`, with an
+optional `version`. `build_flags` is the instrumentation flag
+(`-Zsanitizer=address` for Rust) because a run without it is
+indistinguishable from an ordinary test run. L1 checks the shape, the tool and
+status enums, the sha256 and the ISO timestamps. L2 verifies:
+
+- `output` exists under `--tool-output-root` (default `--root`) and its SHA-256
+  matches `output_sha256`;
+- `finished_at`'s local date equals the evidence date, and `started_at` is not
+  after it;
+- `exit_code` is 0 and `status` is `completed` for a non-open claim: a
+  cut-short or failed run is `unverified`/`failed`, not a pass with a short
+  log (the V2-28 vocabulary is reused);
+- a record that declares `completed` with exit 0 must not cite output that
+  carries a finding line. The check matches the lines that halt a sanitizer:
+  an optional process id followed by `ERROR: ` or `WARNING: ` and
+  `AddressSanitizer:`, `LeakSanitizer:`, `UndefinedBehaviorSanitizer:`,
+  `ThreadSanitizer:` or `MemorySanitizer:`, plus `SUMMARY: …Sanitizer:`. A
+  bare sanitizer name in a test's expected string is not a finding. A
+  recoverable UBSan `file:line: runtime error:` is deliberately not matched,
+  because it can accompany exit 0.
+
+The record does not prove that the build was instrumented, that the corpus
+exercised the claim, or that the sanitizer would have caught a different
+defect. `build_flags` is a declaration; a separately documented probe (for
+example `nm <binary> | grep __asan_init`) is what shows the runtime is linked.
+Without an external anchor a forger can rewrite the record and its output
+together (C-13). A clean run is evidence that nothing fired in that corpus, not
+proof that the claim holds.
+
 ## Fuzz run record
 
 `fuzz-run.schema.json` describes what `tools/fuzz_run.py` writes (V2-17): the
@@ -178,8 +216,8 @@ The gate proves the artifacts exist, not that the routing decision was right.
 
 | Check | What it enforces |
 | --- | --- |
-| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record`, `tool_output` and `shared_tests` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
-| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), cited tests appeared in the log |
+| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record`, `tool_output`, `sanitizer_runs` and `shared_tests` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
+| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), sanitizer-run hash, exit code, `status=completed` and the finding-line contradiction (V2-35), cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
 | L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning; `model-checked` and `proven` need a `tool_output`, `model-checked` also needs a bound |
 | L5 | prose: unqualified absolutes in docs. Engine order: Vale (`styles/RussianAbsolutes` package) if the `vale` binary is available, fallback to the built-in line scanner |

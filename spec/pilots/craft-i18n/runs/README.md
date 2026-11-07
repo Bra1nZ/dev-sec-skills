@@ -1,8 +1,10 @@
 # Captured run — craft-i18n test suite
 
 `cargo-test-2026-11-07.log` is the raw stdout+stderr of one run of the target
-test suite. It is the log that every `run_record` in
-[`../claims.yaml`](../claims.yaml) points at.
+test suite. It is the log that the stable `run_record`s in
+[`../claims.yaml`](../claims.yaml) points at. The ASan evidence item for C-02
+points at [`asan-test-2026-11-07.log`](asan-test-2026-11-07.log) instead, and
+reuses it as its own `run_record` log.
 
 | Field | Value |
 | --- | --- |
@@ -55,3 +57,50 @@ Artifact hashes at this commit:
 
 The target stays unmodified: the log is stored here, and `claim_lint` is run
 with `--run-log-root` pointing at this repository.
+
+## ASan run (V2-35)
+
+`asan-test-2026-11-07.log` is the raw stdout+stderr of the AddressSanitizer
+run cited by C-02. The same bytes serve as its `run_record` log and its
+`sanitizer_runs[0].output`.
+
+| Field | Value |
+| --- | --- |
+| Target | `/home/admini/projects/astraoffice/craft-i18n` |
+| Commit | `5c5c55400e8f7f4ee4f64a64dc196335a6a1f256` |
+| Toolchain | `rustc 1.101.0-nightly (c980177d8 2026-11-06)` |
+| Instrumentation | `RUSTFLAGS=-Zsanitizer=address`; `--target x86_64-unknown-linux-gnu` keeps host proc-macro artifacts uninstrumented |
+| Command | `RUSTUP_HOME=/tmp/opencode/rustup RUSTUP_TOOLCHAIN=nightly CARGO_TARGET_DIR=/tmp/opencode/craft-i18n-asan-target RUSTFLAGS=-Zsanitizer=address cargo test --offline -p craft-i18n-tests --target x86_64-unknown-linux-gnu` |
+| Started | `2026-11-07T21:51:34+03:00` |
+| Finished | `2026-11-07T21:53:31+03:00` |
+| Exit code | 0 |
+| Tests run | 26 (9 unit + 17 integration + 0 doc-tests) |
+| Tests passed | 26 |
+| Finding lines | 0 |
+| `output_sha256` | `e90240b269aad9d6b1ba87ef92e2f2ee24700ab03d3f508683d408ff8a17fe7e` |
+
+The nightly toolchain lives under `/tmp/opencode/rustup`, not in the user's
+`~/.rustup`: `/home` was at 99 % and the stable toolchain was left untouched.
+The build target directory is also under `/tmp` and is not archived.
+
+### What the ASan record proves and what it does not
+
+The record proves that one instrumented run of the 26-test suite ended with
+exit 0 and printed no halting sanitizer line. It does not prove that the build
+was instrumented: that is a separate observation, recorded in
+[`asan-instrumentation-2026-11-07.md`](asan-instrumentation-2026-11-07.md),
+where `nm` finds `__asan_init` and `__asan_report_load*/store*` in the executed
+binary. Even that only shows the runtime is linked; `std` and the allocator are
+not instrumented, the tests are a catalog-format corpus rather than a fuzz
+corpus, and a different defect could still be missed. The record does not raise
+C-02 above `tested`. As with the stable run, a forger can rewrite the record
+and the log together; the external anchor is still C-13.
+
+```bash
+cd /home/admini/projects/astraoffice/craft-i18n
+sha256sum /home/admini/projects/dev-sec-skills/spec/pilots/craft-i18n/runs/asan-test-2026-11-07.log
+RUSTUP_HOME=/tmp/opencode/rustup RUSTUP_TOOLCHAIN=nightly \
+  CARGO_TARGET_DIR=/tmp/opencode/craft-i18n-asan-target \
+  RUSTFLAGS=-Zsanitizer=address \
+  cargo test --offline -p craft-i18n-tests --target x86_64-unknown-linux-gnu
+```

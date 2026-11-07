@@ -346,7 +346,7 @@ coverage, evidence, traceability, taxonomy, status-escalation gate; a
 `runtime-enforcement` detector needs a negative test, and the cell needs
 `enforced_at`, `oracle` and `violation_response`),
 `tools/unroutable.py` (the `unroutable` share) and the `ci/cell-lint.yml`
-template. The linter cases are in [`evals/linter/`](evals/linter/): 46/46,
+template. The linter cases are in [`evals/linter/`](evals/linter/): 53/53,
 including 8 run-record cases, two V2-09 controls — `unrelated-commit` (the
 commit resolves but the artifact changed after it) and `empty-claims` (an empty
 ledger must fail instead of passing vacuously) — and seven V2-10 `tool-output-*`
@@ -354,10 +354,13 @@ cases (valid, output hash, missing output, non-zero exit, date, a model-checked
 claim with no output, a model-checked claim with no bound) and five V2-28 cases (`unverified` at
 exit 0, a timeout with a truncated log, `timed_out` contradicting the
 status, a record without `status`, and an open claim that honestly keeps an
-`unverified` record), and six V2-34 `shared-*` cases (an undeclared shared
+`unverified` record), six V2-34 `shared-*` cases (an undeclared shared
 test, declared sharing with no test of the claim's own, declared sharing with a
 test of its own, an id not cited by the evidence, an empty reason, and an open
-claim). The historical
+claim), and seven V2-35 `sanitizer-*` cases (a valid ASan record, a clean
+record whose output carries a finding line, a failed run, `unverified` for a
+tested claim, a record without `status`, an output hash mismatch, and
+`sanitizer_runs` on a non-test item). The historical
 12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 40/40, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
@@ -419,7 +422,7 @@ checkout still looks fresh.
 Gate strength was measured on the real artifacts (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) takes the craft-i18n
 ledger, its recorded cargo log and the cell registry, applies one attack per
-drill, and requires the expected exit code and message. 12 of 13 attacks are
+drill, and requires the expected exit code and message. 13 of 14 attacks are
 blocked; one stays green and is recorded as a gap: re-dating a run (C-13).
 Borrowing another claim's real tests (V2-34) is now blocked by L6: the open
 C-08 that takes C-01's tests fails even when the sharing is declared, because

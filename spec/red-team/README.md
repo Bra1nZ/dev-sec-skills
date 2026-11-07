@@ -3,7 +3,7 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Twelve attacks are blocked by the check named for them; one
+what happened. Thirteen attacks are blocked by the check named for them; one
 passes with every gate green, and that one is the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 13 attacks, one mutation each
-  2026-11-07-drills.json       # recorded result: 12 blocked, 1 allowed
+  run_drills.py                # the 14 attacks, one mutation each
+  2026-11-07-drills.json       # recorded result: 13 blocked, 1 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -43,6 +43,7 @@ spec/red-team/
 | `redate-the-same-run` | shift the run date one day, escalate `reviewed` → `tested` | **allowed** |
 | `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | blocked by L6 (V2-34) |
 | `borrow-and-declare-sharing` | borrow one test, declare it shared, still call C-08 `tested` | blocked by L6 rule 2 (V2-34) |
+| `sanitizer-findings-hidden` | declare a clean ASan run over output with `ERROR: AddressSanitizer:` | blocked by L2 (V2-35) |
 
 ## The one silent path
 
@@ -80,7 +81,7 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 12 blocked drills show that those specific checks fire on real artifacts,
+- The 13 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
 - The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
   starts blocking it, the drill fails and the gap entry must be updated, so this

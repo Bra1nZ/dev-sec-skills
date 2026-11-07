@@ -64,6 +64,25 @@ The record is not proof of the run. The log and the record are both local, so a
 forger can rewrite them together; only an external anchor (C-13) would close
 that. The pilot records the limit rather than hiding it.
 
+### Sanitizer run (V2-35)
+
+C-02 also carries one ASan run as a separate `kind=test` evidence item: the
+nightly `1.101.0` toolchain with `-Zsanitizer=address`, all 26 tests, exit 0,
+and no finding line in the output. The log is
+[`runs/asan-test-2026-11-07.log`](runs/README.md) and its `run_record` reuses
+it, so the ledger has two independent runs of the same tests (stable and ASan).
+L2 hashes the output, requires a completed exit-0 run, and rejects a record
+that claims a clean run while its own output carries
+`ERROR: AddressSanitizer:` or a `SUMMARY: …Sanitizer:` line. A clean ASan run
+says the corpus did not trip the allocator with this instrumentation; it does
+not prove the parser memory-safe. `std` is not instrumented, and the flag in
+the record does not prove instrumentation by itself: the separate probe
+[`runs/asan-instrumentation-2026-11-07.md`](runs/asan-instrumentation-2026-11-07.md)
+records `__asan_init` in the executed binary. The red-team drill
+`sanitizer-findings-hidden` confirms that the L2 contradiction check blocks a
+hidden finding. C-02 stays `tested`; the sanitizer strengthens the evidence
+but does not raise the status.
+
 ## Lint result
 
 ```text

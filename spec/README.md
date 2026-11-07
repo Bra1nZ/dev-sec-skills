@@ -66,9 +66,9 @@ spec/
     README.md                     # what a re-run trigger is, how freshness is decided, limits
     manifest.yaml                 # empty: no claim is `proven` or `model-checked`
   red-team/
-    README.md                     # 13 attacks on the real pilot artifacts, 1 recorded gap
+    README.md                     # 14 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
-    2026-11-07-drills.json        # recorded result: 12 blocked, 1 allowed
+    2026-11-07-drills.json        # recorded result: 13 blocked, 1 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under

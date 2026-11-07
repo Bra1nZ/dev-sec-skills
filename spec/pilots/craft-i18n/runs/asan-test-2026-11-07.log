@@ -1,0 +1,56 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling syn v3.0.9
+   Compiling displaydoc v0.2.7
+   Compiling tinystr v0.8.4
+   Compiling unic-langid-impl v0.9.6
+   Compiling unic-langid v0.9.6
+   Compiling intl_pluralrules v7.0.2
+   Compiling craft-i18n-tests v0.1.0 (/home/admini/projects/astraoffice/craft-i18n/crates/craft-i18n-tests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 53.49s
+     Running unittests src/lib.rs (/tmp/opencode/craft-i18n-asan-target/x86_64-unknown-linux-gnu/debug/build/craft-i18n-tests/d0e98ec1a60b494f/out/craft_i18n_tests-d0e98ec1a60b494f)
+
+running 9 tests
+test catalog::tests::context_distinguishes_keys ... ok
+test catalog::tests::escapes_unescape ... ok
+test catalog::tests::crlf_and_bom_are_ignored ... ok
+test catalog::tests::one_form_locale ... ok
+test catalog::tests::placeholders_may_reorder ... ok
+test locale::tests::locale_names ... ok
+test catalog::tests::each_bad_row_is_one_problem ... ok
+test catalog::tests::valid_rows_pass ... ok
+test locale::tests::plural_form_counts ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/locales.rs (/tmp/opencode/craft-i18n-asan-target/x86_64-unknown-linux-gnu/debug/build/craft-i18n-tests/24c7088f33105172/out/locales-24c7088f33105172)
+
+running 17 tests
+test bad_locale_name ... ok
+test bad_row_names_file_and_line ... ok
+test bad_app_file_name ... ok
+test clean_tree_passes ... ok
+test missing_clean_room_rule ... ok
+test coverage_counts_rows_against_largest_locale ... ok
+test msg_templates_one_good_two_bad ... ok
+test missing_language_name ... ok
+test no_locales_dir ... ok
+test plural_count_by_locale ... ok
+test redundant_override ... ok
+test redundant_regional_row ... ok
+test regional_app_row_compares_with_base_app_then_shared ... ok
+test script_and_baseless_locales_have_no_regional_check ... ok
+test stray_file ... ok
+test coverage_report ... ok
+test repository_catalogs_pass has been running for over 60 seconds
+test repository_catalogs_pass ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 62.14s
+
+   Doc-tests craft_i18n_tests
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

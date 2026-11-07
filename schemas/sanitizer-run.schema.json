@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/sanitizer-run.schema.json",
+  "title": "Sanitizer run",
+  "description": "A machine-checkable record of one dynamic sanitizer run (V2-35): AddressSanitizer, UndefinedBehaviorSanitizer, ThreadSanitizer, MemorySanitizer or LeakSanitizer. A sanitizer finding is runtime evidence that a claim about memory or undefined behaviour is false, so the record carries how the run ended and the bytes it printed. L2 hashes the output, ties finished_at to the evidence date, and rejects a record that declares a clean run while the output carries a sanitizer finding line. The record does not prove that the build was instrumented, that the corpus exercised the claim, or that the sanitizer would have caught a different defect; without an external anchor a forger can rewrite the record and its output together (C-13).",
+  "type": "object",
+  "required": ["tool", "build_flags", "command", "output", "output_sha256",
+               "exit_code", "started_at", "finished_at", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": {
+      "enum": ["asan", "ubsan", "tsan", "msan", "lsan"],
+      "description": "Sanitizer that instrumented the build. Lsan is listed separately because a leak-only run is not an address run."
+    },
+    "version": {
+      "type": "string",
+      "description": "Toolchain version, e.g. 'rustc 1.101.0-nightly'. A sanitizer's answer can change with the compiler and runtime version."
+    },
+    "build_flags": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Flags that instrumented the build, e.g. '-Zsanitizer=address'. A run without recorded instrumentation flags cannot be told apart from an ordinary test run."
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact command that ran the instrumented tests, including the environment that set the flags."
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Process exit code. A non-zero code cannot support a non-open status."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset."
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset. Its local date must equal the evidence date."
+    },
+    "output": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the captured sanitizer output, relative to --tool-output-root (default: the project root at --root), or a URL, in which case the hash is not checked."
+    },
+    "output_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the output bytes. Lint check L2 verifies it."
+    },
+    "status": {
+      "enum": ["completed", "unverified", "failed", "error"],
+      "description": "How the run ended (V2-28 vocabulary). completed — the process exited before any bound; exit_code is the sanitizer's own. unverified — the run was cut short or the supervisor could not decide; it cannot support a non-open claim. failed — non-zero exit before the bound. error — the wrapper could not start or supervise the process."
+    }
+  }
+}

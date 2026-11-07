@@ -29,6 +29,7 @@ Exit codes: 0 every drill matched its recorded expectation, 1 a drill diverged,
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 import shutil
@@ -78,6 +79,7 @@ def claim(ledger, cid):
 def lint_args(path):
     return [PY, "tools/claim_lint.py", "--root", PILOT2_ROOT,
             "--suite-glob", SUITE_GLOB, "--run-log-root", REPO,
+            "--tool-output-root", REPO,
             "--no-vale", path]
 
 
@@ -270,6 +272,36 @@ def _borrowed_evidence(td):
     ]
 
 
+def _sanitizer_finding(td):
+    """BLOCKED: a record declares a clean ASan run over output with a finding."""
+    target = load(LEDGER)
+    ev = next(e for e in claim(target, "C-02")["evidence"]
+              if e.get("sanitizer_runs"))
+    run = ev["sanitizer_runs"][0]
+    text = (
+        "============================= test session starts =============================\n"
+        "collected 1 item\n\n"
+        "tests/locales.rs::bad_row_names_file_and_line ... ok\n\n"
+        "=================================================================\n"
+        "==4213==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000010\n"
+        "READ of size 4 at 0x602000000010 thread T0\n"
+        "    #0 0x55d4c0 in craft_i18n_tests::catalog::parse_row\n"
+        "SUMMARY: AddressSanitizer: heap-use-after-free\n"
+        "==4213==ABORTING\n"
+        "=================================================================\n"
+    )
+    log = os.path.join(td, "asan-finding.log")
+    with open(log, "w", encoding="utf-8") as f:
+        f.write(text)
+    run["output"] = log
+    run["output_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    path = os.path.join(td, "ledger.yaml")
+    dump(target, path)
+    return [{"gate": "claim_lint", "argv": lint_args(path), "exit": 1,
+             "contains": ["declares a clean run (status=completed, exit_code=0) "
+                          "but its output carries a sanitizer finding line"]}]
+
+
 def _borrowed_evidence_declared(td):
     """BLOCKED by L6 rule 2 even when both claims declare the shared test."""
     base = load(LEDGER)
@@ -337,6 +369,9 @@ DRILLS = [
      "verdict": "blocked"},
     {"name": "borrow-and-declare-sharing", "build": _borrowed_evidence_declared,
      "attack": "borrow one of C-01's tests and declare it shared; C-08 still has no test of its own",
+     "verdict": "blocked"},
+    {"name": "sanitizer-findings-hidden", "build": _sanitizer_finding,
+     "attack": "declare a clean ASan run over output that carries an ERROR: AddressSanitizer line",
      "verdict": "blocked"},
 ]
 

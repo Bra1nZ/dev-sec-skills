@@ -69,11 +69,16 @@
       "name": "borrow-and-declare-sharing",
       "verdict": "blocked",
       "attack": "borrow one of C-01's tests and declare it shared; C-08 still has no test of its own"
+    },
+    {
+      "name": "sanitizer-findings-hidden",
+      "verdict": "blocked",
+      "attack": "declare a clean ASan run over output that carries an ERROR: AddressSanitizer line"
     }
   ],
   "summary": {
-    "drills": 13,
-    "blocked": 12,
+    "drills": 14,
+    "blocked": 13,
     "allowed": 1,
     "failed": 0
   }
