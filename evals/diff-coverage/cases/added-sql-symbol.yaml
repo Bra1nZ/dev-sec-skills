@@ -1,0 +1,62 @@
+# Synthetic fixture — not evidence about any real repository.
+description: A SQL file is added. There is no span parser for SQL, so the symbol is
+  found by its name on an added line; the cell claim maps it.
+base_files:
+  README.md: 'base
+
+    '
+head_files:
+  sql/schema.sql: 'CREATE OR REPLACE FUNCTION rbac.apply_policy_document(p JSONB)
+
+    RETURNS VOID AS $$ BEGIN PERFORM 1; END $$ LANGUAGE plpgsql;
+
+    '
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: sql/schema.sql:1 - FUNCTION rbac.apply_policy_document
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids:
+    - C-01
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: tests/test_guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  declared.symbols: 1
+  changed.share: 1.0
+  changed.mapped: 2
+  changed.unmapped: 0
+expect:
+  DC1: none
+  DC2: none
+exit: 0
+name: added-sql-symbol

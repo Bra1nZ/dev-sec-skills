@@ -1,0 +1,52 @@
+# Template: diff-coverage gate. Copy into the target repo as
+# .github/workflows/diff-coverage.yml and vendor from dev-sec-skills:
+#   tools/diff_coverage.py
+# Adjust CELLS, LEDGER and MAX_UNMAPPED per repo. The registry must contain
+# `enforced_at` declarations; a registry without them yields DC5 and a green
+# run, which is a visible no-op rather than coverage.
+#
+# This is a PR gate, so it compares the PR head with the merge base of the base
+# branch and the head. Do not reuse `make verify` for this: verify has no base
+# ref and compares the working tree against the last commit.
+name: diff-coverage
+
+on:
+  pull_request:
+
+env:
+  CELLS: spec/cells.yaml
+  LEDGER: docs/claims.yaml
+  MAX_UNMAPPED: "0"   # any changed declaration without a claim fails the job
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  diff-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the base commit must be present as a blob source
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Resolve the PR merge base
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          BASE_SHA=$(git merge-base FETCH_HEAD "$HEAD_SHA")
+          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          echo "base: $BASE_SHA -> head: $HEAD_SHA"
+
+      - name: Diff coverage (DC1-DC5)
+        run: |
+          python3 tools/diff_coverage.py \
+            --repo . \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --cells "$CELLS" \
+            --ledger "$LEDGER" \
+            --max-unmapped "$MAX_UNMAPPED"

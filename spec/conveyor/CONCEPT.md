@@ -42,6 +42,7 @@
 | C-25 | Фаззинг-прогон воспроизводим и ограничен явным oracle и бюджетом | `tools/fuzz_run.py`: seed-корпус читается в отсортированном порядке, мутатор `random.Random(seed)`, `executions_digest` = SHA-256 от упорядоченных хэшей входов; oracle-правила `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout` объединяются по ИЛИ; запись по `schemas/fuzz-run.schema.json` хранит манифест корпуса, бюджет, seed и каждую находку с логом | `spec/fuzz/runs/claim-lint-2026-11-07.json`; `evals/fuzz/`; `make fuzz-claim-lint` | `claim_lint` как цель, 5 seed-леджеров, 150 мутаций, seed 20261107 | tested | Мутатор случайный, без coverage guidance; `clean` означает «oracle не сработал в этом бюджете», а не отсутствие багов; digest связывает входы, не поведение цели; replay не входит в `make verify` (≈1 минута) и запускается вручную |
 | C-26 | Находка фаззера не исчезает: она становится cell + detector + fixture или отклоняется с причиной, и это проверяется гейтом | `tools/fuzz_triage.py`: T1 — форма записи триажа, T2 — ровно одна запись на находку (untriaged, duplicate и stale — ошибки), T3 — cell и detector резолвятся в реестре, названном в triage-файле, fixture ID — в mutations-файле, T4 — verdict записи согласован с `findings`; пустой триаж допустим только для чистого прогона | `schemas/fuzz-triage.schema.json`; `spec/fuzz/triage/claim-lint-2026-11-07.yaml`; `evals/fuzz-triage/`; `make check-fuzz-triage` | Синтетические записи; записанный прогон `claim_lint` без находок | tested | На реальной находке гейт ещё не прогонялся; выбор `covered` против `new` — суждение ревью, гейт проверяет только существование артефактов; инъекция находки в копию записи в `/tmp` даёт exit 1, сам артефакт репозитория не менялся |
 | C-27 | Покрытие реестра измеряется, а не предполагается: висячие ссылки, несвязанные символы, stale claims и детекторы без fixture видны | `tools/coverage_report.py`: CV1 — процитированный claim'ом или детектором символ обязан существовать в suite (всегда error); CV2 — символы suite'а, не отображённые на артефакт, claim или `negative_test` (info, error только выше `--max-unmapped`); CV3 — non-open claim с датой старше `--max-age-days` (по умолчанию 90) или без даты; CV4 — non-open детектор `test`/`runtime-enforcement` без `mutation_fixture` и без `mutation_exemption`; маппинг файловый, извлечение — узкие паттерны `report("F3a")`, `def test_*`, `#[test] fn` | `tools/coverage_report.py`; `evals/coverage/`; `spec/coverage/README.md`; `make coverage` | `rbac_pg`: 80 символов, 67 mapped, 13 unmapped в двух файлах; `craft-i18n`: 26/26 mapped; 0 stale, 0 без fixture | tested | Файловый маппинг не доказывает, что детектор исполняет каждый тест в отображённом файле; сканер не AST; CV2–CV4 без порогов остаются отчётом, а не гейтом; stale считается по дате без внешнего anchor |
+| C-28 | Изменённый choke point не исчезает из ревью: объявленный в `enforced_at` путь или символ обязан отображаться на non-open claim, иначе гейт падает | `tools/diff_coverage.py`: DC1 — изменённый объявленный путь без non-open claim, DC2 — изменённый объявленный символ без non-open claim, DC3 — `enforced_at` не локализуется в репозитории (нет ведущего `path:line`, путь отсутствует как blob на base и head, путь вне root) и это всегда error, DC4 — в диапазоне нет изменённых объявлений, DC5 — реестр не объявляет `enforced_at`; маппинг — cell `claim_ids` → non-open claim, либо `artifact` claim'а == путь, либо `tests`/`negative_test` == символ; `open` claim покрытием не считается; символы извлекает строчный сканер (Python — отступ, Rust — глубина скобок, SQL и unknown — имя на изменённой строке) | `tools/diff_coverage.py`; `evals/diff-coverage/`; `spec/diff-coverage/README.md`; `ci/diff-coverage.yml`; `make diff-coverage` | `rbac_pg` `v1.3.1..HEAD`: 110 файлов, 2/2 mapped; `craft-i18n` `f0dd77b^..f0dd77b`: 2/2 mapped; `--max-unmapped 0` | tested | Только ячейки с `enforced_at`: 100 % — это два объявления из 43 ячеек, реестр без объявлений получает DC5, а не покрытие; правка тела SQL-функции без упоминания имени не видна (V2-22); token-fallback даёт false positives на комментариях и строках; маппинг не проверяет свежесть claim'а; шаблон CI не прогонялся на реальном PR; порог агрегатный по путям и символам |
 
 Правила реестра:
 
@@ -408,6 +409,13 @@ prior-art sweep, а не этот абзац.
   файловый, извлечение символов узкое. 14 eval-кейсов, `make coverage` в `make verify`,
   снимки — `spec/coverage/`: `rbac_pg` 67/80 mapped, `craft-i18n` 26/26, 0 stale и
   0 детекторов без fixture.
+- Diff-покрытие (V2-07): `tools/diff_coverage.py` проверяет только choke points из
+  `enforced_at`; DC1/DC2 — изменённый путь или символ без non-open claim, DC3 —
+  нелокализуемое объявление (всегда error), DC4/DC5 — явные info о пустом диапазоне
+  и реестре без объявлений. 14 eval-кейсов, снимки — `spec/diff-coverage/`:
+  `rbac_pg` `v1.3.1..HEAD` 2/2 mapped, `craft-i18n` `f0dd77b^..f0dd77b` 2/2 mapped.
+  Гейт вынесен из `make verify`: ему нужен base ref; шаблон PR-гейта —
+  `ci/diff-coverage.yml`, targets — `make diff-coverage` и `make diff-coverage-record`.
 - Escape hatch `other` + `routing_note` и измерение U (V2-25): 0/43 = 0,0 %;
   гейт `--max-share 0` в `make verify`. Пороги N = 87,5 % и U = 0,0 %
   зафиксированы артефактами 2026-11-07 (V2-32).
@@ -439,7 +447,7 @@ prior-art sweep, а не этот абзац.
 - [x] V2-04. `cell_lint`: отсутствующий base registry → error через `--require-base`, а не запуск без гейта.
 - [x] V2-05. Удалённый claim или cell → error либо обязательное `retired:` с причиной: `retired: [{id, reason, date}]` в схеме леджера и реестра, L1/CL1 проверяют форму (причина, дубликат, живой ID), `status_diff` и CL6 падают на удалении без надгробия и на исчезнувшем надгробии. 3 кейса linter, 4 кейса cell-lint, 5 сценариев status-diff.
 - [x] V2-06. CL2: отсутствие mutation_fixture → error для классов security и correctness — для остальных классов warning, документированный `mutation_exemption` остаётся info (`tools/cell_lint.py`, `evals/cell-lint/cases/mutation-required-*.yaml`).
-- [ ] V2-07. Diff-покрытие: изменённые choke-point пути и символы обязаны отображаться на claim.
+- [x] V2-07. Diff-покрытие: изменённые choke-point пути и символы обязаны отображаться на claim: `tools/diff_coverage.py` (DC1 путь, DC2 символ, DC3 нелокализуемое объявление — всегда error, DC4 пустой диапазон, DC5 реестр без объявлений), 14 eval-кейсов, `ci/diff-coverage.yml`. Измерено 2026-11-07: `rbac_pg` `v1.3.1..HEAD` — 110 файлов, 1 путь и 1 символ, 2/2 mapped; `craft-i18n` `f0dd77b^..f0dd77b` — 2/2 mapped. Гейт не в `make verify`: ему нужен base ref; `make diff-coverage` и `make diff-coverage-record` — отдельные targets.
 - [x] V2-08. `make verify` — единая локальная точка запуска всех статических гейтов: evals, сид-реестр, оба пилотных реестра с claim-леджерами, леджеры, status-diff (`Makefile`). Mutation-прогоны вынесены: `make mutations` (стенд PostgreSQL), `make mutations-i18n` (cargo), `make mutations-all`.
 - [x] V2-09. Негативные контроли в `evals/linter`: заглушка (`fake-test-id`), пере-датировка (`run-record-date-mismatch`, `run-record-log-hash`), посторонний коммит (`unrelated-commit`: коммит резолвится, но артефакт изменён после него — L2 сравнивает артефакт с блобом на коммите) и пустая модель (`empty-claims`: пустой леджер — L1 error, а не вакуумный pass). 25/25 кейсов.
 - [x] V2-10. `model-checked` и `proven` требуют вывод инструмента, а не существование артефакта: схема `schemas/tool-output.schema.json` (`tool`, `command`, `output` + `output_sha256`, `exit_code`, `finished_at`; опционально `version`, `commit`, `verdict`, `bound`), L1 проверяет форму и согласованность commit/command, L2 — хэш вывода, дату `finished_at` и `exit_code=0` для не-open, L4 — отсутствие `tool_output` для `model-checked`/`proven` и отсутствие `bound` для `model-checked`. 7 eval-кейсов; пилоты не затронуты (в них нет этих статусов).
@@ -517,11 +525,15 @@ prior-art sweep, а не этот абзац.
 | `tools/claim_lint.py` | Проверки L1–L5, которые переиспользует `cell_lint` |
 | `tools/cell_lint.py` | Проверки CL1–CL6 реестра ячеек |
 | `tools/status_diff.py` | Запрет эскалации статуса без новой evidence |
+| `tools/coverage_report.py` | CV1–CV4: висячие ссылки, несвязанные символы, stale claims, детекторы без fixture |
+| `tools/diff_coverage.py` | DC1–DC5: изменённый choke point обязан отображаться на non-open claim |
 | `evals/linter/` | Образец адверсариального набора для детекторов |
 | `evals/cell-lint/` | Адверсариальный набор для `cell_lint` |
 | `spec/conveyor/cell-registry.schema.json` | Машиночитаемая ячейка |
 | `spec/pilots/rbac_pg/` | Пилотный реестр: 29 ячеек на реальном репозитории |
 | `spec/pilots/craft-i18n/` | Второй пилот: 14 ячеек на Rust-крейте, не-RBAC и не-БД |
+| `spec/coverage/` | CV1–CV4: метод, измеренные числа, границы, снимки 2026-11-07 |
+| `spec/diff-coverage/` | DC1–DC5: объявления, экстрактор, измеренные числа, границы, снимки 2026-11-07 |
 | `spec/conveyor/guard-grammar.md` | Границы L2 |
 | `spec/conveyor/product-trials.md` | Граница продуктовых испытаний: критерии входа, метрики и протокол замера (draft) |
 | `Makefile` | `make verify` — единая точка запуска статических гейтов (V2-08); `make mutations` (стенд PostgreSQL), `make mutations-i18n` (cargo) и `make mutations-all` — mutation-прогоны |

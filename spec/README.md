@@ -44,6 +44,10 @@ spec/
     README.md                     # CV1-CV4: method, measured numbers, limits
     2026-11-07-rbac-pg.json       # recorded coverage snapshot
     2026-11-07-craft-i18n.json    # recorded coverage snapshot
+  diff-coverage/
+    README.md                     # DC1-DC5: declarations, extractor, measured numbers, limits
+    2026-11-07-rbac-pg.json       # recorded diff-coverage snapshot
+    2026-11-07-craft-i18n.json    # recorded diff-coverage snapshot
 ```
 
 ## Status
@@ -125,6 +129,22 @@ fixture; `craft-i18n` 26 of 26 mapped, 0 stale, 0 without a fixture. Mapping is
 file-level and symbol extraction is a narrow scanner, not an AST; the report
 says which files nobody mapped, not whether a detector executes every test in a
 mapped file.
+
+Diff coverage is a separate gate (V2-07): `tools/diff_coverage.py` reads the
+choke points a registry declares through `enforced_at` and checks that every one
+changed in a git range maps to a non-open claim (DC1 path, DC2 symbol). An
+`enforced_at` that cannot be located in the repository is always an error (DC3);
+an untouched range (DC4) or a registry with no declarations (DC5) is an explicit
+info, not a silent pass. Mapping is by cell `claim_ids`, claim evidence
+`artifact`, or a claim/negative-test symbol; an `open` claim never counts.
+Symbols come from a line scanner — Python indentation, Rust brace depth, SQL by
+name on a changed line — so a SQL body-only edit is invisible (V2-22). The
+recorded 2026-11-07 measurement: `rbac_pg` `v1.3.1..HEAD`, 110 changed files,
+1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n` `f0dd77b^..f0dd77b`,
+3 files, 2 of 2 mapped. Only CELL-001 and CELL-003 declare `enforced_at` at all,
+so 100 % is two declarations, not the 43 cells. The gate is not in `make verify`
+— a PR gate needs a base SHA — and `ci/diff-coverage.yml` is the untested
+template for one.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

@@ -1,0 +1,56 @@
+# Synthetic fixture — not evidence about any real repository.
+description: A path-only choke point changes; the cell has no claim and no claim evidence
+  names the path, so DC1 must error.
+base_files:
+  src/guard.py: "def check(x):\n    return x > 0\n"
+head_files:
+  src/guard.py: "def check(x):\n    return x >= 0\n"
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/guard.py:1 - boundary check
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: tests/test_guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.share: 0.0
+  changed.mapped: 0
+  changed.unmapped: 1
+  declared.paths.0: src/guard.py
+  declared.symbols: 0
+expect:
+  DC1: error
+  DC2: none
+exit: 1
+name: unmapped-path

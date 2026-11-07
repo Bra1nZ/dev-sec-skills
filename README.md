@@ -152,6 +152,7 @@ styles/
 ci/
   claim-lint.yml
   cell-lint.yml
+  diff-coverage.yml
 evals/
   evals.json
   iteration-1/
@@ -172,6 +173,9 @@ evals/
     run_evals.py
     cases/
   coverage/
+    run_evals.py
+    cases/
+  diff-coverage/
     run_evals.py
     cases/
   iteration-3/
@@ -195,6 +199,10 @@ spec/
     runs/claim-lint-2026-11-07.json
     triage/claim-lint-2026-11-07.yaml
   coverage/
+    README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
+  diff-coverage/
     README.md
     2026-11-07-rbac-pg.json
     2026-11-07-craft-i18n.json
@@ -251,6 +259,11 @@ make verify
 (`../astraoffice/craft-i18n`); если цели нет, команда падает, а не пропускает
 гейт.
 
+Diff-покрытие вынесено из `verify` так же, как mutation-прогоны: гейту нужен
+base ref, а `verify` сравнивает рабочее дерево с последним коммитом этого
+репозитория. `make diff-coverage` прогоняет DC1–DC5 по двум фиксированным
+диапазонам, `make diff-coverage-record` пишет снимки в `spec/diff-coverage/`.
+
 Mutation-прогоны вынесены: `make mutations` — `rbac_pg` на живом PostgreSQL;
 `make mutations-i18n` — фикстуры `craft-i18n`, нужен только cargo;
 `make mutations-all` — оба набора; `make verify-all` — verify плюс оба набора.
@@ -270,7 +283,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, шесть наборов для линтеров и каталог `spec/` с концептом конвейера.
+скилов, семь наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -328,6 +341,21 @@ unmapped в двух файлах, которые никто не цитируе
 доказывает, что детектор исполняет каждый тест в отображённом файле. Кейсы —
 [`evals/coverage/`](evals/coverage/): 14/14; снимки измерения — в
 [`spec/coverage/`](spec/coverage/README.md).
+
+Diff-покрытие `tools/diff_coverage.py` (V2-07) проверяет только choke points,
+объявленные в `enforced_at`: изменённый путь или символ без non-open claim —
+DC1/DC2, нераспознанное объявление — всегда ошибка DC3, пустой диапазон и
+реестр без объявлений — явные info DC4/DC5. `open` claim покрытием не
+считается. Символы извлекает строчный сканер: Python — по отступу, Rust — по
+глубине скобок, SQL и неизвестные расширения — по имени на изменённой строке;
+поэтому правка тела SQL-функции без упоминания имени не видна (закроет V2-22).
+Записанное измерение 2026-11-07: `rbac_pg` `v1.3.1..HEAD` — 110 изменённых
+файлов, 1 объявленный путь и 1 символ, 2 из 2 mapped; `craft-i18n`
+`f0dd77b^..f0dd77b` — 3 файла, 2 из 2 mapped. 100 % — это два объявления
+(CELL-001 и CELL-003), а не 43 ячейки: реестр без `enforced_at` получает DC5,
+а не покрытие. Кейсы — [`evals/diff-coverage/`](evals/diff-coverage/): 14/14;
+метод и границы — в [`spec/diff-coverage/`](spec/diff-coverage/README.md);
+шаблон PR-гейта — [`ci/diff-coverage.yml`](ci/diff-coverage.yml).
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.

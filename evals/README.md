@@ -47,6 +47,9 @@ evals/
   coverage/
     run_evals.py        # coverage_report.py: CV1-CV4 fail closed
     cases/
+  diff-coverage/
+    run_evals.py        # diff_coverage.py: DC1-DC5 fail closed on a git range
+    cases/
 ```
 
 ## Prompts
@@ -110,7 +113,14 @@ dangling negative test, a stale claim at info, above a threshold, and with no
 usable date, a missing fixture above a threshold, an exempted detector, a
 non-test detector that owes no fixture, open work excluded from both checks, a
 run without `--suite-glob`, and a missing root returning a usage error.
-Reproduce all six:
+`evals/diff-coverage/` runs 14 cases for `tools/diff_coverage.py`, each built
+from a synthetic git repository: a clean path and symbol, an unmapped path, an
+unmapped symbol, a symbol mapped only by a test ID, an untouched choke point
+(DC4), a missing declaration path, a prose declaration, an open claim that does
+not count, a deleted file, an added SQL symbol, a registry with no declarations
+(DC5), a threshold that tolerates one unmapped entity, a renamed file, and a
+missing ref returning 2.
+Reproduce all seven:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -119,6 +129,7 @@ python3 evals/status-diff/run_evals.py
 python3 evals/fuzz/run_evals.py
 python3 evals/fuzz-triage/run_evals.py
 python3 evals/coverage/run_evals.py
+python3 evals/diff-coverage/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -142,7 +153,9 @@ run has no findings; they show it fails closed, not that a real finding was
 routed correctly. The coverage cases exercise the report on synthetic suites;
 the clean control passes every threshold at zero, so an always-red report
 cannot pass the suite, but a green case says nothing about a real target's
-coverage.
+coverage. The diff-coverage cases exercise the gate on synthetic git
+repositories; they show that DC1–DC5 fail closed on the named defects, not that
+a real PR range maps every changed choke point.
 
 ## Reproduce
 

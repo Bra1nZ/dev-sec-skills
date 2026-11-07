@@ -1,0 +1,50 @@
+{
+  "repo": "../astraoffice/craft-i18n",
+  "base": "f0dd77b^",
+  "base_sha": "17906c544c57839b27a5d9d426f0f1ec92839bcb",
+  "head": "f0dd77b",
+  "head_sha": "f0dd77b8799154adb01aba27fa4342b1593359f3",
+  "measured": "2026-11-07",
+  "changed_files": [
+    "ROADMAP.md",
+    "crates/craft-i18n-tests/src/catalog.rs",
+    "crates/craft-i18n-tests/src/locale.rs"
+  ],
+  "declared": {
+    "paths": [
+      "crates/craft-i18n-tests/src/catalog.rs"
+    ],
+    "symbols": 1
+  },
+  "changed": {
+    "paths": [
+      {
+        "id": "crates/craft-i18n-tests/src/catalog.rs",
+        "kind": "path",
+        "claims": [
+          "C-01",
+          "C-02",
+          "C-03"
+        ],
+        "mapped": true
+      }
+    ],
+    "symbols": [
+      {
+        "id": "crates/craft-i18n-tests/src/catalog.rs::parse_row",
+        "kind": "symbol",
+        "path": "crates/craft-i18n-tests/src/catalog.rs",
+        "symbol": "parse_row",
+        "claims": [
+          "C-01",
+          "C-02"
+        ],
+        "mapped": true
+      }
+    ],
+    "mapped": 2,
+    "unmapped": 0,
+    "share": 1.0
+  },
+  "findings": []
+}

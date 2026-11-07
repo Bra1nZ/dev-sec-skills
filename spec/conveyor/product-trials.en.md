@@ -113,6 +113,15 @@ entry in §7.
 | M3 | Claim-map cost | Time and number of steps to build the invariant map for a chosen fragment | minutes, steps | before/after measurement with the same procedure |
 | M4 | Diff coverage | Share of changed choke-point paths and symbols mapped to a claim | share | V2-07, same extractor and threshold |
 
+M4 is instrumentally measurable, but a product baseline is not recorded yet. The
+first instrument measurement on 2026-11-07: `rbac_pg` `v1.3.1..HEAD` — 110
+changed files, 1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n`
+`f0dd77b^..f0dd77b` — 3 files, 2 of 2 mapped. Both ranges are fixed, not PR
+runs; the 100 % covers two `enforced_at` declarations, not 43 cells, and is
+therefore not a product baseline. The `--max-unmapped 0` threshold was not
+overridden in either run; the method and its limits are in
+`spec/diff-coverage/README.md`.
+
 ### 3.2 Baseline
 
 The baseline is recorded before the solution is applied: same product, same

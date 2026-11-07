@@ -1,0 +1,50 @@
+# Synthetic fixture — not evidence about any real repository.
+description: enforced_at names a path that exists at neither end of the diff; the
+  gate cannot locate the choke point and must fail closed.
+base_files:
+  src/guard.py: "def check(x):\n    return x > 0\n"
+head_files:
+  src/guard.py: "def check(x):\n    return x >= 0\n"
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/gone.py:1 (check)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids:
+    - C-01
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: tests/test_guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+expect:
+  DC3: error
+exit: 1
+name: declaration-missing-path

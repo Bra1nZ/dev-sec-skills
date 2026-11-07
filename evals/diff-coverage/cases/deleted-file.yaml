@@ -1,0 +1,55 @@
+# Synthetic fixture — not evidence about any real repository.
+description: The declared choke point is deleted; its base span intersects removed
+  lines, so the symbol still counts as changed.
+base_files:
+  src/guard.py: "def check(x):\n    return x > 0\n"
+delete_head:
+- src/guard.py
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/guard.py:1 (check)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids:
+    - C-01
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: tests/test_guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.share: 1.0
+  changed.mapped: 2
+  changed.unmapped: 0
+expect:
+  DC1: none
+  DC2: none
+exit: 0
+name: deleted-file

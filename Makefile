@@ -55,10 +55,20 @@ FUZZ_RUNS ?= 150
 COVERAGE_RECORD_RBAC ?= spec/coverage/2026-11-07-rbac-pg.json
 COVERAGE_RECORD_I18N ?= spec/coverage/2026-11-07-craft-i18n.json
 
+# Diff coverage (V2-07). These are not part of `verify`: a merge gate needs a
+# base ref, while `verify` compares the working tree against the last commit of
+# this repository. The ranges below are fixed measurements, not PR ranges.
+DIFF_BASE_RBAC ?= v1.3.1
+DIFF_BASE_I18N ?= f0dd77b^
+DIFF_HEAD_I18N ?= f0dd77b
+DIFF_RECORD_RBAC ?= spec/diff-coverage/2026-11-07-rbac-pg.json
+DIFF_RECORD_I18N ?= spec/diff-coverage/2026-11-07-craft-i18n.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
-        status-pilot2 unroutable coverage coverage-record mutations \
-        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint help
+        status-pilot2 unroutable coverage coverage-record diff-coverage \
+        diff-coverage-record mutations mutations-i18n mutations-all \
+        check-fuzz-triage fuzz-claim-lint help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage
 
@@ -78,6 +88,7 @@ evals:
 	$(PYTHON) evals/fuzz/run_evals.py
 	$(PYTHON) evals/fuzz-triage/run_evals.py
 	$(PYTHON) evals/coverage/run_evals.py
+	$(PYTHON) evals/diff-coverage/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -203,6 +214,36 @@ coverage-record:
 	  --ledger "$(PILOT2_LEDGER)" \
 	  --json "$(COVERAGE_RECORD_I18N)"
 
+diff-coverage:
+	@echo "== DC1-DC5: diff coverage of declared choke points (V2-07) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/diff_coverage.py \
+	  --repo "$(PILOT_ROOT)" --base "$(DIFF_BASE_RBAC)" --head HEAD \
+	  --cells "$(PILOT_REGISTRY)" \
+	  --ledger "$(PILOT_ROOT)/$(PILOT_LEDGER)" \
+	  --max-unmapped 0
+	$(PYTHON) tools/diff_coverage.py \
+	  --repo "$(PILOT2_ROOT)" --base "$(DIFF_BASE_I18N)" --head "$(DIFF_HEAD_I18N)" \
+	  --cells "$(PILOT2_REGISTRY)" \
+	  --ledger "$(PILOT2_LEDGER)" \
+	  --max-unmapped 0
+
+diff-coverage-record:
+	@echo "== DC1-DC5: record the diff-coverage measurement (V2-07) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/diff_coverage.py \
+	  --repo "$(PILOT_ROOT)" --base "$(DIFF_BASE_RBAC)" --head HEAD \
+	  --cells "$(PILOT_REGISTRY)" \
+	  --ledger "$(PILOT_ROOT)/$(PILOT_LEDGER)" \
+	  --max-unmapped 0 --json "$(DIFF_RECORD_RBAC)"
+	$(PYTHON) tools/diff_coverage.py \
+	  --repo "$(PILOT2_ROOT)" --base "$(DIFF_BASE_I18N)" --head "$(DIFF_HEAD_I18N)" \
+	  --cells "$(PILOT2_REGISTRY)" \
+	  --ledger "$(PILOT2_LEDGER)" \
+	  --max-unmapped 0 --json "$(DIFF_RECORD_I18N)"
+
 check-fuzz-triage:
 	@echo "== T1-T4: fuzz finding triage (V2-18) =="
 	$(PYTHON) tools/fuzz_triage.py \
@@ -236,7 +277,7 @@ help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
 	@echo "  verify-all    verify plus both mutation batches (needs PostgreSQL and cargo)"
-	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage"
+	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
@@ -247,6 +288,8 @@ help:
 	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"
 	@echo "  coverage      CV1-CV4 over both pilots: cited symbols, unmapped symbols, stale claims, fixtures"
 	@echo "  coverage-record  write the two JSON coverage snapshots into spec/coverage/"
+	@echo "  diff-coverage  DC1-DC5 over both pilots: changed choke points must map to a claim"
+	@echo "  diff-coverage-record  write the two JSON diff-coverage snapshots into spec/diff-coverage/"
 	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"

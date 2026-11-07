@@ -1,0 +1,55 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'One unmapped path under --max-unmapped 1 is reported but not an error:
+  the threshold is a policy, not a second extractor.'
+base_files:
+  src/guard.py: "def check(x):\n    return x > 0\n"
+head_files:
+  src/guard.py: "def check(x):\n    return x >= 0\n"
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/guard.py:1 - boundary check
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: tests/test_guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+args:
+- --max-unmapped
+- '1'
+json:
+  changed.unmapped: 1
+  changed.share: 0.0
+expect:
+  DC1: none
+exit: 0
+name: threshold-allows

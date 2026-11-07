@@ -141,6 +141,7 @@ tools/
 ci/
   claim-lint.yml
   cell-lint.yml
+  diff-coverage.yml
 evals/
   evals.json
   iteration-1/
@@ -161,6 +162,9 @@ evals/
     run_evals.py
     cases/
   coverage/
+    run_evals.py
+    cases/
+  diff-coverage/
     run_evals.py
     cases/
   iteration-3/
@@ -184,6 +188,10 @@ spec/
     runs/claim-lint-2026-11-07.json
     triage/claim-lint-2026-11-07.yaml
   coverage/
+    README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
+  diff-coverage/
     README.md
     2026-11-07-rbac-pg.json
     2026-11-07-craft-i18n.json
@@ -239,6 +247,12 @@ The pilots are located by `PILOT_ROOT` (defaults to `../rbac_pg`) and
 `PILOT2_ROOT` (`../astraoffice/craft-i18n`); if one is missing, the command
 fails instead of skipping the gate.
 
+Diff coverage is separate from `verify` for the same reason mutation runs are:
+the gate needs a base ref, while `verify` compares the working tree against this
+repository's last commit. `make diff-coverage` runs DC1–DC5 over the two fixed
+ranges, and `make diff-coverage-record` writes the snapshots into
+`spec/diff-coverage/`.
+
 Mutation runs are separate: `make mutations` for `rbac_pg` on a live
 PostgreSQL, `make mutations-i18n` for the `craft-i18n` fixtures (cargo only),
 `make mutations-all` for both, and `make verify-all` for verify plus both.
@@ -258,7 +272,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, six linter suites, and the `spec/` directory with the conveyor concept.
+evals, seven linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -310,6 +324,22 @@ narrow scanner, not an AST: the report shows which files nobody mapped, not
 that a detector executes every test in a mapped file. Its cases are in
 [`evals/coverage/`](evals/coverage/): 14/14; the measurement snapshots are in
 [`spec/coverage/`](spec/coverage/README.md).
+
+Diff coverage `tools/diff_coverage.py` (V2-07) checks only choke points
+declared in `enforced_at`: a changed path or symbol without a non-open claim is
+DC1/DC2, an unlocatable declaration is always DC3, and an empty range or a
+registry with no declarations is an explicit DC4/DC5 info. An `open` claim never
+counts as coverage. Symbols come from a line scanner — Python indentation, Rust
+brace depth, SQL and unknown extensions by name on a changed line — so a SQL
+body-only edit that never names the function is invisible (V2-22 closes that).
+The recorded 2026-11-07 measurement: `rbac_pg` `v1.3.1..HEAD` has 110 changed
+files, 1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n`
+`f0dd77b^..f0dd77b` has 3 files, 2 of 2 mapped. The 100 % is two declarations
+(CELL-001 and CELL-003), not 43 cells: a registry without `enforced_at` gets
+DC5, not coverage. Its cases are in
+[`evals/diff-coverage/`](evals/diff-coverage/): 14/14; the method and limits are
+in [`spec/diff-coverage/`](spec/diff-coverage/README.md); the PR-gate template
+is [`ci/diff-coverage.yml`](ci/diff-coverage.yml).
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,
