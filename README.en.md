@@ -145,6 +145,7 @@ tools/
   fuzz_triage.py
   invariant_catalog.py
   mutation_plan.py
+  proof_plan.py
   sarif_evidence.py
   status_diff.py
   unroutable.py
@@ -200,6 +201,9 @@ evals/
     run_evals.py
   bounded-check/
     run_evals.py
+  proof-plan/
+    run_evals.py
+    mutation_selftest.py
 spec/
   README.md
   conveyor/
@@ -238,6 +242,9 @@ spec/
     adapters.yaml
     fixtures/
     2026-11-07-report.json
+  proofs/
+    README.md
+    manifest.yaml
   pilots/
     rbac_pg/
       cells.yaml
@@ -385,6 +392,20 @@ days. The first run is [42394278295](https://github.com/Bra1nZ/dev-sec-skills/ac
 success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
 executions, 0 findings. This proves determinism and input integrity, not
 new-bug discovery; the nightly schedule itself has not fired yet.
+
+Event-driven `proven` (V2-29) is `tools/proof_plan.py` plus
+[`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): each proof declares
+the code, model, encoding and tooling it depends on, and a diff decides which
+proofs must be re-run. The manifest is empty because no claim here is `proven`;
+an empty manifest declares absence, and the planner says so instead of letting a
+green gate look like coverage. `make proof-plan` resolves the merge base of
+`origin/main..HEAD`. Its cases are in
+[`evals/proof-plan/`](evals/proof-plan/): 36/36, and
+`make proof-plan-selftest` (outside `verify`, ~80 s) mutates the planner eight
+ways and requires a named case to fail each time. The planner does not verify
+the record hash (`claim_lint` does) and does not prove that the model matches the
+code; freshness is a timestamp comparison, so a record taken from a stale
+checkout still looks fresh.
 
 The coverage report `tools/coverage_report.py` (V2-20) proves that a cited
 symbol exists (CV1, always an error) and measures suite symbols that no

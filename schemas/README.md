@@ -18,6 +18,9 @@ evidence-first contract. The ledger turns the prose discipline of
   invariant catalogue (V2-21), checked by `../tools/invariant_catalog.py`.
 - `sarif-evidence.schema.json` — JSON Schema (draft-07) for the normalized SARIF
   evidence report (V2-23), written by `../tools/sarif_evidence.py`.
+- `proof-manifest.schema.json` — JSON Schema (draft-07) for the proof manifest
+  (V2-29), read by `../tools/proof_plan.py`; it declares which code, model,
+  encoding and tooling a proof depends on.
 - `../tools/claim_lint.py` — the linter (Python 3 stdlib; PyYAML for `.yaml` ledgers).
 
 ## Ledger format
@@ -70,6 +73,21 @@ A synthetic fixture without `.git` skips the check instead of failing it.
 The record does not prove the run happened: without an external anchor (C-13)
 a forger can rewrite the record and the log together. It removes silent
 re-dating and unexecuted citations, not determined fraud.
+
+### Proof manifest
+
+A manifest (V2-29) is `{version: 1, proofs: [...]}`. Each entry declares `id`,
+`claim`, `artifact`, `tool_output`, `depends_on`, `assumptions`, and optionally
+`model`, `encoding`, `tooling`, `proven_commit`, `proven_at`, `owner`, `note`.
+`depends_on` and `assumptions` are required and may not be empty: a proof whose
+boundaries are unwritten is an overclaim, and a proof with no declared
+dependency can never be invalidated by a diff. The loader rejects those, a
+duplicate ID, and an `artifact` that does not exist with exit 2.
+`../tools/proof_plan.py` compares the manifest against a git range and prints
+which proofs must be re-run; `../spec/proofs/manifest.yaml` is empty because no
+claim in this repository is `proven`. The schema does not encode freshness:
+that is a comparison of the record's `finished_at` against commit times, and it
+is described in `../spec/proofs/README.md`.
 
 ### Tool output
 

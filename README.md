@@ -140,6 +140,7 @@ schemas/
   fuzz-triage.schema.json
   invariant-catalog.schema.json
   run-record.schema.json
+  proof-manifest.schema.json
   sarif-evidence.schema.json
   tool-output.schema.json
   README.md
@@ -154,6 +155,7 @@ tools/
   fuzz_triage.py
   invariant_catalog.py
   mutation_plan.py
+  proof_plan.py
   sarif_evidence.py
   status_diff.py
   unroutable.py
@@ -217,6 +219,9 @@ evals/
     run_evals.py
   bounded-check/
     run_evals.py
+  proof-plan/
+    run_evals.py
+    mutation_selftest.py
 spec/
   README.md
   conveyor/
@@ -255,6 +260,9 @@ spec/
     adapters.yaml
     fixtures/
     2026-11-07-report.json
+  proofs/
+    README.md
+    manifest.yaml
   pilots/
     rbac_pg/
       cells.yaml
@@ -407,6 +415,19 @@ fixture — или была отклонена с записанной прич�
 success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
 исполнений, 0 находок. Это доказательство детерминизма и целостности входов, а не
 поиск новых багов; сам ночной schedule ещё ни разу не срабатывал.
+
+Event-driven `proven` (V2-29) — `tools/proof_plan.py` и
+[`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): каждая доказанная
+claim объявляет код, модель, encoding и tooling, от которых зависит, а diff
+решает, какие доказательства обязаны перепрогнаться. Манифест пуст, потому что
+ни одна claim здесь не `proven`; пустой манифест объявляет отсутствие, и
+планировщик говорит об этом прямо, а не выдаёт зелёный гейт за покрытие.
+`make proof-plan` берёт merge base `origin/main..HEAD`. Кейсы —
+[`evals/proof-plan/`](evals/proof-plan/): 36/36; восемь мутаций самого
+планировщика проверяет `make proof-plan-selftest` (вне `verify`, ~80 с).
+Планировщик не проверяет хэш записи (это делает `claim_lint`) и не доказывает,
+что модель соответствует коду; свежесть — сравнение времени, поэтому запись,
+снятая со stale checkout, выглядит свежей.
 
 Отчёт покрытия `tools/coverage_report.py` (V2-20) проверяет, что процитированный
 символ существует (CV1, всегда ошибка), и измеряет символы suite'а, не

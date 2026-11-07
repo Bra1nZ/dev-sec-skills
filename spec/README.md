@@ -62,6 +62,9 @@ spec/
     adapters.yaml                 # 3 engines, ordered rules, registry aliases
     fixtures/                     # authored SARIF: semgrep, codeql, bandit
     2026-11-07-report.json        # recorded normalized report
+  proofs/
+    README.md                     # what a re-run trigger is, how freshness is decided, limits
+    manifest.yaml                 # empty: no claim is `proven` or `model-checked`
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -159,6 +162,18 @@ from `ci/` is scope: `ci/` holds templates for *target* repositories, while
 `.github/workflows/` runs on this repository. The replay proves determinism and
 input integrity, not new-bug discovery, and the nightly schedule itself had not
 fired at the time of writing.
+
+Event-driven `proven` (V2-29) is `tools/proof_plan.py` plus
+`spec/proofs/manifest.yaml`: each proof declares the code, model, encoding and
+tooling it depends on, and a diff decides which proofs must be re-run. The
+manifest is empty because no claim here is `proven`; an empty manifest declares
+absence, and the planner says so instead of letting a green gate look like
+evidence. `make proof-plan` resolves the merge base of `origin/main..HEAD` and
+prints the plan. The planner is covered by 36 synthetic git cases in
+`evals/proof-plan/` and by eight mutants of itself (`make proof-plan-selftest`,
+not in `verify`). It does not verify the record hash (`claim_lint` does), does
+not check that the model matches the code, and decides freshness from
+timestamps, so a record produced from a stale checkout still looks fresh.
 
 Every finding must become a cell, a detector and a fixture (V2-18):
 `tools/fuzz_triage.py` checks one entry per finding, resolves the cell and

@@ -1,0 +1,14 @@
+# Proof manifest (V2-29). Schemas: schemas/proof-manifest.schema.json.
+#
+# Empty on purpose: no claim in this repository is `proven` or
+# `model-checked`, so there is no proof whose dependencies could go stale. An
+# empty manifest declares the absence of proofs; it is not coverage. With
+# `--require-fresh` the planner prints that the gate is vacuous rather than
+# letting a green run look like proof coverage.
+#
+# The first real proof adds one entry with its artifact, tool_output record,
+# depended-on code, and the assumptions the model makes. The planner's
+# behaviour, including every trigger and both gates, is already covered by
+# evals/proof-plan/ (see spec/proofs/README.md).
+version: 1
+proofs: []

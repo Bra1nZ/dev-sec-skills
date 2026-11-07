@@ -61,6 +61,9 @@ evals/
     run_evals.py        # sarif_evidence.py: mapping, unmapped, provenance (V2-23)
   bounded-check/
     run_evals.py        # bounded_check.py: timeout -> unverified, group kill (V2-28)
+  proof-plan/
+    run_evals.py        # proof_plan.py: diff -> proofs to re-run (V2-29)
+    mutation_selftest.py  # 8 mutants; each must turn a named case red
 ```
 
 ## Prompts
@@ -167,7 +170,7 @@ and an empty command rejected with exit 2 and no record, a record written to
 `--json` with stdout left clean, a grandchild process that must not survive the
 process-group kill, and two integration cases where `claim_lint` accepts a
 `completed` record and rejects an `unverified` one for a `model-checked` claim.
-Reproduce all twelve:
+Reproduce all thirteen:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -182,7 +185,18 @@ python3 evals/mutation-plan/run_evals.py
 python3 evals/invariant-catalog/run_evals.py
 python3 evals/sarif/run_evals.py
 python3 evals/bounded-check/run_evals.py
+python3 evals/proof-plan/run_evals.py
 ```
+
+`evals/proof-plan/` (V2-29) builds a throw-away git repository per case, writes
+a manifest and a `tool_output` record, and checks the plan: which proof is
+`rerun` and why, which is `fresh` because its record postdates the last change,
+what a rename or a delete does, and that both gates exit 1 while a broken
+manifest exits 2. 36 cases. The suite is only evidence if it can fail, so
+`evals/proof-plan/mutation_selftest.py` applies eight named mutations to
+`tools/proof_plan.py` and requires the case named for each behaviour to go red;
+it runs ~80 s and is a separate target (`make proof-plan-selftest`), not part of
+`make verify`.
 
 A case may declare `git.commits`; the runner commits them in order and
 substitutes each resulting SHA as `{{COMMIT_<n>}}` into later commit files, the

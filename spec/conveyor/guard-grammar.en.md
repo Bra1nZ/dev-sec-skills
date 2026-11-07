@@ -497,7 +497,7 @@ exactly the defect CELL-002 captures as a separate cell.
 | Platform drift | PostgreSQL/ORM changes semantics | platform tests for the extractor |
 | Value substitution | tenant from a header | `value-provenance` in scope |
 | Language growth for coverage | the grammar grows without evidence | reviewed change, 6.5 |
-| Expectation of a "theorem per PR" | specification synthesis from code is passed off as checking | L2 is a model diff and goal survival, not synthesis; proofs are event-driven, CONCEPT §12.1 (V2-29) |
+| Expectation of a "theorem per PR" | specification synthesis from code is passed off as checking | L2 is a model diff and goal survival, not synthesis; proofs are re-run when the model, code, encoding or tooling changes (V2-29, `tools/proof_plan.py`) |
 
 ## 11. Open questions
 

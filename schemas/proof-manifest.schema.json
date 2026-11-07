@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/proof-manifest.schema.json",
+  "title": "Proof manifest",
+  "description": "Declares which code, model, encoding and tooling a `proven` or `model-checked` claim depends on, so a diff can decide which proofs must be re-run (V2-29). The manifest is the claim's scope: a dependency it omits is invisible to tools/proof_plan.py. An entry without declared assumptions is rejected by the loader, because a proof whose assumptions are unstated is an overclaim.",
+  "type": "object",
+  "required": ["version", "proofs"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Manifest format version. tools/proof_plan.py rejects anything else."
+    },
+    "proofs": {
+      "type": "array",
+      "description": "One entry per proof or bounded model check. An empty list is allowed: a repository with no proofs says so instead of omitting the file.",
+      "items": {
+        "$ref": "#/definitions/proof"
+      }
+    }
+  },
+  "definitions": {
+    "proof": {
+      "type": "object",
+      "required": ["id", "claim", "artifact", "tool_output", "depends_on",
+                   "assumptions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^P-[0-9]{2,}$",
+          "description": "Stable proof ID, unique within the manifest."
+        },
+        "claim": {
+          "type": "string",
+          "pattern": "^C-[0-9]{2,}$",
+          "description": "Claim the proof supports. Status lives in the claim ledger, not here."
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Model or proof script, relative to --repo (or absolute). It must exist; a manifest that points at nothing is a broken manifest, not a stale proof."
+        },
+        "tool_output": {
+          "type": "string",
+          "minLength": 1,
+          "description": "JSON record of the run, shaped by schemas/tool-output.schema.json (tools/bounded_check.py writes one). Only `status` and `finished_at` are read by the planner; `claim_lint` verifies the hash."
+        },
+        "depends_on": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "description": "Code paths or globs the proof abstracts. A changed, renamed or deleted match triggers a re-run. `*` stays within one path segment; `**` crosses segments."
+        },
+        "model": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "description": "Additional model files (helpers, imported modules) beyond `artifact`."
+        },
+        "encoding": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "description": "Encoding, configuration or harness files whose change can change what the proof means."
+        },
+        "tooling": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "description": "Checker wrapper, extractor or translator paths. A change here invalidates the proof even when the model and code stay put."
+        },
+        "assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "description": "What the model abstracts or ignores. Required: a proof without declared assumptions is a status overclaim."
+        },
+        "proven_commit": {
+          "type": "string",
+          "description": "Commit the record was produced at. Informational; freshness is decided from `finished_at` and the diff, not from this field."
+        },
+        "proven_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the recorded run. Informational."
+        },
+        "owner": {
+          "type": "string",
+          "description": "Who decides whether a re-run failure is a model bug or a code bug."
+        },
+        "note": {
+          "type": "string",
+          "description": "Free-form note, e.g. why a dependency is listed."
+        }
+      }
+    }
+  }
+}

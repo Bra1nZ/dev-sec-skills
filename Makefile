@@ -95,12 +95,22 @@ SARIF_INPUTS ?= spec/sarif/fixtures
 SARIF_STRICT ?=
 SARIF_RECORD ?= spec/sarif/2026-11-07-report.json
 
+# Proof planning (V2-29). Event-driven `proven`: a diff decides which proofs
+# must be re-run. PROOF_BASE is the comparison ref; the target resolves the
+# merge base, because a base-branch tip is not the fork point. The planner is
+# informational here (no --require flags): a stale proof is reported, and the
+# gates are opt-in for a repository that actually has proofs.
+PROOF_MANIFEST ?= spec/proofs/manifest.yaml
+PROOF_BASE ?= origin/main
+PROOF_HEAD ?= HEAD
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
-        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint help
+        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint \
+        proof-plan proof-plan-selftest help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
 
@@ -126,6 +136,7 @@ evals:
 	$(PYTHON) evals/invariant-catalog/run_evals.py
 	$(PYTHON) evals/sarif/run_evals.py
 	$(PYTHON) evals/bounded-check/run_evals.py
+	$(PYTHON) evals/proof-plan/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -389,6 +400,19 @@ mutations-i18n:
 	  --target "$(PILOT2_ROOT)" \
 	  --target-dir "$(PILOT2_MUTATION_TARGET_DIR)"
 
+proof-plan:
+	@echo "== proof plan: $(PROOF_BASE)...$(PROOF_HEAD) against $(PROOF_MANIFEST) =="
+	@base=$$(git merge-base "$(PROOF_BASE)" "$(PROOF_HEAD)") || \
+	  { echo "error: no merge base for $(PROOF_BASE) and $(PROOF_HEAD)" >&2; exit 2; }; \
+	$(PYTHON) tools/proof_plan.py --repo . --base "$$base" \
+	  --head "$(PROOF_HEAD)" --manifest "$(PROOF_MANIFEST)"
+
+# The planner's eval suite is only evidence if a broken planner turns it red.
+# Runs seven mutants against the full suite (~70s), so it is not in `verify`.
+proof-plan-selftest:
+	@echo "== proof plan: mutate the planner, require the suite to fail (V2-29) =="
+	$(PYTHON) evals/proof-plan/mutation_selftest.py
+
 mutations-all: mutations mutations-i18n
 
 help:
@@ -420,3 +444,5 @@ help:
 	@echo "  mutation-plan select fixtures for the cells the pilot diffs touched (V2-11)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"
+	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
+	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
