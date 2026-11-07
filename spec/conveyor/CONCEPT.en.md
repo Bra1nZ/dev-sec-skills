@@ -495,7 +495,7 @@ Not commitments and not status: a task closes only with evidence.
 
 - [x] V2-17. Fuzzing adapter: oracle, seed corpus, budget, fixed seed, run artifact: `tools/fuzz_run.py`, `schemas/fuzz-run.schema.json`, rules `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout`; `executions_digest` reproduces for the same corpus and seed. The recorded `claim_lint` run — 5 seed ledgers, 150 mutations, 155 executions, seed 20261107, `clean`; 5 eval cases; `make fuzz-claim-lint` compares the digest.
 - [x] V2-18. Triage fuzzer findings → cell + detector + fixture: `tools/fuzz_triage.py` (T1–T4), `schemas/fuzz-triage.schema.json`, 13 eval cases; `make check-fuzz-triage` runs in `make verify`. The recorded run is clean, so the triage is empty; injecting a finding into a copy of the record makes the gate exit 1.
-- [ ] V2-19. Scheduled fuzzing that does not block merges.
+- [x] V2-19. Scheduled fuzzing that does not block merges: `.github/workflows/fuzz-nightly.yml` runs on cron `30 2 * * *` and `workflow_dispatch`, never on `push`/`pull_request`; it replays `spec/fuzz/runs/claim-lint-2026-11-07.json` through `make fuzz-claim-lint` and fails when `executions_digest` moves; the artifact `fuzz-record-<run_id>` carries the record and findings for 90 days. First run: [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295), 2026-11-07, commit `3110214`, success, digest `93e1af3183658aa6…`, seed 20261107, 155 executions, 0 findings; the downloaded artifact was compared locally. Limits: the evidence comes from `workflow_dispatch`, the nightly schedule has not fired yet; the replay proves determinism and input integrity, not new-bug discovery; the artifact lives in GitHub and is not an external anchor (C-13); a red run blocks no merge and notifies no one.
 - [x] V2-20. Coverage report: unmapped symbols, stale claims, cells without a fixture: `tools/coverage_report.py` (CV1–CV4), 14 eval cases, `make coverage` in `make verify`, recorded snapshots in `spec/coverage/`. Measured 2026-11-07: `rbac_pg` 80 symbols, 67 mapped, 13 unmapped in two uncited suite files; `craft-i18n` 26/26; 0 stale claims and 0 detectors without a fixture in both.
 
 **General-code track — beyond RBAC**
@@ -566,6 +566,7 @@ Not commitments and not status: a task closes only with evidence.
 | `spec/sarif/` | Adapters for three engines, authored fixtures with explicit provenance, and a recorded report |
 | `tools/mutation_plan.py` | V2-11: diff → changed cells → selected mutation fixtures |
 | `ci/mutation-changed.yml` | CI template: plan from the merge base, run only selected fixtures, skip on an empty plan |
+| `.github/workflows/fuzz-nightly.yml` | V2-19: nightly replay of the recorded fuzz run; cron + dispatch, no push/PR, a 90-day artifact |
 | `tools/diff_coverage.py` | DC1–DC5: a changed choke point must map to a non-open claim |
 | `evals/linter/` | Example adversarial set for detectors |
 | `evals/cell-lint/` | Adversarial set for `cell_lint` |

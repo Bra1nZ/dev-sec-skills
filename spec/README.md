@@ -148,6 +148,18 @@ execution against explicit oracle rules, and writes
 coverage-guided, and a clean verdict is scoped to that oracle and budget, not a
 statement that the target is free of bugs.
 
+The first CI in this repository (V2-19) is that replay on a timer:
+`.github/workflows/fuzz-nightly.yml` runs on cron and on manual dispatch, never
+on `push`/`pull_request`, so it cannot block a merge. It fails when
+`executions_digest` moves and uploads a `fuzz-record-<run_id>` artifact for 90
+days. The first dispatch (run 42394278295, 2026-11-07) succeeded with digest
+`93e1af3183658aa6…`, seed 20261107, 155 executions and 0 findings; the
+downloaded artifact was compared with the committed record. The difference
+from `ci/` is scope: `ci/` holds templates for *target* repositories, while
+`.github/workflows/` runs on this repository. The replay proves determinism and
+input integrity, not new-bug discovery, and the nightly schedule itself had not
+fired at the time of writing.
+
 Every finding must become a cell, a detector and a fixture (V2-18):
 `tools/fuzz_triage.py` checks one entry per finding, resolves the cell and
 detector in the registry the triage names, checks the fixture ID in the

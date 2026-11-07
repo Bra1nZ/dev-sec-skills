@@ -165,6 +165,9 @@ styles/
       RussianAbsolutes/
         accept.txt
   README.md
+.github/
+  workflows/
+    fuzz-nightly.yml
 ci/
   cell-lint.yml
   claim-lint.yml
@@ -394,6 +397,16 @@ coverage guidance: `clean` означает «этот oracle ничего не 
 fixture — или была отклонена с записанной причиной; stale-запись, неразрешённая
 ячейка и fixture, а также verdict, расходящийся с `findings`, — ошибки. Его
 кейсы — [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
+
+Ночной replay записанного прогона (V2-19) живёт в
+[`.github/workflows/fuzz-nightly.yml`](.github/workflows/fuzz-nightly.yml): cron
+`30 2 * * *` и `workflow_dispatch`, без `push`/`pull_request`, поэтому красный
+прогон не блокирует merge. Workflow реплеит `make fuzz-claim-lint`, падает на
+расхождении `executions_digest` и выгружает артефакт `fuzz-record-<run_id>` на 90
+дней. Первый прогон — [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295):
+success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
+исполнений, 0 находок. Это доказательство детерминизма и целостности входов, а не
+поиск новых багов; сам ночной schedule ещё ни разу не срабатывал.
 
 Отчёт покрытия `tools/coverage_report.py` (V2-20) проверяет, что процитированный
 символ существует (CV1, всегда ошибка), и измеряет символы suite'а, не

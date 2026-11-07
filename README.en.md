@@ -148,6 +148,9 @@ tools/
   sarif_evidence.py
   status_diff.py
   unroutable.py
+.github/
+  workflows/
+    fuzz-nightly.yml
 ci/
   cell-lint.yml
   claim-lint.yml
@@ -372,6 +375,16 @@ requires every finding to become a cell, a detector and a mutation fixture — o
 to be dismissed with a recorded reason; a stale entry, an unresolved cell or
 fixture, and a verdict that contradicts the findings are errors. Its cases are
 in [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
+
+The nightly replay of the recorded run (V2-19) lives in
+[`.github/workflows/fuzz-nightly.yml`](.github/workflows/fuzz-nightly.yml): cron
+`30 2 * * *` plus `workflow_dispatch`, never `push`/`pull_request`, so a red run
+blocks no merge. The workflow replays `make fuzz-claim-lint`, fails when
+`executions_digest` moves, and uploads the `fuzz-record-<run_id>` artifact for 90
+days. The first run is [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295):
+success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
+executions, 0 findings. This proves determinism and input integrity, not
+new-bug discovery; the nightly schedule itself has not fired yet.
 
 The coverage report `tools/coverage_report.py` (V2-20) proves that a cited
 symbol exists (CV1, always an error) and measures suite symbols that no

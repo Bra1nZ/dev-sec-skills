@@ -483,7 +483,7 @@ prior-art sweep, а не этот абзац.
 
 - [x] V2-17. Фаззинг-адаптер: oracle, seed-корпус, бюджет, фиксированный seed, артефакт прогона: `tools/fuzz_run.py`, схема `schemas/fuzz-run.schema.json`, правила `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout`; `executions_digest` воспроизводится при том же корпусе и seed. Записанный прогон `claim_lint` — 5 seed-леджеров, 150 мутаций, 155 исполнений, seed 20261107, `clean`; 5 eval-кейсов, `make fuzz-claim-lint` сверяет digest.
 - [x] V2-18. Триаж находок фаззера → cell + detector + fixture: `tools/fuzz_triage.py` (T1–T4), схема `schemas/fuzz-triage.schema.json`, 13 eval-кейсов; `make check-fuzz-triage` в `make verify`. Записанный прогон чист, поэтому триаж пуст; инъекция находки в копию записи даёт exit 1.
-- [ ] V2-19. Scheduled-запуск фаззера, не блокирующий merge.
+- [x] V2-19. Scheduled-запуск фаззера, не блокирующий merge: `.github/workflows/fuzz-nightly.yml` — cron `30 2 * * *` и `workflow_dispatch`, без `push`/`pull_request`; реплеит `spec/fuzz/runs/claim-lint-2026-11-07.json` через `make fuzz-claim-lint`, падает на расхождении `executions_digest`; артефакт `fuzz-record-<run_id>` с записью и findings, 90 дней. Первый прогон: [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295), 2026-11-07, commit `3110214`, success, digest `93e1af3183658aa6…`, seed 20261107, 155 исполнений, 0 находок; скачанный артефакт сверен локально. Ограничения: evidence получена через `workflow_dispatch`, сам ночной schedule ещё ни разу не срабатывал; replay доказывает детерминизм и целостность входов, а не поиск новых багов; артефакт живёт в GitHub и не является внешним anchor (C-13); красный прогон не блокирует merge и никого не уведомляет.
 - [x] V2-20. Отчёт покрытия: unmapped symbols, stale claims, cells без fixture: `tools/coverage_report.py` (CV1–CV4), 14 eval-кейсов, `make coverage` в `make verify`, записанные снимки `spec/coverage/`. Измерено 2026-11-07: `rbac_pg` — 80 символов, 67 mapped, 13 unmapped в двух suite-файлах, которые никто не цитирует; `craft-i18n` — 26/26; 0 stale claims и 0 детекторов без fixture в обоих.
 
 **Трек general-code — выход за пределы RBAC**
@@ -553,6 +553,7 @@ prior-art sweep, а не этот абзац.
 | `spec/sarif/` | Адаптеры трёх движков, authored fixtures с явной provenance и снимок отчёта |
 | `tools/mutation_plan.py` | V2-11: diff → изменённые ячейки → выбранные mutation fixtures |
 | `ci/mutation-changed.yml` | Шаблон CI: план по merge base, запуск только выбранных fixtures, skip при пустом плане |
+| `.github/workflows/fuzz-nightly.yml` | V2-19: ночной replay записанного fuzz-прогона; cron + dispatch, без push/PR, артефакт на 90 дней |
 | `tools/diff_coverage.py` | DC1–DC5: изменённый choke point обязан отображаться на non-open claim |
 | `evals/linter/` | Образец адверсариального набора для детекторов |
 | `evals/cell-lint/` | Адверсариальный набор для `cell_lint` |
