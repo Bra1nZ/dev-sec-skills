@@ -76,14 +76,22 @@ CHOKE_SCHEMA ?= spec/conveyor/cell-registry.schema.json
 CHOKE_RECORD_RBAC ?= spec/choke-points/2026-11-07-rbac-pg.json
 CHOKE_RECORD_I18N ?= spec/choke-points/2026-11-07-craft-i18n.json
 
+# Invariant catalogue (V2-21). A consistency gate, not a coverage claim: every
+# entry is open until a detector cites it.
+INVARIANT_CATALOG ?= spec/invariants/catalog.yaml
+INVARIANT_CELLS ?= spec/conveyor/cells.seed.yaml
+INVARIANT_RULES ?= spec/choke-points/rules.yaml
+INVARIANT_SCHEMA ?= schemas/invariant-catalog.schema.json
+INVARIANT_RECORD ?= spec/invariants/2026-11-07-coverage.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
-        diff-coverage-record choke-points choke-points-record \
-        mutation-plan mutations mutations-i18n mutations-all check-fuzz-triage \
-        fuzz-claim-lint help
+        diff-coverage-record choke-points choke-points-record invariants \
+        invariants-record mutation-plan mutations mutations-i18n mutations-all \
+        check-fuzz-triage fuzz-claim-lint help
 
-verify: verify-repo verify-pilot verify-pilot2 unroutable coverage
+verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
 
 verify-all: verify mutations-all
 
@@ -104,6 +112,7 @@ evals:
 	$(PYTHON) evals/diff-coverage/run_evals.py
 	$(PYTHON) evals/choke-points/run_evals.py
 	$(PYTHON) evals/mutation-plan/run_evals.py
+	$(PYTHON) evals/invariant-catalog/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -145,6 +154,23 @@ status-pilot:
 	  echo "note: first-release exemption: $(PILOT_LEDGER) is newer than $(PILOT_LEDGER_BASE_REF)"; \
 	fi; \
 	$(PYTHON) tools/status_diff.py $$args
+
+invariants:
+	@echo "== INV1-INV5: invariant catalogue outside databases and roles (V2-21) =="
+	$(PYTHON) tools/invariant_catalog.py \
+	  --catalog "$(INVARIANT_CATALOG)" \
+	  --cells "$(INVARIANT_CELLS)" \
+	  --rules "$(INVARIANT_RULES)" \
+	  --schema "$(INVARIANT_SCHEMA)"
+
+invariants-record:
+	@echo "== INV1-INV5: record the invariant coverage snapshot (V2-21) =="
+	$(PYTHON) tools/invariant_catalog.py \
+	  --catalog "$(INVARIANT_CATALOG)" \
+	  --cells "$(INVARIANT_CELLS)" \
+	  --rules "$(INVARIANT_RULES)" \
+	  --schema "$(INVARIANT_SCHEMA)" \
+	  --json "$(INVARIANT_RECORD)"
 
 mutation-plan:
 	@echo "== changed-cell selection for the two pilots (V2-11) =="
@@ -350,6 +376,8 @@ help:
 	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
+	@echo "  invariants    INV1-INV5 over the general-code invariant catalogue (V2-21)"
+	@echo "  invariants-record  write the coverage snapshot into spec/invariants/"
 	@echo "  mutation-plan select fixtures for the cells the pilot diffs touched (V2-11)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"

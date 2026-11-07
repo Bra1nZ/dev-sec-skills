@@ -1,0 +1,159 @@
+{
+  "generated": "2026-11-07",
+  "catalog_generated": "2026-11-07",
+  "categories": {
+    "input-validation": {
+      "count": 3,
+      "invariants": [
+        "INV-IV-001",
+        "INV-IV-002",
+        "INV-IV-003"
+      ]
+    },
+    "authn-session": {
+      "count": 3,
+      "invariants": [
+        "INV-AS-001",
+        "INV-AS-002",
+        "INV-AS-003"
+      ]
+    },
+    "secrets": {
+      "count": 3,
+      "invariants": [
+        "INV-SE-001",
+        "INV-SE-002",
+        "INV-SE-003"
+      ]
+    },
+    "lifecycle": {
+      "count": 3,
+      "invariants": [
+        "INV-LC-001",
+        "INV-LC-002",
+        "INV-LC-003"
+      ]
+    },
+    "transactions": {
+      "count": 3,
+      "invariants": [
+        "INV-TX-001",
+        "INV-TX-002",
+        "INV-TX-003"
+      ]
+    }
+  },
+  "invariants": 15,
+  "status": {
+    "open": 15
+  },
+  "seed_cells": {
+    "total": 12,
+    "referenced": 9,
+    "out_of_scope": 3,
+    "unmapped": []
+  },
+  "rules": {
+    "total": 11,
+    "used": [
+      "authentication",
+      "authorization",
+      "concurrency",
+      "error-handling",
+      "input-validation",
+      "resource-bound",
+      "resource-lifecycle",
+      "secret-crypto",
+      "transaction"
+    ],
+    "unused": [
+      "migration",
+      "sql-rls"
+    ]
+  },
+  "matrix": [
+    {
+      "cell": "CELL-003",
+      "invariants": [
+        "INV-TX-001"
+      ]
+    },
+    {
+      "cell": "CELL-004",
+      "invariants": [
+        "INV-TX-002"
+      ]
+    },
+    {
+      "cell": "CELL-005",
+      "invariants": [
+        "INV-TX-003"
+      ]
+    },
+    {
+      "cell": "CELL-006",
+      "invariants": [
+        "INV-LC-002",
+        "INV-TX-003"
+      ]
+    },
+    {
+      "cell": "CELL-007",
+      "invariants": [
+        "INV-LC-001",
+        "INV-LC-002",
+        "INV-LC-003",
+        "INV-SE-001",
+        "INV-SE-002"
+      ]
+    },
+    {
+      "cell": "CELL-008",
+      "invariants": [
+        "INV-AS-001",
+        "INV-AS-002",
+        "INV-AS-003",
+        "INV-SE-003"
+      ]
+    },
+    {
+      "cell": "CELL-009",
+      "invariants": [
+        "INV-IV-001",
+        "INV-IV-002",
+        "INV-IV-003",
+        "INV-LC-003",
+        "INV-SE-002"
+      ]
+    },
+    {
+      "cell": "CELL-010",
+      "invariants": [
+        "INV-IV-001",
+        "INV-IV-003"
+      ]
+    },
+    {
+      "cell": "CELL-012",
+      "invariants": [
+        "INV-SE-001"
+      ]
+    }
+  ],
+  "out_of_scope": [
+    {
+      "cell": "CELL-001",
+      "reason": "Database role and grant enforcement. The catalogue is deliberately outside databases and roles; the rbac_pg pilot covers this cell."
+    },
+    {
+      "cell": "CELL-002",
+      "reason": "Membership in administrative database roles. Database-specific, so it is outside this catalogue."
+    },
+    {
+      "cell": "CELL-011",
+      "reason": "Build inputs, provenance and SBOM. Supply-chain integrity is a separate track, not one of the five general-code categories."
+    }
+  ],
+  "errors": 0,
+  "warnings": 0
+}

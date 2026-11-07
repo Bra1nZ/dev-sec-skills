@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:dev-sec-skills:spec:invariants:catalog:v0",
+  "title": "Invariant catalogue outside databases and roles",
+  "description": "Machine-readable catalogue for the five general-code invariant categories of V2-21. It complements the cell taxonomy: a cell says what failure class exists, an invariant says what must always be true, where it is enforced, how a violation is observed and which bypasses are known. An entry is a design obligation, not evidence that the obligation holds.",
+  "type": "object",
+  "required": ["version", "generated", "categories", "invariants"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "generated": { "type": "string", "format": "date" },
+    "source_cells": {
+      "type": "string",
+      "description": "Seed registry the seed_cells references resolve against."
+    },
+    "choke_rules": {
+      "type": "string",
+      "description": "Choke-point rules file the choke_point_rule references resolve against."
+    },
+    "out_of_scope": {
+      "type": "array",
+      "description": "Seed cells deliberately not covered by this catalogue, each with a reason. A seed cell must be referenced by an invariant or listed here; silence is not scope.",
+      "items": {
+        "type": "object",
+        "required": ["cell", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "cell": { "type": "string", "pattern": "^CELL-[0-9]{3,}$" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "categories": {
+      "type": "object",
+      "description": "Exactly the five V2-21 categories.",
+      "required": [
+        "input-validation",
+        "authn-session",
+        "secrets",
+        "lifecycle",
+        "transactions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "input-validation": { "$ref": "#/definitions/category" },
+        "authn-session": { "$ref": "#/definitions/category" },
+        "secrets": { "$ref": "#/definitions/category" },
+        "lifecycle": { "$ref": "#/definitions/category" },
+        "transactions": { "$ref": "#/definitions/category" }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/invariant" }
+    }
+  },
+  "definitions": {
+    "category": {
+      "type": "object",
+      "required": ["title", "taxonomy_class", "failure_class", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "minLength": 5 },
+        "taxonomy_class": {
+          "enum": ["security", "correctness", "maintainability", "performance"]
+        },
+        "failure_class": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 20 }
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "required": [
+        "id",
+        "category",
+        "statement",
+        "enforcement",
+        "taxonomy_class",
+        "failure_class",
+        "failure_mode",
+        "entry_points",
+        "choke_point_rule",
+        "seed_cells",
+        "oracle",
+        "violation_response",
+        "evidence_kind",
+        "negative_test",
+        "status",
+        "bypasses",
+        "limitations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^INV-[A-Z]{2}-[0-9]{3}$" },
+        "category": {
+          "enum": [
+            "input-validation",
+            "authn-session",
+            "secrets",
+            "lifecycle",
+            "transactions"
+          ]
+        },
+        "statement": { "type": "string", "minLength": 20 },
+        "enforcement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The single choke point every path must cross, or the mechanism that makes the check atomic with the action."
+        },
+        "taxonomy_class": {
+          "enum": ["security", "correctness", "maintainability", "performance"]
+        },
+        "failure_class": { "type": "string", "minLength": 1 },
+        "failure_mode": {
+          "enum": ["deny", "abort", "rollback", "safe-degrade", "detect"]
+        },
+        "entry_points": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "choke_point_rule": {
+          "type": "string",
+          "description": "Rule ID in spec/choke-points/rules.yaml that maps a candidate to this invariant's class."
+        },
+        "seed_cells": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^CELL-[0-9]{3,}$" }
+        },
+        "oracle": {
+          "type": "string",
+          "minLength": 10,
+          "description": "The observation that distinguishes a violation: assertion, probe, log line or returned code."
+        },
+        "violation_response": {
+          "type": "string",
+          "minLength": 10,
+          "description": "What the system does on violation: deny, abort, roll back, degrade or record."
+        },
+        "evidence_kind": {
+          "enum": ["test", "runtime-enforcement", "review", "tool-output"]
+        },
+        "negative_test": {
+          "type": "string",
+          "minLength": 10,
+          "description": "The adversarial case that must fail when the enforcement is removed."
+        },
+        "status": {
+          "enum": ["proven", "model-checked", "tested", "static-refinement", "reviewed", "open"],
+          "description": "Honest status of this invariant. A catalogue entry starts open: naming a negative test does not mean it exists or has run."
+        },
+        "evidence_path": {
+          "type": "string",
+          "description": "Repository-relative artifact that backs a non-open status. INV4 errors when it is absent or does not exist."
+        },
+        "bypasses": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 10 },
+          "description": "Known ways the invariant can be skipped. Two is the minimum: one bypass is an anecdote, not a threat model."
+        },
+        "limitations": { "type": "string", "minLength": 20 }
+      }
+    }
+  }
+}

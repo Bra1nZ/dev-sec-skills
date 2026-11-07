@@ -53,6 +53,10 @@ spec/
     rules.yaml                    # signals and ordered class-mapping rules
     2026-11-07-rbac-pg.json       # recorded choke-point scan snapshot
     2026-11-07-craft-i18n.json    # recorded choke-point scan snapshot
+  invariants/
+    README.md                     # INV1-INV5: method, categories, measured coverage, limits
+    catalog.yaml                  # 5 general-code categories, 15 invariants, out_of_scope cells
+    2026-11-07-coverage.json      # recorded catalogue coverage snapshot
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under

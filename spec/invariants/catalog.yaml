@@ -1,0 +1,597 @@
+# Invariant catalogue outside databases and roles (V2-21).
+#
+# Five categories, three invariants each. Every entry names a falsifiable
+# statement, one enforcement point, the failure mode, the observation that
+# distinguishes a violation, the negative test that must fail when enforcement
+# is removed, and at least two known bypasses. `open` is deliberate: naming a
+# negative test does not mean it exists. The catalogue is a design obligation,
+# not evidence that the obligations hold.
+#
+# References resolve against:
+#   source_cells: spec/conveyor/cells.seed.yaml
+#   choke_rules:  spec/choke-points/rules.yaml
+#
+# Run:
+#   python3 tools/invariant_catalog.py \
+#     --catalog spec/invariants/catalog.yaml \
+#     --cells spec/conveyor/cells.seed.yaml \
+#     --rules spec/choke-points/rules.yaml
+version: 1
+generated: "2026-11-07"
+source_cells: spec/conveyor/cells.seed.yaml
+choke_rules: spec/choke-points/rules.yaml
+
+out_of_scope:
+  - cell: CELL-001
+    reason: >-
+      Database role and grant enforcement. The catalogue is deliberately outside
+      databases and roles; the rbac_pg pilot covers this cell.
+  - cell: CELL-002
+    reason: >-
+      Membership in administrative database roles. Database-specific, so it is
+      outside this catalogue.
+  - cell: CELL-011
+    reason: >-
+      Build inputs, provenance and SBOM. Supply-chain integrity is a separate
+      track, not one of the five general-code categories.
+
+categories:
+  input-validation:
+    title: Input validation and canonicalization
+    taxonomy_class: security
+    failure_class: invalid-or-injected-input
+    description: >-
+      Untrusted input is checked at one boundary, in the representation that is
+      actually acted on, and every path that accepts it crosses that boundary.
+  authn-session:
+    title: Authentication and session lifecycle
+    taxonomy_class: security
+    failure_class: broken-authentication
+    description: >-
+      A session is accepted only after every claim is verified, and revocation
+      or rotation takes effect across every cache and replica within the stated
+      window.
+  secrets:
+    title: Secret handling and cryptographic primitives
+    taxonomy_class: security
+    failure_class: exposed-secret-or-weak-crypto
+    description: >-
+      Secrets are loaded at runtime from a designated source, never reach logs
+      or artifacts, and are compared or verified with vetted primitives.
+  lifecycle:
+    title: Resource lifecycle and cleanup
+    taxonomy_class: correctness
+    failure_class: lifecycle-cleanup
+    description: >-
+      Every acquired resource is released on every exit path, shutdown is
+      bounded, and a cleanup failure does not hide the original error.
+  transactions:
+    title: Transactions, idempotency and concurrency
+    taxonomy_class: correctness
+    failure_class: check-then-act-or-partial-write
+    description: >-
+      A refused operation leaves no partial state, a retry does not double-apply
+      it, and a check-then-act race is closed by a constraint, lock or fencing
+      token at the write.
+
+invariants:
+  # ---------------------------------------------------------- input validation
+  - id: INV-IV-001
+    category: input-validation
+    statement: >-
+      Every externally supplied field is validated against an allowlist of type,
+      range, length and encoding at one shared boundary before any read or write,
+      and invalid input is denied with its input class.
+    enforcement: >-
+      One validator at the boundary of the service; handlers and batch jobs call
+      it instead of repeating field checks.
+    taxonomy_class: security
+    failure_class: invalid-or-injected-input
+    failure_mode: deny
+    entry_points: [http, cli, batch, import, api]
+    choke_point_rule: input-validation
+    seed_cells: [CELL-009, CELL-010]
+    oracle: >-
+      The response names the rejected input class and no write is visible after
+      the request; the same input through a batch path produces the same refusal.
+    violation_response: >-
+      The request is denied before any state change; the error does not echo the
+      raw value and the operation is not partially applied.
+    evidence_kind: test
+    negative_test: >-
+      Submit an oversized field, an unknown enum, and a wrong type through the
+      single-item and batch endpoints; each must be denied, not truncated or
+      coerced.
+    status: open
+    bypasses:
+      - A deeper layer re-parses the raw string after the boundary check and acts on a different value.
+      - A batch or import endpoint applies its own per-field checks that drift from the shared validator.
+      - A coercion helper silently truncates or normalizes an out-of-range value instead of rejecting it.
+    limitations: >-
+      No detector in either pilot cites this invariant. The negative test is a
+      specification, not a recorded run; format-specific validation libraries
+      may reject a value for a different reason than the one the oracle names.
+
+  - id: INV-IV-002
+    category: input-validation
+    statement: >-
+      Canonicalization happens before validation and authorization, and the
+      canonical representation is the one that is checked and acted on.
+    enforcement: >-
+      A single decode-and-canonicalize step at the boundary; authorization
+      receives the canonical value, never the raw input.
+    taxonomy_class: security
+    failure_class: invalid-or-injected-input
+    failure_mode: deny
+    entry_points: [http, api, import]
+    choke_point_rule: input-validation
+    seed_cells: [CELL-009]
+    oracle: >-
+      Two inputs that canonicalize to the same value produce the same decision;
+      an input that changes meaning after decoding is rejected, not checked twice.
+    violation_response: >-
+      The request is denied at the canonical boundary; the raw and canonical
+      forms never reach different authorization decisions.
+    evidence_kind: test
+    negative_test: >-
+      Send percent-encoded, double-encoded, Unicode-normalized and case-folded
+      variants of one identifier; every variant must reach the same decision.
+    status: open
+    bypasses:
+      - Authorization checks the raw value while the storage layer decodes it later.
+      - A second decoder runs in a downstream service and produces a different canonical form.
+      - Casefolding or Unicode normalization changes the value after the permission lookup.
+    limitations: >-
+      Canonical equivalence depends on the protocol and the storage engine; the
+      catalogue names the property, not a canonicalization library. No pilot
+      detector covers this invariant.
+
+  - id: INV-IV-003
+    category: input-validation
+    statement: >-
+      Batch, bulk and import paths apply the same validation and authorization as
+      the single-item path, including rejection of a mixed batch before any item
+      is applied.
+    enforcement: >-
+      One shared per-item check invoked by both paths, with the batch
+      transaction refusing the whole batch on the first invalid item.
+    taxonomy_class: security
+    failure_class: batch-bypass
+    failure_mode: deny
+    entry_points: [batch, bulk-api, import, admin]
+    choke_point_rule: authorization
+    seed_cells: [CELL-010, CELL-009]
+    oracle: >-
+      An invalid or unauthorized item in a batch produces the same code as the
+      single-item path, and the batch has no partial effect.
+    violation_response: >-
+      The batch is refused and rolled back; no item before the invalid one is
+      committed and no per-item success is reported.
+    evidence_kind: test
+    negative_test: >-
+      Send a batch whose second item is invalid and whose third item is
+      unauthorized; both the single-item and batch paths must refuse, and the
+      world state must be unchanged.
+    status: open
+    bypasses:
+      - The batch path duplicates the check and drifts from the single-item validator.
+      - An admin or import-only route bypasses the check because it is considered trusted.
+      - Items are applied one by one before the invalid item is discovered, leaving partial state.
+    limitations: >-
+      CELL-010 records the failure class but has no detector in the seed. The
+      catalogue does not prove that any batch endpoint exists; the negative test
+      must be written against the real entry points.
+
+  # ------------------------------------------------------------- authn/session
+  - id: INV-AS-001
+    category: authn-session
+    statement: >-
+      A session credential is accepted only when signature, issuer, audience,
+      expiry, not-before and revocation status all pass at one verifier.
+    enforcement: >-
+      One session verifier used by every protected entry point; no handler parses
+      or trusts claims on its own.
+    taxonomy_class: security
+    failure_class: broken-authentication
+    failure_mode: deny
+    entry_points: [http, api, background-job, queue-consumer]
+    choke_point_rule: authentication
+    seed_cells: [CELL-008]
+    oracle: >-
+      A token with any one claim invalid is refused with an authentication error,
+      and the refusal is the same through every entry point.
+    violation_response: >-
+      The request is denied before authorization and before any state change; the
+      failure is recorded without the token value.
+    evidence_kind: test
+    negative_test: >-
+      Present tokens with a bad signature, wrong issuer, wrong audience, expired
+      and not-yet-valid timestamps, and a revoked ID; each must be refused.
+    status: open
+    bypasses:
+      - A background worker or queue consumer trusts a message field instead of verifying the credential.
+      - A cached verification result survives revocation or rotation.
+      - An alternate entry point (CLI, admin socket) skips the verifier.
+    limitations: >-
+      CELL-008 covers rotation, not the full claim set. The seed has no
+      authentication cell, so this invariant is ahead of the detectors; the
+      negative test is a specification.
+
+  - id: INV-AS-002
+    category: authn-session
+    statement: >-
+      Rotation invalidates an old credential no later than the stated window, in
+      every cache, replica and long-lived connection that can accept it.
+    enforcement: >-
+      A version or epoch checked at the verifier, bumped on rotation, with caches
+      keyed by the epoch rather than by the raw credential.
+    taxonomy_class: security
+    failure_class: stale-credential
+    failure_mode: deny
+    entry_points: [authentication, background-job, admin]
+    choke_point_rule: authentication
+    seed_cells: [CELL-008]
+    oracle: >-
+      After the window, the old credential is refused on every replica; the new
+      credential works and the old one is refused at the same point.
+    violation_response: >-
+      The old credential is denied and the attempt is recorded; no cache or
+      replica continues to accept it after the window.
+    evidence_kind: test
+    negative_test: >-
+      Rotate a credential, wait past the stated window, and present the old value
+      to every replica and cached path; every attempt must be denied.
+    status: open
+    bypasses:
+      - A per-process cache is not invalidated on rotation.
+      - A long-lived connection or pooled session authenticates once and is never rechecked.
+      - A replica misses the epoch bump because rotation is applied per node.
+    limitations: >-
+      The window is a stated property, not a constant: the catalogue requires the
+      design to name it. CELL-008 is open in the seed and has no detector.
+
+  - id: INV-AS-003
+    category: authn-session
+    statement: >-
+      Logout and revocation take effect at the next authorization decision: a
+      credential presented after revocation cannot authorize any operation.
+    enforcement: >-
+      Revocation state is checked at the same verifier as the session, or the
+      credential is short-lived enough that the stated window bounds the exposure.
+    taxonomy_class: security
+    failure_class: broken-authentication
+    failure_mode: deny
+    entry_points: [http, api, background-job, admin]
+    choke_point_rule: authentication
+    seed_cells: [CELL-008]
+    oracle: >-
+      A request made after logout or revocation is refused even when the token
+      bytes are unchanged and still unexpired.
+    violation_response: >-
+      The request is denied at the verifier; no state change occurs and the
+      refusal is attributable to revocation, not to a malformed token.
+    evidence_kind: test
+    negative_test: >-
+      Log out one session, then replay its token against a protected endpoint and
+      a background job; both must refuse before any side effect.
+    status: open
+    bypasses:
+      - The API checks revocation but a background consumer checks only the signature.
+      - Revocation is written to one store while a replica reads another.
+      - A short-circuit for "already authenticated" skips the revocation lookup.
+    limitations: >-
+      A stateless token with no revocation list cannot satisfy the immediate form;
+      it needs a bounded window and the design must state it. No pilot detector
+      covers this invariant.
+
+  # ------------------------------------------------------------------ secrets
+  - id: INV-SE-001
+    category: secrets
+    statement: >-
+      Secrets are read at runtime from a designated secret store and never from
+      source, image layers, command-line arguments or world-readable config.
+    enforcement: >-
+      One secret-loading adapter that resolves a named secret at startup or use;
+      the process fails closed when the store is unavailable.
+    taxonomy_class: security
+    failure_class: exposed-secret-or-weak-crypto
+    failure_mode: abort
+    entry_points: [startup, configuration, build, release]
+    choke_point_rule: secret-crypto
+    seed_cells: [CELL-012, CELL-007]
+    oracle: >-
+      A scan of the source, image and process arguments finds no secret value;
+      a missing secret aborts startup instead of falling back to a literal.
+    violation_response: >-
+      Startup or the operation aborts with a configuration error that names the
+      missing secret but not its value.
+    evidence_kind: test
+    negative_test: >-
+      Build an image and start the process with the secret store unavailable;
+      the process must abort, and a source/image/argv scan must find no value.
+    status: open
+    bypasses:
+      - A default literal is used when the store is unreachable.
+      - A build step bakes a secret into an image layer or generated config.
+      - A debug flag prints the resolved configuration, including the value.
+    limitations: >-
+      CELL-012 covers insecure release defaults, not secret storage. A runtime
+      store can still be compromised; the invariant is about the loading path,
+      not the store's own security. No pilot detector covers it.
+
+  - id: INV-SE-002
+    category: secrets
+    statement: >-
+      Secrets never appear in logs, error payloads, traces or crash dumps, and
+      redaction happens at the sink rather than at selected call sites.
+    enforcement: >-
+      One logging/error sink that redacts by field type before serialization;
+      callers cannot opt out for a secret field.
+    taxonomy_class: security
+    failure_class: exposed-secret-or-weak-crypto
+    failure_mode: safe-degrade
+    entry_points: [http, api, cli, error-path]
+    choke_point_rule: error-handling
+    seed_cells: [CELL-009, CELL-007]
+    oracle: >-
+      A request that fails on a secret-bearing field produces an error whose
+      payload and log line contain no value or stable prefix of the value.
+    violation_response: >-
+      The error is returned and logged with the field redacted; the operation
+      fails but the secret is not disclosed.
+    evidence_kind: test
+    negative_test: >-
+      Trigger validation, authentication and dependency errors with a secret in
+      the input; scan the response, logs and trace for the value and its prefix.
+    status: open
+    bypasses:
+      - A framework serializes the whole request object before the redactor runs.
+      - A debug or trace level bypasses the redaction filter.
+      - A crash dump or uncaught exception prints the local variable.
+    limitations: >-
+      Redaction is easier to test at known sinks than to prove universal. A
+      secret can also leak through timing or length even when the value is
+      redacted; that is outside this invariant. No pilot detector covers it.
+
+  - id: INV-SE-003
+    category: secrets
+    statement: >-
+      Secret comparison, token verification and password hashing use vetted
+      constant-time primitives; no home-grown equality, MAC or key derivation is
+      used for a security decision.
+    enforcement: >-
+      A small crypto adapter exposes constant-time compare, verify and hash; all
+      security decisions call it rather than comparing bytes directly.
+    taxonomy_class: security
+    failure_class: exposed-secret-or-weak-crypto
+    failure_mode: abort
+    entry_points: [authentication, api, configuration]
+    choke_point_rule: secret-crypto
+    seed_cells: [CELL-008]
+    oracle: >-
+      The verifier uses a vetted primitive and a wrong secret takes the same code
+      path as a right one; a non-constant-time comparison is rejected by review
+      or a lint rule.
+    violation_response: >-
+      Verification fails closed; the implementation refuses to start or the
+      build fails when a banned primitive is used.
+    evidence_kind: test
+    negative_test: >-
+      Replace the constant-time compare with `==` and confirm the detector fails;
+      verify a wrong secret and check that the response does not depend on the
+      matching prefix length.
+    status: open
+    bypasses:
+      - A helper compares truncated or normalized secrets before the constant-time check.
+      - A non-security comparison (cache key, lookup) exposes the same secret through timing.
+      - A home-grown MAC or KDF is used because the vetted one was inconvenient.
+    limitations: >-
+      Constant-time behavior is hard to prove from source; a mutation fixture can
+      show sensitivity to the comparison but not the absence of all timing
+      channels. No pilot detector covers this invariant.
+
+  # ---------------------------------------------------------------- lifecycle
+  - id: INV-LC-001
+    category: lifecycle
+    statement: >-
+      Every acquired resource is released on success, error, cancellation and
+      timeout through one scope guard, and no exit path bypasses it.
+    enforcement: >-
+      A language-level scope guard (context manager, `defer`, RAII, `finally`)
+      that owns the resource for the whole operation.
+    taxonomy_class: correctness
+    failure_class: lifecycle-cleanup
+    failure_mode: safe-degrade
+    entry_points: [http, background-job, shutdown, error-path]
+    choke_point_rule: resource-lifecycle
+    seed_cells: [CELL-007]
+    oracle: >-
+      After each exit path the resource is closed exactly once; a forced
+      exception or cancellation does not leave it open.
+    violation_response: >-
+      The guard releases the resource and the original error is propagated; a
+      release failure is reported without masking the original error.
+    evidence_kind: test
+    negative_test: >-
+      Force an exception, a cancellation and a timeout inside the guarded scope;
+      each path must close the resource and report the original failure.
+    status: open
+    bypasses:
+      - An early return before the guard is installed.
+      - A resource acquired in one layer and released in another that can be skipped.
+      - A cleanup callback that runs only on the success path.
+    limitations: >-
+      Cell CELL-007 records the class but the seed has no detector. Garbage
+      collection is not release, and a closed handle can still be reachable; the
+      invariant is about ownership, not memory zeroization.
+
+  - id: INV-LC-002
+    category: lifecycle
+    statement: >-
+      Shutdown stops accepting new work, drains or aborts in-flight work within a
+      stated bound, and releases every owned resource before exit.
+    enforcement: >-
+      One shutdown coordinator with a deadline; intake closes first, then workers
+      observe cancellation, then resources are released.
+    taxonomy_class: correctness
+    failure_class: lifecycle-cleanup
+    failure_mode: safe-degrade
+    entry_points: [shutdown, background-job, queue-consumer]
+    choke_point_rule: resource-bound
+    seed_cells: [CELL-007, CELL-006]
+    oracle: >-
+      After the deadline the process has exited or reported the remaining work;
+      no new item is accepted after intake closes and no lease is left held.
+    violation_response: >-
+      New work is refused, in-flight work is drained or cancelled, and the
+      process exits within the bound with a record of what was not finished.
+    evidence_kind: test
+    negative_test: >-
+      Start long-running work, signal shutdown, and confirm that intake refuses
+      new items, the deadline is honored, and every lease is released.
+    status: open
+    bypasses:
+      - The signal handler waits for a worker that never observes cancellation.
+      - A second entry point keeps accepting work while the coordinator drains.
+      - A lease is released on the success path but not on forced shutdown.
+    limitations: >-
+      A bounded shutdown can lose in-flight work; the invariant requires the loss
+      to be explicit, not silent. CELL-006 (stale worker) covers the lease side,
+      but the seed has no shutdown detector.
+
+  - id: INV-LC-003
+    category: lifecycle
+    statement: >-
+      A cleanup or release failure does not mask the original error and does not
+      turn a failed operation into a success-shaped result.
+    enforcement: >-
+      The scope guard aggregates the primary failure and the cleanup failure, and
+      the error contract reports both.
+    taxonomy_class: correctness
+    failure_class: error-contract
+    failure_mode: abort
+    entry_points: [error-path, shutdown, http, api]
+    choke_point_rule: error-handling
+    seed_cells: [CELL-009, CELL-007]
+    oracle: >-
+      When both the operation and cleanup fail, the returned error names the
+      original failure and the cleanup failure; the status is not success.
+    violation_response: >-
+      The operation reports failure and includes the cleanup failure as context;
+      it never returns an empty success value.
+    evidence_kind: test
+    negative_test: >-
+      Make cleanup throw while the operation also throws; assert that the
+      original error is still identifiable and the result is not success.
+    status: open
+    bypasses:
+      - A cleanup exception propagates and replaces the original error.
+      - A catch-all returns a default value after cleanup fails.
+      - A background job marks the task done before cleanup completes.
+    limitations: >-
+      Error aggregation is language- and framework-specific; the catalogue names
+      the contract, not a class. No pilot detector covers this invariant.
+
+  # -------------------------------------------------------------- transactions
+  - id: INV-TX-001
+    category: transactions
+    statement: >-
+      A refused or failed operation leaves no partial write, charge, counter
+      increment or half-applied state.
+    enforcement: >-
+      One transaction boundary or compensating action around the whole unit of
+      work; the check and the write share it.
+    taxonomy_class: correctness
+    failure_class: partial-write-on-refusal
+    failure_mode: rollback
+    entry_points: [http, batch, import, migration, recovery]
+    choke_point_rule: transaction
+    seed_cells: [CELL-003]
+    oracle: >-
+      After an expected refusal, the world state equals the pre-operation state,
+      including counters, side tables and emitted events.
+    violation_response: >-
+      The unit of work rolls back; committed side effects outside the boundary
+      are reported as a violation, not ignored.
+    evidence_kind: test
+    negative_test: >-
+      Refuse an operation after it has written one row and incremented one
+      counter; assert that both are absent afterwards.
+    status: open
+    bypasses:
+      - An event, email or queue message is emitted before the transaction commits.
+      - One repository call uses its own transaction and commits independently.
+      - A retry re-applies the already-committed prefix after a partial failure.
+    limitations: >-
+      CELL-003 is open in the seed. Side effects outside the transactional store
+      (email, queue, files) cannot be rolled back; the invariant requires them to
+      be listed or made idempotent.
+
+  - id: INV-TX-002
+    category: transactions
+    statement: >-
+      Retry, duplicate delivery and replay do not double-apply an operation; the
+      idempotency key is checked and consumed atomically with the effect.
+    enforcement: >-
+      A unique idempotency key in the same store and transaction as the effect,
+      inserted or claimed before the effect runs.
+    taxonomy_class: correctness
+    failure_class: non-idempotent-retry
+    failure_mode: detect
+    entry_points: [http, queue-consumer, batch, recovery]
+    choke_point_rule: transaction
+    seed_cells: [CELL-004]
+    oracle: >-
+      The same key delivered twice produces one effect and the second attempt is
+      reported as a duplicate; the key cannot be claimed twice concurrently.
+    violation_response: >-
+      The duplicate is detected and skipped or rejected; the stored effect is
+      unchanged and the response is stable across attempts.
+    evidence_kind: test
+    negative_test: >-
+      Deliver the same message twice, then concurrently, and assert one effect
+      and one duplicate outcome; replay a stale message after a delayed delivery.
+    status: open
+    bypasses:
+      - The key is checked before the effect but not stored in the same transaction.
+      - Two workers both miss the key because the uniqueness constraint is absent.
+      - A retry uses a fresh key, so the duplicate is indistinguishable from new work.
+    limitations: >-
+      Exactly-once delivery is not assumed; the invariant is at-least-once plus
+      idempotency. CELL-004 is open and the seed has no detector. The key
+      lifetime and replay window must be stated by the design.
+
+  - id: INV-TX-003
+    category: transactions
+    statement: >-
+      A check-then-act sequence is protected by a database constraint, row lock
+      or fencing token at the write, and a worker that lost ownership cannot
+      commit.
+    enforcement: >-
+      The constraint or lock is taken in the same transaction as the write; a
+      lease carries a monotonic epoch checked at commit.
+    taxonomy_class: correctness
+    failure_class: check-then-act
+    failure_mode: abort
+    entry_points: [http, background-job, batch]
+    choke_point_rule: concurrency
+    seed_cells: [CELL-005, CELL-006]
+    oracle: >-
+      Two concurrent writers produce one success and one abort or retry, never a
+      violated constraint; a paused stale worker's commit is refused.
+    violation_response: >-
+      The losing writer aborts or retries; the stale commit is refused and the
+      lease owner is unchanged.
+    evidence_kind: test
+    negative_test: >-
+      Run two writers through the same check-then-act path concurrently, and pause
+      one worker between check and write after another takes the lease.
+    status: open
+    bypasses:
+      - The lock is taken but released before the write commits.
+      - A second service instance uses its own in-process lock.
+      - The fencing token is checked before the write but not enforced by the store.
+    limitations: >-
+      CELL-005 and CELL-006 are open in the seed. In-process locks are not
+      evidence for a multi-instance service; the invariant needs the actual
+      serialization mechanism to be named.
