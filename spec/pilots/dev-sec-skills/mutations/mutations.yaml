@@ -1,0 +1,20 @@
+# Mutation fixtures for the dev-sec-skills self-pilot — can D-PINNED-ACTIONS fail?
+#
+# Each fixture copies a clean probe tree, applies one mutation, runs the
+# detector against the copy, and requires the set of failing detector tests to
+# equal `expect_failures` exactly. The repository is never modified.
+#
+#   python3 spec/pilots/dev-sec-skills/mutations/run_mutations.py
+target: dev-sec-skills
+detector: spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py
+fixtures:
+  - id: MUT-001
+    cell: CELL-001
+    detector: D-PINNED-ACTIONS
+    probe: spec/pilots/dev-sec-skills/probes/pinned-ci
+    artifact: .github/workflows/ci.yml
+    source_sha256: "c979aa9e41e32fc55b1b03dc037de42ec3c2a3a8cd22a842da333cb1a77d05c3"
+    mutations:
+      - anchor: "uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7"
+        replacement: "uses: actions/checkout@v7"
+    expect_failures: [test_workflow_actions_are_pinned]

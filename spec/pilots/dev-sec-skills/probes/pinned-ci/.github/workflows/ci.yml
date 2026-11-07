@@ -1,0 +1,17 @@
+name: probe-ci
+
+# Deliberately small control tree for MUT-001: every action is pinned, so the
+# detector passes here and fails only after the fixture mutates a ref back to a
+# mutable tag. This repository workflow is never modified by the fixture.
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: echo ok
