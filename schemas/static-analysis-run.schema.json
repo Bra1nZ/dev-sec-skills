@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/static-analysis-run.schema.json",
+  "title": "Static analysis run",
+  "description": "A machine-checkable record of one static-analysis engine run (V2-36): the engine and its exact command, the rule set and its hash, the target commit, the raw engine output (SARIF), the normalized report and one triage entry per finding. A static-analysis finding is a review queue entry, not a verdict: it may be a true positive, a false positive, or a failure class no detector owns. The record therefore cannot support a `static-refinement` claim until every finding has a disposition: `covered` or `new` with a cell, detector and fixture that resolve; `not-a-bug` with a reason; or `out-of-scope` with a reason when the finding is real but the cited taxonomy does not own the failure class. L2 hashes the rule set and both outputs, ties `finished_at` to the evidence date, rejects an authored-fixture input and an unclassified finding (`unmapped`) for a non-open claim, and checks the triage bijection and routing. The record does not prove that the engine would have found a different defect; without an external anchor a forger can rewrite the record and its outputs together (C-13).",
+  "type": "object",
+  "required": ["tool", "command", "rules", "target_commit", "output",
+               "output_sha256", "report", "report_sha256", "exit_code",
+               "started_at", "finished_at", "status", "triage"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Engine that produced the findings, e.g. 'semgrep', 'bandit', 'codeql', 'svace'. L2 checks it against an engine with at least one run in the normalized report."
+    },
+    "version": {
+      "type": "string",
+      "description": "Engine version. A rule set is interpreted by a version, so a version upgrade can change the answer."
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact command that ran the engine, including the configuration, target and SARIF output. L1 requires it to equal the evidence command when the evidence names one."
+    },
+    "rules": {
+      "type": "object",
+      "description": "The rule set the engine applied. A finding is a function of the rules, not only of the code, so an unnamed or unhashed rule set makes the run unreproducible. A rule set fetched from a registry under a non-redistributable licence is named by URL: it is not vendored, and L2 does not fetch it.",
+      "required": ["name", "source", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human name of the rule set, e.g. 'dev-sec-skills-ci-supply-chain'."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the vendored rule file, relative to --tool-output-root, or the URL it was fetched from."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the rule bytes actually applied. L2 verifies it for a local path; a URL is not fetched and its hash is not re-derived."
+        }
+      }
+    },
+    "target_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$",
+      "description": "Commit of the analyzed repository. L1 requires it to equal the evidence commit when the evidence names one; L2 resolves it in --root when that root is a git work tree."
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Engine exit code. A non-zero code cannot support a non-open status; engines that return non-zero when findings exist need an adapter, not a reinterpretation of the code."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset."
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset. Its local date must equal the evidence date."
+    },
+    "output": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the raw engine output (SARIF), relative to --tool-output-root, or a URL. A URL is not fetched and its hash is not checked, so L2 rejects it for a non-open claim."
+    },
+    "output_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the raw output. L2 verifies it and that the normalized report hashes the same bytes as an input."
+    },
+    "report": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the normalized report produced by tools/sarif_evidence.py, relative to --tool-output-root. The report, not the record, carries the finding identities the triage names. A URL is not fetched, the triage cannot be checked against it, and L2 rejects it for a non-open claim."
+    },
+    "report_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the normalized report. L2 verifies it."
+    },
+    "status": {
+      "enum": ["completed", "unverified", "failed", "error"],
+      "description": "How the supervised run ended (V2-28 vocabulary). Only `completed` with exit_code 0 can support a non-open claim."
+    },
+    "cells": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Cell registry the triage's cell, detector and fixture fields resolve against, relative to --tool-output-root. Required when any entry has disposition covered or new."
+    },
+    "triage": {
+      "type": "array",
+      "description": "Exactly one entry per finding in the normalized report. An empty list is valid only when the report has no findings. `covered` and `new` name artifacts that must resolve; `not-a-bug` states why the finding is not a defect; `out-of-scope` states why a real finding has no owner in the cited taxonomy.",
+      "items": { "$ref": "#/definitions/entry" }
+    }
+  },
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "required": ["finding", "disposition", "date"],
+      "properties": {
+        "finding": {
+          "type": "string",
+          "pattern": "^F-[0-9]{3,}$",
+          "description": "Finding id from the normalized report (`findings[].id`)."
+        },
+        "disposition": {
+          "enum": ["covered", "new", "not-a-bug", "out-of-scope"],
+          "description": "covered: an existing cell, detector and fixture already catch this failure class. new: no detector caught it, and the named cell, detector and fixture now exist. not-a-bug: the finding does not describe a defect, and the reason says why. out-of-scope: the finding describes a real symptom but the cited taxonomy owns no cell for its failure class; the reason names the boundary."
+        },
+        "cell": {
+          "type": "string",
+          "pattern": "^CELL-[0-9]{3,}$",
+          "description": "Cell that owns the failure class. Required for covered and new."
+        },
+        "detector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Detector of `cell` that catches the failure. Required for covered and new."
+        },
+        "fixture": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mutation fixture in the `path#MUT-ID` form used by the cell registry. Required for covered and new."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why the finding is not a defect (not-a-bug) or why the taxonomy does not own it (out-of-scope). Required for both; the reason is the whole point of the entry."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the finding was triaged."
+        },
+        "note": {
+          "type": "string",
+          "description": "Free-form context: observed output, fix, or follow-up."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "disposition": { "enum": ["covered", "new"] } },
+            "required": ["disposition"]
+          },
+          "then": { "required": ["cell", "detector", "fixture"] },
+          "else": { "required": ["reason"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

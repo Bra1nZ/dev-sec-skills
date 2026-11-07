@@ -251,6 +251,13 @@ spec/
     adapters.yaml
     fixtures/
     2026-11-07-report.json
+  static-analysis/
+    README.md
+    rules/
+      ci-supply-chain-2026-11-07.yml
+    runs/
+      ci-craft-i18n-2026-11-07.sarif
+      ci-craft-i18n-2026-11-07.report.json
   proofs/
     README.md
     manifest.yaml
@@ -344,7 +351,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, twelve linter suites, and the `spec/` directory with the conveyor concept.
+evals, thirteen linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -361,7 +368,7 @@ coverage, evidence, traceability, taxonomy, status-escalation gate; a
 `runtime-enforcement` detector needs a negative test, and the cell needs
 `enforced_at`, `oracle` and `violation_response`),
 `tools/unroutable.py` (the `unroutable` share) and the `ci/cell-lint.yml`
-template. The linter cases are in [`evals/linter/`](evals/linter/): 53/53,
+template. The linter cases are in [`evals/linter/`](evals/linter/): 70/70,
 including 8 run-record cases, two V2-09 controls — `unrelated-commit` (the
 commit resolves but the artifact changed after it) and `empty-claims` (an empty
 ledger must fail instead of passing vacuously) — and seven V2-10 `tool-output-*`
@@ -375,7 +382,13 @@ test of its own, an id not cited by the evidence, an empty reason, and an open
 claim), and seven V2-35 `sanitizer-*` cases (a valid ASan record, a clean
 record whose output carries a finding line, a failed run, `unverified` for a
 tested claim, a record without `status`, an output hash mismatch, and
-`sanitizer_runs` on a non-test item). The historical
+`sanitizer_runs` on a non-test item), and seventeen V2-36 `static-analysis-*`
+cases (a valid record with `covered` routing, a real finding recorded as
+`out-of-scope`, a record on a non-`static-analysis` item, rule and SARIF
+hashes, `unverified`, `unmapped`, an authored fixture, a duplicate and a
+missing triage entry, a missing cell, `not-a-bug`/`out-of-scope` without a
+reason, `static-refinement` without a record, an engine absent from the
+report, and a SARIF or report behind a URL). The historical
 12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 40/40, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
@@ -444,7 +457,7 @@ cited commit.
 Gate strength was measured on the real artifacts (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) takes the craft-i18n
 ledger, its recorded cargo log and the cell registry, applies one attack per
-drill, and requires the expected exit code and message. 13 of 14 attacks are
+drill, and requires the expected exit code and message. 14 of 15 attacks are
 blocked; one stays green and is recorded as a gap: re-dating a run (C-13).
 Borrowing another claim's real tests (V2-34) is now blocked by L6: the open
 C-08 that takes C-01's tests fails even when the sharing is declared, because
@@ -502,6 +515,21 @@ are `make choke-points` and `make choke-points-record`. The CP1 threshold is not
 in `make verify` until the noise is reduced; a class match is a hypothesis, not
 evidence and not a cell.
 
+Static analysis becomes evidence only with a record and a triage (V2-36):
+`schemas/static-analysis-run.schema.json` pins the engine, the command, the rule
+set and its hash, the target commit, the raw SARIF, the normalized report and
+exactly one disposition per finding. `covered`/`new` resolve to a cell, a
+detector and a mutation fixture; `not-a-bug`/`out-of-scope` require a reason.
+`claim_lint` L1 checks the shape, L2 hashes the rules and both outputs, requires
+the named engine in the report, zero `unmapped` and `fixture_inputs`, and a
+bijection between the triage and the report, and L4 requires a record for
+`static-refinement`. The recorded run in
+[`spec/static-analysis/`](spec/static-analysis/README.md) is Semgrep with three
+rules authored here: five findings, all `out-of-scope` because the pilot
+taxonomy owns no supply-chain cell. The rules are authored, not vendored:
+Semgrep's Rules License v1.0 forbids redistribution, and the `p/ci` attempt is
+not committed. The channel adds 17 linter cases; the adapter has 17.
+
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,
 3 open, 0 CL1/CL3/CL4 errors when run with the claim ledger. 24 of 27 detectors
@@ -515,7 +543,8 @@ The second pilot is
 [`spec/pilots/craft-i18n/`](spec/pilots/craft-i18n/README.md), deliberately
 non-RBAC and non-database: a Rust crate that validates translation catalogs.
 14 cells (13 tested, 1 open), 13 detectors, 12 of 13 with a mutation fixture
-and one documented exemption; an 8-claim ledger with 0 L1–L6 findings. The open
+and one documented exemption; a 9-claim ledger (C-09 is `static-refinement`
+with a recorded static-analysis run) with 0 L1–L6 findings. The open
 CELL-002 is a real gap: Unicode Cf characters (U+202E, U+200B, U+2066) pass the
 checker, while U+0007 and U+FEFF are rejected.
 

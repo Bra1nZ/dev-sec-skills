@@ -13,6 +13,9 @@ evidence-first contract. The ledger turns the prose discipline of
 - `sanitizer-run.schema.json` — JSON Schema (draft-07) for
   `evidence[].sanitizer_runs` (V2-35): one dynamic sanitizer run with its
   instrumentation flags, captured output and outcome.
+- `static-analysis-run.schema.json` — JSON Schema (draft-07) for
+  `evidence[].static_analysis_runs` (V2-36): one engine run with its rule set,
+  SARIF output, normalized report and one triage entry per finding.
 - `fuzz-run.schema.json` — JSON Schema (draft-07) for a fuzz run record (V2-17),
   written by `../tools/fuzz_run.py`.
 - `fuzz-triage.schema.json` — JSON Schema (draft-07) for the triage of one fuzz
@@ -35,7 +38,7 @@ A ledger is a JSON or YAML document with a `claims` array. Each claim:
 | `id` | yes | stable ID, `C-<n>` |
 | `claim` | yes | falsifiable statement |
 | `mechanism` | yes | what makes the claim true |
-| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `shared_tests`, `run_record`, `tool_output`, `sanitizer_runs`, `note` |
+| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `shared_tests`, `run_record`, `tool_output`, `sanitizer_runs`, `static_analysis_runs`, `note` |
 | `scope` | yes | `platforms`, `actors_excluded`, `assumptions` |
 | `status` | yes | `proven` / `model-checked` / `tested` / `static-refinement` / `reviewed` / `open` |
 | `limitations` | open only | known limits, next to the claim |
@@ -185,6 +188,64 @@ Without an external anchor a forger can rewrite the record and its output
 together (C-13). A clean run is evidence that nothing fired in that corpus, not
 proof that the claim holds.
 
+### Static-analysis run (V2-36)
+
+A static-analysis run is the only channel that can support `static-refinement`,
+so `evidence[].static_analysis_runs` is valid only on `kind=static-analysis`.
+Each run records `tool`, an optional `version`, `command`, `rules` (`name`,
+`source`, `sha256`), `target_commit`, `output` (raw SARIF) and `output_sha256`,
+`report` (normalized by `../tools/sarif_evidence.py`) and `report_sha256`,
+`exit_code`, `started_at`, `finished_at`, `status`, an optional `cells` registry
+and `triage`.
+
+A finding is a review-queue entry, not a verdict. The triage therefore needs
+exactly one entry per finding in the report:
+
+- `covered`: an existing cell, detector and mutation fixture already catch the
+  failure class;
+- `new`: no detector caught it, and the named cell, detector and fixture now
+  exist;
+- `not-a-bug`: the finding does not describe a defect; `reason` says why;
+- `out-of-scope`: the finding describes a real symptom, but the cited taxonomy
+  owns no cell for its failure class; `reason` names the boundary.
+
+`out-of-scope` is not a softer `not-a-bug`. It records a gap: the run found
+something, the taxonomy has no owner, and the evidence says so instead of
+dropping the finding.
+
+L1 checks the record and triage shape and the disposition vocabulary. L2:
+
+- hashes `rules.source` when it is a local path (a URL is not fetched), and
+  hashes both outputs; a URL `output` or `report` is an error for a non-open
+  claim;
+- ties `finished_at` to the evidence date and rejects `started_at` after it;
+- resolves `target_commit` in `--root` when that root is a git work tree;
+- requires `exit_code` 0 and `status: completed` for a non-open claim;
+- checks that the report's `format` is `dev-sec-skills/sarif-evidence/v1`, that
+  `output_sha256` appears among `report.inputs[].sha256`, that the named engine
+  has at least one run in the report, and that `summary.unmapped` and
+  `summary.fixture_inputs` are 0 (errors for a non-open claim, warnings for an
+  `open` one);
+- requires a bijection between `report.findings[].id` and `triage[].finding`;
+- resolves `cell`, `detector` and `fixture` for every `covered`/`new` entry
+  against the registry named by `cells` (relative to `--tool-output-root`).
+
+The record does not prove that the engine would have found a different defect,
+that a mapped finding is exploitable, or that an `out-of-scope` finding is
+harmless. A forger can rewrite the record, the rules and both outputs together
+(C-13). A rule set fetched from a registry under a non-redistributable licence
+is named by URL and not vendored; the hash records the bytes that were applied,
+but nobody re-derives it from the URL.
+
+### Review evidence
+
+`kind=review` has no machine form by design. It names the artifact a human
+read, the commit and the date; L2 checks that the artifact exists and the
+commit resolves, and that is all. A review supports `reviewed` and no higher
+status. A structured checklist would be a different channel with its own
+provenance question; the current design keeps the human judgement visible
+instead of encoding it as a boolean.
+
 ## Fuzz run record
 
 `fuzz-run.schema.json` describes what `tools/fuzz_run.py` writes (V2-17): the
@@ -216,10 +277,10 @@ The gate proves the artifacts exist, not that the routing decision was right.
 
 | Check | What it enforces |
 | --- | --- |
-| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record`, `tool_output`, `sanitizer_runs` and `shared_tests` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
-| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), sanitizer-run hash, exit code, `status=completed` and the finding-line contradiction (V2-35), cited tests appeared in the log |
+| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record`, `tool_output`, `sanitizer_runs`, `static_analysis_runs` and `shared_tests` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
+| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), sanitizer-run hash, exit code, `status=completed` and the finding-line contradiction (V2-35), static-analysis rule/output/report hashes, engine presence, zero unmapped and fixture inputs, the triage bijection and cell routing (V2-36), cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
-| L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning; `model-checked` and `proven` need a `tool_output`, `model-checked` also needs a bound |
+| L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning; `model-checked` and `proven` need a `tool_output`, `model-checked` also needs a bound; `static-refinement` needs a `static_analysis_runs` record |
 | L5 | prose: unqualified absolutes in docs. Engine order: Vale (`styles/RussianAbsolutes` package) if the `vale` binary is available, fallback to the built-in line scanner |
 | L6 | relevance: a test cited by two claims is declared in `shared_tests` with a reason by each of them, and a non-open claim cites at least one test no other claim cites (V2-34) |
 

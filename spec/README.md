@@ -27,8 +27,9 @@ spec/
         README.md                 # what a fixture proves, results, gaps
     craft-i18n/
       cells.yaml                  # 14 cells: a Rust catalog checker, no DB
-      claims.yaml                 # 8 claims, authored here; target untouched
+      claims.yaml                 # 9 claims, authored here; target untouched
       README.md                   # second-pilot calibration and limits
+      runs/                       # captured cargo and ASan logs, hashes
       mutations/
         mutations.yaml            # 12 fixtures, pinned by sha256
         run_mutations.py          # Rust-aware runner, exact failing-set match
@@ -59,9 +60,16 @@ spec/
     2026-11-07-coverage.json      # recorded catalogue coverage snapshot
   sarif/
     README.md                     # engine/rule -> taxonomy mapping, fixture provenance, limits
-    adapters.yaml                 # 3 engines, ordered rules, registry aliases
+    adapters.yaml                 # 3 engines, aliases, ordered rules, registry aliases
     fixtures/                     # authored SARIF: semgrep, codeql, bandit
     2026-11-07-report.json        # recorded normalized report
+  static-analysis/
+    README.md                     # V2-36: record, triage vocabulary, licence boundary
+    rules/
+      ci-supply-chain-2026-11-07.yml  # authored MIT rules (not a registry copy)
+    runs/
+      ci-craft-i18n-2026-11-07.sarif       # raw Semgrep SARIF
+      ci-craft-i18n-2026-11-07.report.json # normalized report, triaged by C-09
   proofs/
     README.md                     # re-run triggers, freshness, P-01/P-02, limits
     manifest.yaml                 # P-01/P-02: the bounded C-02 cross-check
@@ -72,9 +80,9 @@ spec/
       c02-mutants-2026-11-07.json     # P-02 tool_output record
       c02-mutants-2026-11-07.log      # captured stdout, hash-checked
   red-team/
-    README.md                     # 14 attacks on the real pilot artifacts, 1 recorded gap
+    README.md                     # 15 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
-    2026-11-07-drills.json        # recorded result: 13 blocked, 1 allowed
+    2026-11-07-drills.json        # recorded result: 14 blocked, 1 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -277,6 +285,23 @@ green fixture run is not evidence about a repository. The adapter proves
 that the mapping and its failure paths work; it does not prove that a real
 engine produces these findings, that a finding is a true positive, or that a
 flagged site is unprotected.
+
+Static analysis becomes evidence only with a record and a triage (V2-36):
+`schemas/static-analysis-run.schema.json` names the engine, its command, the
+rule set and its hash, the target commit, the raw SARIF, the normalized report
+and one disposition per finding. `covered`/`new` resolve to a cell, detector
+and mutation fixture; `not-a-bug`/`out-of-scope` require a reason. `claim_lint`
+L1 checks the shape, L2 hashes the rules and both outputs, checks that the
+report hashes the cited SARIF, that the named engine ran, that `unmapped` and
+`fixture_inputs` are zero, and that the triage is a bijection with the report;
+L4 requires a record for `static-refinement`. The recorded run
+`static-analysis/ci-craft-i18n-2026-11-07` is Semgrep with three rules authored
+here, five findings, all `out-of-scope` because the pilot taxonomy owns no
+supply-chain cell. The rule set is authored rather than vendored precisely
+because the Semgrep Registry rules are not redistributable; the first attempt
+with `p/ci` is not committed. The channel has 17 linter eval cases and the
+adapter has 17; neither run proves that a finding is exploitable or that the
+taxonomy is complete.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

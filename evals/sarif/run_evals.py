@@ -104,9 +104,11 @@ def _sarif(engine, results, fixture=True):
     return doc
 
 
-def _scenario(name, documents, expect, config=None, args=None):
-    return {"name": name, "documents": documents, "config": config,
-            "args": args, "expect": expect}
+def _scenario(name, documents, expect, config=None, args=None, **extra):
+    scenario = {"name": name, "documents": documents, "config": config,
+                "args": args, "expect": expect}
+    scenario.update(extra)
+    return scenario
 
 
 SCENARIOS = [
@@ -241,6 +243,27 @@ SCENARIOS = [
         "paths": ["src/app.py"],
     }, args=["--max-unmapped", "0"]),
 
+    _scenario("engine-alias-resolves", {
+        "semgrep.sarif": _sarif("Semgrep OSS", [
+            _result("py/sql-injection", fingerprint="a-1")]),
+    }, {
+        "exit": 0, "errors": [],
+        "json": {"findings": 1, "unmapped": 0},
+        "paths": ["src/app.py"],
+    }, config=_config(engines=[{
+        "id": "semgrep", "name": "Semgrep", "aliases": ["Semgrep OSS"],
+        "rules": [_rule("semgrep", "^py/sql-injection$")],
+    }]), args=["--max-unmapped", "0"]),
+
+    _scenario("path-root-rebases-findings", {
+        "semgrep.sarif": None,
+    }, {
+        "exit": 0, "errors": [],
+        "json": {"findings": 1, "unmapped": 0},
+        "paths": ["src/app.py"],
+    }, args=["--max-unmapped", "0"], path_root="scanroot",
+        file_uri="scanroot/src/app.py"),
+
     _scenario("stable-digest", {
         "semgrep.sarif": _sarif("Semgrep", [
             _result("py/sql-injection", fingerprint="s-1")]),
@@ -305,11 +328,14 @@ def run(scenario, tool):
         with open(os.path.join(td, "config.yaml"), "w", encoding="utf-8") as f:
             yaml.safe_dump(config, f, sort_keys=False)
         documents = {}
+        if scenario.get("path_root"):
+            os.makedirs(os.path.join(td, scenario["path_root"]), exist_ok=True)
         for rel, content in scenario["documents"].items():
             if content is None:
                 content = _sarif("Semgrep", [_result(
                     "py/sql-injection",
-                    path="file://" + os.path.join(td, "src/app.py"),
+                    path="file://" + os.path.join(
+                        td, scenario.get("file_uri") or "src/app.py"),
                     fingerprint="u-1")])
             documents[rel] = content
             _write(td, rel, content)
@@ -323,6 +349,8 @@ def run(scenario, tool):
             extra.append(args[idx + 1])
             del args[idx:idx + 2]
         inputs = [os.path.join(td, rel) for rel in sorted(documents)] + extra
+        if scenario.get("path_root"):
+            args += ["--path-root", os.path.join(td, scenario["path_root"])]
         cmd = [sys.executable, tool, "--config", os.path.join(td, "config.yaml"),
                "--root", td] + args
         report_path = os.path.join(td, "report.json")

@@ -19,6 +19,15 @@ reuses it as its own `run_record` log.
 | Tests passed | 26 |
 | `log_sha256` | `9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d` |
 
+## Static-analysis run (V2-36)
+
+C-09 uses a different channel: a Semgrep run over the target's `.github/`, with
+a SARIF output and a normalized report. Those artifacts are not logs of the test
+suite, so they live with the channel description in
+[`spec/static-analysis/`](../../../static-analysis/README.md), not here. The
+record's `target_commit` is the same `5c5c554`, and `claim_lint` resolves it
+against the target `--root`.
+
 ## What the record proves and what it does not
 
 `claim_lint` L2 recomputes the log hash, hashes the cited source file under the

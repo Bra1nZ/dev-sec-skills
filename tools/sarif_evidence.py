@@ -125,6 +125,13 @@ def load_config(config_path, root, schema):
         if eid in seen:
             raise ValueError("duplicate engine id %r" % eid)
         seen.add(eid)
+        aliases = engine.get("aliases")
+        if aliases is not None:
+            if not isinstance(aliases, list) or any(
+                    not isinstance(alias, str) or not alias.strip()
+                    for alias in aliases):
+                raise ValueError("engine %r: aliases must be a list of non-empty strings"
+                                 % eid)
         for rule in engine.get("rules") or []:
             if not rule.get("id") or not rule.get("match"):
                 raise ValueError("engine %r: rule needs id and match" % eid)
@@ -201,7 +208,11 @@ def run(argv):
     ap.add_argument("inputs", nargs="+", help="SARIF files or directories")
     ap.add_argument("--config", required=True)
     ap.add_argument("--root", default=".",
-                    help="repository root for path rebasing and registries")
+                    help="repository root for input paths and registries")
+    ap.add_argument("--path-root", default=None,
+                    help="directory that absolute finding URIs are rebased to "
+                         "(default: --root); use it when the scanned checkout "
+                         "is not the repository that holds this config")
     ap.add_argument("--schema", default=os.path.join(
         here, "spec", "conveyor", "cell-registry.schema.json"))
     ap.add_argument("--max-unmapped", type=int, default=None,
@@ -217,6 +228,10 @@ def run(argv):
     root = os.path.abspath(args.root)
     if not os.path.isdir(root):
         print("error: root not found: %s" % root, file=sys.stderr)
+        return 2
+    path_root = os.path.abspath(args.path_root or root)
+    if not os.path.isdir(path_root):
+        print("error: path root not found: %s" % path_root, file=sys.stderr)
         return 2
     if not os.path.exists(args.config):
         print("error: config not found: %s" % args.config, file=sys.stderr)
@@ -234,8 +249,8 @@ def run(argv):
 
     engine_by_name = {}
     for engine in engines:
-        engine_by_name[engine["name"].lower()] = engine
-        engine_by_name[engine["id"].lower()] = engine
+        for name in [engine["name"], engine["id"]] + list(engine.get("aliases") or []):
+            engine_by_name[name.lower()] = engine
     files = collect_inputs(args.inputs)
     if not files:
         print("[SARIF1] error  no SARIF input found", file=sys.stderr)
@@ -334,7 +349,7 @@ def run(argv):
                 region = physical.get("region") or {}
                 start = region.get("startLine")
                 end = region.get("endLine", start)
-                normalized = normalize_path(uri, root)
+                normalized = normalize_path(uri, path_root)
                 if not normalized:
                     unmapped.append({
                         "engine": engine["id"], "rule_id": rule_id,

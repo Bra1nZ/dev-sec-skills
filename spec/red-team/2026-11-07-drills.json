@@ -74,11 +74,16 @@
       "name": "sanitizer-findings-hidden",
       "verdict": "blocked",
       "attack": "declare a clean ASan run over output that carries an ERROR: AddressSanitizer line"
+    },
+    {
+      "name": "static-findings-hidden",
+      "verdict": "blocked",
+      "attack": "drop the triage entry for a real static-analysis finding (F-005)"
     }
   ],
   "summary": {
-    "drills": 14,
-    "blocked": 13,
+    "drills": 15,
+    "blocked": 14,
     "allowed": 1,
     "failed": 0
   }

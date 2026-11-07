@@ -8,7 +8,8 @@ unprotected.
 
 An adapter is a mapping, not a verifier. `spec/sarif/adapters.yaml` declares
 three engines (Semgrep, CodeQL, Bandit), resolves each engine by
-`tool.driver.name`, and maps every result by rule ID. Rules are ordered and the
+`tool.driver.name` (or `id`, or one of its `aliases` — osemgrep writes
+`Semgrep OSS`), and maps every result by rule ID. Rules are ordered and the
 first match wins. A finding whose engine or rule is not declared is `unmapped`
 with a reason — `unknown-engine`, `unmapped-rule`, `missing-rule-id` or
 `missing-location`. It is never pushed into `other` and never silently dropped.
@@ -21,7 +22,7 @@ with a reason — `unknown-engine`, `unmapped-rule`, `missing-rule-id` or
 - `2026-11-07-report.json` — normalized report from `make sarif-record`.
 - `schemas/sarif-evidence.schema.json` — output contract.
 - `tools/sarif_evidence.py` — the normalizer.
-- `evals/sarif/` — 15 synthetic adversarial cases.
+- `evals/sarif/` — 17 synthetic adversarial cases.
 
 ## Mapping: class first, cell optionally
 
@@ -85,6 +86,20 @@ make sarif SARIF_INPUTS=artifacts/semgrep.sarif SARIF_STRICT=--reject-fixtures
 green run says the mapping and the failure paths work, not that a repository is
 clean. Gating a real PR needs engine output, a pinned engine version and a
 recorded run.
+
+When the scanned checkout is not the repository that holds `adapters.yaml`,
+`--root` still points at this repository (the registries and the input paths are
+relative to it) and `--path-root` names the checkout that absolute finding URIs
+are rebased to:
+
+```bash
+python3 tools/sarif_evidence.py --config spec/sarif/adapters.yaml --root . \
+  --path-root /path/to/target --max-unmapped 0 --reject-fixtures \
+  spec/static-analysis/runs/ci-craft-i18n-2026-11-07.sarif
+```
+
+Without `--path-root` the finding paths stay absolute; the report is still
+valid, but the bytes carry a machine-specific prefix.
 
 ## Unmapped is a result, not a crash
 

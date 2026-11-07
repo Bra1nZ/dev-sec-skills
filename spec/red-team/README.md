@@ -3,7 +3,7 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Thirteen attacks are blocked by the check named for them; one
+what happened. Fourteen attacks are blocked by the check named for them; one
 passes with every gate green, and that one is the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 14 attacks, one mutation each
-  2026-11-07-drills.json       # recorded result: 13 blocked, 1 allowed
+  run_drills.py                # the 15 attacks, one mutation each
+  2026-11-07-drills.json       # recorded result: 14 blocked, 1 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -44,6 +44,7 @@ spec/red-team/
 | `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | blocked by L6 (V2-34) |
 | `borrow-and-declare-sharing` | borrow one test, declare it shared, still call C-08 `tested` | blocked by L6 rule 2 (V2-34) |
 | `sanitizer-findings-hidden` | declare a clean ASan run over output with `ERROR: AddressSanitizer:` | blocked by L2 (V2-35) |
+| `static-findings-hidden` | drop the triage entry for a real static-analysis finding (F-005) | blocked by L2 (V2-36) |
 
 ## The one silent path
 
@@ -81,14 +82,14 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 13 blocked drills show that those specific checks fire on real artifacts,
+- The 14 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
 - The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
   starts blocking it, the drill fails and the gap entry must be updated, so this
   document cannot quietly become stale.
 - The drills run `claim_lint --no-vale`: L5 prose scanning is not exercised here
   (L5 is covered by the linter evals and `make verify`).
-- Only the craft-i18n ledger is attacked. It is one pilot with eight claims; the
+- Only the craft-i18n ledger is attacked. It is one pilot with nine claims; the
   rbac_pg ledger is external and has no run records, so the same attack there
   would test less.
 - The attacks are static edits to committed artifacts. A compromised tool, a

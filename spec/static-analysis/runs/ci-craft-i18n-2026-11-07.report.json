@@ -1,0 +1,145 @@
+{
+  "format": "dev-sec-skills/sarif-evidence/v1",
+  "generated": "2026-11-07",
+  "inputs": [
+    {
+      "path": "spec/static-analysis/runs/ci-craft-i18n-2026-11-07.sarif",
+      "sha256": "3e32c249edb0f8de52e581424d555a3fe29aed289019102580d5d24050166709",
+      "engines": [
+        "Semgrep OSS"
+      ],
+      "runs": 1,
+      "results": 5,
+      "fixture": false
+    }
+  ],
+  "engines": [
+    {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "runs": 1,
+      "findings": 5,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "codeql",
+      "name": "CodeQL",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    }
+  ],
+  "present_engines": [
+    "semgrep"
+  ],
+  "findings": [
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.dependabot-missing-cooldown",
+      "level": "warning",
+      "message": "A Dependabot update entry sets no `cooldown`. A newly published package version can be adopted on the next daily run, so a compromised release has no window in which it can be reported and yanked.",
+      "path": ".github/dependabot.yml",
+      "start_line": 4,
+      "end_line": 18,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-001"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.dependabot-missing-cooldown",
+      "level": "warning",
+      "message": "A Dependabot update entry sets no `cooldown`. A newly published package version can be adopted on the next daily run, so a compromised release has no window in which it can be reported and yanked.",
+      "path": ".github/dependabot.yml",
+      "start_line": 19,
+      "end_line": 30,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-002"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.mutable-action-ref",
+      "level": "error",
+      "message": "A GitHub Actions `uses:` reference points at a mutable tag or branch (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be retagged, so the code the workflow runs is not the code that was reviewed.",
+      "path": ".github/workflows/ci.yml",
+      "start_line": 17,
+      "end_line": 17,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-003"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.mutable-action-ref",
+      "level": "error",
+      "message": "A GitHub Actions `uses:` reference points at a mutable tag or branch (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be retagged, so the code the workflow runs is not the code that was reviewed.",
+      "path": ".github/workflows/sonarcloud.yml",
+      "start_line": 20,
+      "end_line": 20,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-004"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.secrets-inherit",
+      "level": "error",
+      "message": "A reusable workflow is called with `secrets: inherit`. Every secret of the caller becomes available to the called workflow, so a compromised or over-broad reusable workflow receives secrets it never asked for.",
+      "path": ".github/workflows/sonarcloud.yml",
+      "start_line": 21,
+      "end_line": 21,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "exposed-secret-or-weak-crypto",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-005"
+    }
+  ],
+  "unmapped": [],
+  "summary": {
+    "inputs": 1,
+    "fixture_inputs": 0,
+    "findings": 5,
+    "mapped": 5,
+    "unmapped": 0,
+    "duplicates": 0,
+    "cell_mapped": 0,
+    "engines_present": 1,
+    "digest": "2c9ace2359dd4a796654ef9b899141cde01ac593f858edb2af6383111724ccea"
+  },
+  "errors": []
+}

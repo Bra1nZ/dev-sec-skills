@@ -1,0 +1,58 @@
+rules:
+  - id: dev-sec-skills.ci.mutable-action-ref
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      A GitHub Actions `uses:` reference points at a mutable tag or branch
+      (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be
+      retagged, so the code the workflow runs is not the code that was reviewed.
+    paths:
+      include:
+        - "**/.github/workflows/*.yml"
+        - "**/.github/workflows/*.yaml"
+    pattern-regex: 'uses:\s*[A-Za-z0-9_.-]+/[A-Za-z0-9_.\-/]+@(?:v[0-9]+|main|master)\b'
+    metadata:
+      category: security
+      confidence: HIGH
+      license: MIT
+      references:
+        - https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
+
+  - id: dev-sec-skills.ci.secrets-inherit
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      A reusable workflow is called with `secrets: inherit`. Every secret of the
+      caller becomes available to the called workflow, so a compromised or
+      over-broad reusable workflow receives secrets it never asked for.
+    paths:
+      include:
+        - "**/.github/workflows/*.yml"
+        - "**/.github/workflows/*.yaml"
+    pattern-regex: 'secrets:\s*inherit\b'
+    metadata:
+      category: security
+      confidence: HIGH
+      license: MIT
+      references:
+        - https://docs.github.com/en/actions/using-workflows/reusing-workflows
+
+  - id: dev-sec-skills.ci.dependabot-missing-cooldown
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      A Dependabot update entry sets no `cooldown`. A newly published package
+      version can be adopted on the next daily run, so a compromised release has
+      no window in which it can be reported and yanked.
+    paths:
+      include:
+        - "**/.github/dependabot.yml"
+        - "**/.github/dependabot.yaml"
+    pattern-regex: '(?m)^  - package-ecosystem:[^\n]*(?:\n(?:(?!  - package-ecosystem:)[^\n]*))*'
+    pattern-not-regex: '(?m)^\s+cooldown:'
+    metadata:
+      category: security
+      confidence: MEDIUM
+      license: MIT
+      references:
+        - https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#cooldown

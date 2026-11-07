@@ -7,8 +7,9 @@ schemas/claim-ledger.schema.json):
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
                      status=open requires limitations, run_record shape,
-                     tool_output shape, sanitizer_runs shape, retired
-                     tombstones (reason present, never also active)
+                     tool_output shape, sanitizer_runs shape,
+                     static_analysis_runs shape, retired tombstones (reason
+                     present, never also active)
   L2  evidence:      artifact paths exist, commits resolvable, the artifact
                      matches its blob at the cited commit, dates within the
                      freshness window, run_record log and artifact hashes
@@ -18,7 +19,12 @@ schemas/claim-ledger.schema.json):
                      tool_output.status=completed is required for a non-open
                      claim (V2-28), sanitizer_runs outputs match their hashes
                      and a completed exit-0 run must not cite output that
-                     carries a sanitizer finding line
+                     carries a sanitizer finding line, static_analysis_runs
+                     hash the rule set and both outputs, the report hashes the
+                     cited SARIF, the engine is present, unmapped and authored
+                     inputs are zero for a non-open claim, and the triage is a
+                     bijection with the report's findings that resolves its
+                     cells
   L3  traceability:  every test ID in kind=test evidence exists in the suite
   L4  consistency:   status matches the strongest evidence channel; stronger
                      evidence than the status is a warning; model-checked and
@@ -63,6 +69,24 @@ expected string is not a finding. Recoverable UBSan diagnostics
 accompany exit code 0. The record does not prove the build was instrumented,
 that the corpus exercised the claim, or that the sanitizer would have caught a
 different defect.
+
+A static-analysis run (schemas/static-analysis-run.schema.json) is only valid
+on `kind: static-analysis` and is the only evidence that can support
+`static-refinement`. A finding is a review-queue entry, not a verdict, so the
+record carries the engine, the rule set and its hash, the target commit, the
+raw SARIF output, the normalized sarif_evidence report and exactly one triage
+entry per finding. L1 checks the shape and the disposition vocabulary
+(`covered`/`new` name cell, detector and fixture; `not-a-bug`/`out-of-scope`
+require a reason). L2 hashes the rules and both outputs, ties finished_at to
+the evidence date, requires `completed` with exit 0 for a non-open claim,
+checks that the report hashes the cited SARIF, that the named engine is
+present, that `unmapped` and `fixture_inputs` are zero, that the triage is a
+bijection with the report's findings, and that every `covered`/`new` entry
+resolves its cell, detector and fixture in the named registry. A URL for the
+SARIF or the report is rejected for a non-open claim, because remote bytes
+cannot be hashed locally and the triage cannot be checked against them. An
+`out-of-scope` entry records a real finding the cited taxonomy does not own; it
+is not a claim that the finding is false.
 
 Commits are anchored too, not just resolved: when the root is a git work tree,
 the artifact must exist at the cited commit (the run record's commit when the
@@ -145,6 +169,19 @@ SANITIZER_FINDING_RE = re.compile(
     r"(?:Address|Leak|UndefinedBehavior|Thread|Memory)Sanitizer:"
     r"|^SUMMARY: (?:Address|Leak|UndefinedBehavior|Thread|Memory)Sanitizer:",
     re.MULTILINE)
+# Static-analysis run (V2-36, schemas/static-analysis-run.schema.json). The
+# engine's SARIF output is the raw evidence; the normalized sarif_evidence
+# report carries the finding identities the triage names. A finding is a
+# review-queue entry, so a record needs exactly one disposition per finding
+# before it can support a claim.
+STATIC_ANALYSIS_FIELDS = ("tool", "command", "rules", "target_commit", "output",
+                          "output_sha256", "report", "report_sha256", "exit_code",
+                          "started_at", "finished_at", "status", "triage")
+STATIC_REPORT_FORMAT = "dev-sec-skills/sarif-evidence/v1"
+TRIAGE_DISPOSITIONS = ("covered", "new", "not-a-bug", "out-of-scope")
+TRIAGE_ROUTED = ("covered", "new")
+FINDING_ID_RE = re.compile(r"^F-[0-9]{3,}$")
+CELL_ID_RE = re.compile(r"^CELL-[0-9]{3,}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 URL_RE = re.compile(r"^[a-z]+://")
 # Summary lines the run-record cross-check understands. cargo prints one per
@@ -628,6 +665,184 @@ def check_sanitizer_runs_schema(claims, findings):
                                                ", ".join(TOOL_RUN_STATUSES)), cid))
 
 
+def check_static_analysis_runs_schema(claims, findings):
+    """L1 shape for evidence.static_analysis_runs (V2-36).
+
+    A static-analysis run is a `static-refinement` evidence channel: the engine,
+    the rule set it interpreted, the target commit, the raw SARIF, the
+    normalized report, and one triage entry per finding. The shape has to hold
+    before L2 can hash the artifacts, compare the report with the triage and
+    resolve the cells.
+    """
+    for c in claims:
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("static_analysis_runs") is None:
+                continue
+            cid = c["id"]
+            runs = ev.get("static_analysis_runs")
+            if ev.get("kind") != "static-analysis":
+                findings.append(Finding("L1", "error",
+                                        "static_analysis_runs is only valid on "
+                                        "kind=static-analysis evidence", cid))
+                continue
+            if not isinstance(runs, list) or not runs:
+                findings.append(Finding("L1", "error",
+                                        "static_analysis_runs must be a non-empty list", cid))
+                continue
+            for k, run in enumerate(runs):
+                tag = "static_analysis_runs[%d]" % k
+                if not isinstance(run, dict):
+                    findings.append(Finding("L1", "error", "%s is not an object" % tag, cid))
+                    continue
+                missing = [f for f in STATIC_ANALYSIS_FIELDS if f not in run]
+                if missing:
+                    findings.append(Finding("L1", "error",
+                                            "%s missing %s" % (tag, ", ".join(missing)), cid))
+                for field in ("tool", "command", "output", "report"):
+                    value = run.get(field)
+                    if not isinstance(value, str) or not value.strip():
+                        findings.append(Finding("L1", "error",
+                                                "%s %s must be a non-empty string"
+                                                % (tag, field), cid))
+                version = run.get("version")
+                if version is not None and (not isinstance(version, str)
+                                            or not version.strip()):
+                    findings.append(Finding("L1", "error",
+                                            "%s version must be a non-empty string"
+                                            % tag, cid))
+                rules = run.get("rules")
+                if not isinstance(rules, dict):
+                    findings.append(Finding("L1", "error", "%s rules is not an object" % tag, cid))
+                else:
+                    for field in ("name", "source"):
+                        value = rules.get(field)
+                        if not isinstance(value, str) or not value.strip():
+                            findings.append(Finding("L1", "error",
+                                                    "%s rules.%s must be a non-empty string"
+                                                    % (tag, field), cid))
+                    if not isinstance(rules.get("sha256"), str) \
+                            or not SHA256_RE.match(str(rules.get("sha256"))):
+                        findings.append(Finding("L1", "error",
+                                                "%s rules.sha256 is not a sha256 hex digest"
+                                                % tag, cid))
+                commit = run.get("target_commit")
+                if not isinstance(commit, str) \
+                        or not re.match(r"^[0-9a-f]{7,64}$", commit):
+                    findings.append(Finding("L1", "error",
+                                            "%s target_commit is not a git commit hash"
+                                            % tag, cid))
+                else:
+                    ev_commit = ev.get("commit")
+                    if ev_commit and str(commit) != str(ev_commit):
+                        findings.append(Finding("L1", "error",
+                                                "%s target_commit %s does not match evidence "
+                                                "commit %s" % (tag, commit, ev_commit), cid))
+                for field in ("output_sha256", "report_sha256"):
+                    value = run.get(field)
+                    if not isinstance(value, str) or not SHA256_RE.match(value):
+                        findings.append(Finding("L1", "error",
+                                                "%s %s is not a sha256 hex digest"
+                                                % (tag, field), cid))
+                if not isinstance(run.get("exit_code"), int):
+                    findings.append(Finding("L1", "error",
+                                            "%s exit_code must be an integer" % tag, cid))
+                for field in ("started_at", "finished_at"):
+                    value = run.get(field)
+                    if value is not None and _parse_iso(value) is None:
+                        findings.append(Finding("L1", "error",
+                                                "%s %s is not an ISO 8601 timestamp"
+                                                % (tag, field), cid))
+                if run.get("status") not in TOOL_RUN_STATUSES:
+                    findings.append(Finding("L1", "error",
+                                            "%s status=%r is not one of %s"
+                                            % (tag, run.get("status"),
+                                               ", ".join(TOOL_RUN_STATUSES)), cid))
+                if run.get("command") and ev.get("command") \
+                        and run["command"] != ev["command"]:
+                    findings.append(Finding("L1", "error",
+                                            "%s command does not match evidence command"
+                                            % tag, cid))
+                cells = run.get("cells")
+                if cells is not None and (not isinstance(cells, str) or not cells.strip()):
+                    findings.append(Finding("L1", "error",
+                                            "%s cells must be a non-empty string"
+                                            % tag, cid))
+                triage = run.get("triage")
+                if not isinstance(triage, list):
+                    findings.append(Finding("L1", "error", "%s triage is not a list" % tag, cid))
+                    continue
+                seen = set()
+                needs_registry = False
+                for j, entry in enumerate(triage):
+                    etag = "%s.triage[%d]" % (tag, j)
+                    if not isinstance(entry, dict):
+                        findings.append(Finding("L1", "error", "%s is not an object" % etag, cid))
+                        continue
+                    for field in ("finding", "disposition", "date"):
+                        if field not in entry:
+                            findings.append(Finding("L1", "error",
+                                                    "%s missing '%s'" % (etag, field), cid))
+                    fid = entry.get("finding")
+                    if fid is not None and (not isinstance(fid, str)
+                                            or not FINDING_ID_RE.match(fid)):
+                        findings.append(Finding("L1", "error",
+                                                "%s finding %r does not match ^F-[0-9]{3,}$"
+                                                % (etag, fid), cid))
+                    elif isinstance(fid, str):
+                        if fid in seen:
+                            findings.append(Finding("L1", "error",
+                                                    "%s duplicates triage for finding %s"
+                                                    % (tag, fid), cid))
+                        seen.add(fid)
+                    disposition = entry.get("disposition")
+                    if disposition is not None and disposition not in TRIAGE_DISPOSITIONS:
+                        findings.append(Finding("L1", "error",
+                                                "%s disposition %r is not one of %s"
+                                                % (etag, disposition,
+                                                   ", ".join(TRIAGE_DISPOSITIONS)), cid))
+                        continue
+                    if "date" in entry:
+                        date_value = entry.get("date")
+                        if not isinstance(date_value, str) \
+                                or not DATE_RE.match(date_value) \
+                                or _parse_iso(date_value) is None:
+                            findings.append(Finding("L1", "error",
+                                                    "%s date is not YYYY-MM-DD" % etag, cid))
+                    if disposition in TRIAGE_ROUTED:
+                        needs_registry = True
+                        for field in ("cell", "detector", "fixture"):
+                            value = entry.get(field)
+                            if not isinstance(value, str) or not value.strip():
+                                findings.append(Finding("L1", "error",
+                                                        "%s disposition %s requires %s"
+                                                        % (etag, disposition, field), cid))
+                        cell = entry.get("cell")
+                        if isinstance(cell, str) and cell \
+                                and not CELL_ID_RE.match(cell):
+                            findings.append(Finding("L1", "error",
+                                                    "%s cell %r does not match ^CELL-[0-9]{3,}$"
+                                                    % (etag, cell), cid))
+                        fixture = entry.get("fixture")
+                        if isinstance(fixture, str) and fixture and "#" not in fixture:
+                            findings.append(Finding("L1", "error",
+                                                    "%s fixture %r must use the path#MUT-ID form"
+                                                    % (etag, fixture), cid))
+                    elif disposition in ("not-a-bug", "out-of-scope"):
+                        reason = entry.get("reason")
+                        if not isinstance(reason, str) or not reason.strip():
+                            findings.append(Finding("L1", "error",
+                                                    "%s disposition %s requires a non-empty reason"
+                                                    % (etag, disposition), cid))
+                    note = entry.get("note")
+                    if note is not None and not isinstance(note, str):
+                        findings.append(Finding("L1", "error",
+                                                "%s note must be a string" % etag, cid))
+                if needs_registry and not run.get("cells"):
+                    findings.append(Finding("L1", "error",
+                                            "%s triage routes a finding to a cell but the run "
+                                            "names no cells registry" % tag, cid))
+
+
 # ------------------------------------------------------- L2 evidence health
 
 def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
@@ -824,6 +1039,293 @@ def _check_sanitizer_run(ev, run, claim, tool_output_root, index, findings):
                                 "its output carries a sanitizer finding line" % tag, cid))
 
 
+def _load_structured(path):
+    """Load a JSON or YAML file (the cell registries and fixtures are YAML)."""
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    if path.endswith((".yaml", ".yml")):
+        if yaml is None:
+            raise ValueError("PyYAML is required for %s" % path)
+        return yaml.safe_load(text) or {}
+    return json.loads(text)
+
+
+def _registry_cells(path):
+    doc = _load_structured(path)
+    if not isinstance(doc, dict) or not isinstance(doc.get("cells"), list):
+        raise ValueError("registry has no cells list: %s" % path)
+    return {c.get("id"): c for c in doc["cells"] if isinstance(c, dict)}
+
+
+def _fixture_ids(path):
+    """Fixture IDs of a mutation file.
+
+    The two pilots name the list differently (`mutations` and `fixtures`), and
+    the cell registry points at either by `path#MUT-ID`.
+    """
+    doc = _load_structured(path)
+    if not isinstance(doc, dict):
+        return set()
+    items = doc.get("fixtures")
+    if not isinstance(items, list):
+        items = doc.get("mutations")
+    if not isinstance(items, list):
+        return set()
+    return {item.get("id") for item in items if isinstance(item, dict)}
+
+
+def _check_static_analysis_run(ev, run, claim, root, tool_output_root, index, findings):
+    """L2: the engine output, the report and the triage support the record.
+
+    A static-analysis run is a review-queue producer, not a verdict. The record
+    has to show that the run completed, that both outputs hash to the cited
+    bytes, that the normalized report hashes the same SARIF, that no finding is
+    unclassified or authored, and that every finding in the report has exactly
+    one disposition which resolves when it names a cell.
+    """
+    cid = claim["id"]
+    status = claim.get("status")
+    tag = "static_analysis_runs[%d]" % index
+
+    rc = run.get("exit_code")
+    if isinstance(rc, int) and rc != 0 and status != "open":
+        findings.append(Finding("L2", "error",
+                                "%s exit_code=%d cannot support status=%s"
+                                % (tag, rc, status), cid))
+
+    run_status = run.get("status")
+    if run_status in TOOL_RUN_STATUSES and run_status != "completed" \
+            and status != "open":
+        findings.append(Finding("L2", "error",
+                                "%s status=%s cannot support status=%s (V2-28)"
+                                % (tag, run_status, status), cid))
+
+    start, end = _parse_iso(run.get("started_at")), _parse_iso(run.get("finished_at"))
+    if start and end:
+        if start > end:
+            findings.append(Finding("L2", "error",
+                                    "%s started_at is after finished_at" % tag, cid))
+        ev_date = ev.get("date")
+        if ev_date and DATE_RE.match(str(ev_date)) and end.date().isoformat() != str(ev_date):
+            findings.append(Finding("L2", "error",
+                                    "%s finished_at date %s does not match evidence date %s"
+                                    % (tag, end.date().isoformat(), ev_date), cid))
+
+    # The target commit is what makes the findings about the cited bytes. A
+    # checkout that no longer resolves the commit is a different target.
+    commit = run.get("target_commit")
+    inside = _git(root, "rev-parse", "--is-inside-work-tree")
+    if isinstance(commit, str) and commit \
+            and inside.returncode == 0 and inside.stdout.strip() == "true":
+        if _git(root, "cat-file", "-e", "%s^{commit}" % commit).returncode != 0:
+            findings.append(Finding("L2", "error",
+                                    "%s target_commit %s is not resolvable in %s"
+                                    % (tag, commit, root), cid))
+
+    # The rule bytes decide what the engine could find; hash them locally.
+    rules = run.get("rules") if isinstance(run.get("rules"), dict) else {}
+    source = rules.get("source")
+    if isinstance(source, str) and source:
+        if URL_RE.match(source):
+            findings.append(Finding("L2", "info",
+                                    "%s rules.source is a URL; its hash is not checked"
+                                    % tag, cid))
+        else:
+            path = source if os.path.isabs(source) \
+                else os.path.join(tool_output_root, source)
+            if not os.path.exists(path):
+                findings.append(Finding("L2", "error",
+                                        "%s rules file not found: %s" % (tag, source), cid))
+            elif _sha256_file(path) != rules.get("sha256"):
+                findings.append(Finding("L2", "error",
+                                        "%s rules.sha256 mismatch for %s"
+                                        % (tag, source), cid))
+
+    # Raw output: the bytes the engine wrote.
+    output = run.get("output")
+    if not isinstance(output, str) or not output:
+        return
+    if URL_RE.match(output):
+        # The hash is the only link between the record and the bytes. A remote
+        # output cannot be hashed here, so it cannot support a non-open claim.
+        severity = "error" if status != "open" else "info"
+        findings.append(Finding("L2", severity,
+                                "%s output is a URL; its hash is not checked and it "
+                                "cannot support status=%s" % (tag, status), cid))
+    else:
+        output_path = output if os.path.isabs(output) \
+            else os.path.join(tool_output_root, output)
+        if not os.path.exists(output_path):
+            findings.append(Finding("L2", "error",
+                                    "%s output not found: %s" % (tag, output), cid))
+            return
+        if _sha256_file(output_path) != run.get("output_sha256"):
+            findings.append(Finding("L2", "error",
+                                    "%s output_sha256 mismatch for %s"
+                                    % (tag, output), cid))
+
+    # Normalized report: the finding identities the triage names.
+    report = None
+    report_ref = run.get("report")
+    if not isinstance(report_ref, str) or not report_ref:
+        return
+    if URL_RE.match(report_ref):
+        # The triage names findings by the report's ids, and the report hashes
+        # the SARIF. Without local report bytes the bijection cannot be checked,
+        # so a URL report is not evidence for a non-open claim.
+        severity = "error" if status != "open" else "info"
+        findings.append(Finding("L2", severity,
+                                "%s report is a URL; its hash and triage cannot be "
+                                "checked and it cannot support status=%s"
+                                % (tag, status), cid))
+        return
+    report_path = report_ref if os.path.isabs(report_ref) \
+        else os.path.join(tool_output_root, report_ref)
+    if not os.path.exists(report_path):
+        findings.append(Finding("L2", "error",
+                                "%s report not found: %s" % (tag, report_ref), cid))
+        return
+    if _sha256_file(report_path) != run.get("report_sha256"):
+        findings.append(Finding("L2", "error",
+                                "%s report_sha256 mismatch for %s"
+                                % (tag, report_ref), cid))
+    try:
+        report = _load_structured(report_path)
+    except (OSError, ValueError) as e:
+        findings.append(Finding("L2", "error",
+                                "%s report is not readable JSON/YAML: %s" % (tag, e), cid))
+        return
+    if not isinstance(report, dict):
+        findings.append(Finding("L2", "error", "%s report is not an object" % tag, cid))
+        return
+
+    if report.get("format") != STATIC_REPORT_FORMAT:
+        findings.append(Finding("L2", "error",
+                                "%s report format is %r, expected %r"
+                                % (tag, report.get("format"), STATIC_REPORT_FORMAT), cid))
+    inputs = [i.get("sha256") for i in report.get("inputs") or []
+              if isinstance(i, dict)]
+    if run.get("output_sha256") not in inputs:
+        findings.append(Finding("L2", "error",
+                                "%s report does not hash the cited output as an input"
+                                % tag, cid))
+
+    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+    for key in ("unmapped", "fixture_inputs"):
+        value = summary.get(key)
+        if not isinstance(value, int):
+            findings.append(Finding("L2", "error",
+                                    "%s report summary.%s is missing or not an integer"
+                                    % (tag, key), cid))
+        elif value != 0:
+            severity = "error" if status != "open" else "warning"
+            findings.append(Finding("L2", severity,
+                                    "%s report summary.%s=%d: an unclassified or authored "
+                                    "input cannot support status=%s"
+                                    % (tag, key, value, status), cid))
+
+    # The engine the record names must be the engine that produced the
+    # findings, not merely a name in the configuration file.
+    tool = run.get("tool")
+    tool_key = str(tool).strip().lower() if isinstance(tool, str) else ""
+    engines = [e for e in report.get("engines") or []
+               if isinstance(e, dict) and e.get("runs")]
+    if not any(tool_key == str(e.get("id", "")).lower()
+               or tool_key == str(e.get("name", "")).lower()
+               for e in engines):
+        findings.append(Finding("L2", "error",
+                                "%s tool %r is not a present engine in the report"
+                                % (tag, tool), cid))
+
+    # Bijection between report findings and triage entries.
+    report_findings = [f for f in report.get("findings") or [] if isinstance(f, dict)]
+    ids = [f.get("id") for f in report_findings]
+    if any(not isinstance(fid, str) or not FINDING_ID_RE.match(fid) for fid in ids):
+        findings.append(Finding("L2", "error",
+                                "%s report has a finding without an F-NNN id" % tag, cid))
+        return
+    triage = [t for t in run.get("triage") or [] if isinstance(t, dict)]
+    seen = set()
+    for entry in triage:
+        fid = entry.get("finding")
+        if fid not in ids:
+            findings.append(Finding("L2", "error",
+                                    "%s triage names finding %r that is not in the report"
+                                    % (tag, fid), cid))
+            continue
+        if fid in seen:
+            findings.append(Finding("L2", "error",
+                                    "%s has more than one triage entry for finding %s"
+                                    % (tag, fid), cid))
+            continue
+        seen.add(fid)
+    missing = sorted(set(ids) - seen)
+    if missing:
+        findings.append(Finding("L2", "error",
+                                "%s finding(s) %s have no triage entry"
+                                % (tag, ", ".join(missing)), cid))
+
+    # Routing: a covered/new entry names a cell, a detector of that cell and a
+    # fixture that holds the cited mutation. A not-a-bug/out-of-scope entry is
+    # its reason; L1 already required one.
+    routed = [e for e in triage if e.get("disposition") in TRIAGE_ROUTED]
+    if not routed:
+        return
+    declared = run.get("cells")
+    if not declared:
+        findings.append(Finding("L2", "error",
+                                "%s routes a finding to a cell but names no registry"
+                                % tag, cid))
+        return
+    cells_path = declared if os.path.isabs(declared) \
+        else os.path.join(tool_output_root, declared)
+    if not os.path.exists(cells_path):
+        findings.append(Finding("L2", "error",
+                                "%s cell registry not found: %s" % (tag, declared), cid))
+        return
+    try:
+        cells = _registry_cells(cells_path)
+    except (OSError, ValueError) as e:
+        findings.append(Finding("L2", "error",
+                                "%s cannot load cell registry: %s" % (tag, e), cid))
+        return
+    for entry in routed:
+        who = "%s finding %s" % (tag, entry.get("finding"))
+        cell_id = entry.get("cell")
+        cell = cells.get(cell_id)
+        if cell is None:
+            findings.append(Finding("L2", "error",
+                                    "%s: cell %r is not in %s"
+                                    % (who, cell_id, declared), cid))
+            continue
+        detectors = [d.get("id") for d in cell.get("detectors") or []
+                     if isinstance(d, dict)]
+        if entry.get("detector") not in detectors:
+            findings.append(Finding("L2", "error",
+                                    "%s: detector %r is not in cell %s"
+                                    % (who, entry.get("detector"), cell_id), cid))
+        fixture = entry.get("fixture")
+        if not isinstance(fixture, str) or "#" not in fixture:
+            continue
+        rel, fixture_id = fixture.rsplit("#", 1)
+        fixture_path = rel if os.path.isabs(rel) else os.path.join(tool_output_root, rel)
+        if not os.path.exists(fixture_path):
+            findings.append(Finding("L2", "error",
+                                    "%s: fixture file not found: %s" % (who, rel), cid))
+            continue
+        try:
+            fixture_ids = _fixture_ids(fixture_path)
+        except (OSError, ValueError) as e:
+            findings.append(Finding("L2", "error",
+                                    "%s: cannot load fixture file %s: %s"
+                                    % (who, rel, e), cid))
+            continue
+        if fixture_id not in fixture_ids:
+            findings.append(Finding("L2", "error",
+                                    "%s: fixture %r is not in %s"
+                                    % (who, fixture_id, rel), cid))
+
+
 def _git(root, *args):
     return subprocess.run(["git"] + list(args), cwd=root, capture_output=True, text=True)
 
@@ -909,6 +1411,11 @@ def check_evidence(claims, root, max_age_days, findings, run_log_root=None,
                 for k, run in enumerate(ev["sanitizer_runs"]):
                     if isinstance(run, dict):
                         _check_sanitizer_run(ev, run, c, tool_output_root, k, findings)
+            if isinstance(ev.get("static_analysis_runs"), list):
+                for k, run in enumerate(ev["static_analysis_runs"]):
+                    if isinstance(run, dict):
+                        _check_static_analysis_run(ev, run, c, root,
+                                                   tool_output_root, k, findings)
 
 
 # --------------------------------------------------------- L3 traceability
@@ -984,6 +1491,18 @@ def check_consistency(claims, report_ids, def_names, findings):
                 findings.append(Finding("L4", "error",
                                         "status=model-checked requires a tool_output that states "
                                         "the bound (V2-10)", c["id"]))
+        # V2-36: a static-refinement status names an analysis run. A
+        # kind=static-analysis evidence item without a record is prose, and
+        # prose cannot say which engine ran over which commit with which rules.
+        if status == "static-refinement":
+            runs = [run for ev in c.get("evidence") or []
+                    if isinstance(ev, dict)
+                    for run in (ev.get("static_analysis_runs") or [])
+                    if isinstance(run, dict)]
+            if not runs:
+                findings.append(Finding("L4", "error",
+                                        "status=static-refinement requires evidence with a "
+                                        "static_analysis_runs record (V2-36)", c["id"]))
 
 
 # ---------------------------------------------------------------- L5 prose
@@ -1195,6 +1714,7 @@ def main():
         check_run_records_schema(claims, findings)
         check_tool_outputs_schema(claims, findings)
         check_sanitizer_runs_schema(claims, findings)
+        check_static_analysis_runs_schema(claims, findings)
         run_log_root = args.run_log_root or root
         tool_output_root = args.tool_output_root or root
         check_evidence(claims, root, args.max_age_days, findings, run_log_root,

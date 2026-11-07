@@ -1,0 +1,209 @@
+# Synthetic fixture - not evidence about any real project.
+name: static-analysis-valid
+description: 'Control - a kind=static-analysis claim at static-refinement with one covered finding: the
+  rule set, the SARIF and the report hash to the cited bytes, the report names the engine, the triage
+  is a bijection, and the cell, detector and mutation fixture resolve. Nothing is reported: the control
+  proves the new channel does not fire on a complete record.'
+git:
+  commits:
+  - message: the synthetic scan target
+    files:
+      src/app.py: |
+        def write(row):
+            return row
+files:
+  reports/scan.sarif: |
+    {
+      "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+      "version": "2.1.0",
+      "runs": [
+        {
+          "tool": {
+            "driver": {
+              "name": "Semgrep OSS",
+              "version": "1.184.0",
+              "rules": [
+                {
+                  "id": "demo.write"
+                }
+              ]
+            }
+          },
+          "results": [
+            {
+              "ruleId": "demo.write",
+              "level": "error",
+              "message": {
+                "text": "synthetic finding"
+              },
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "src/app.py"
+                    },
+                    "region": {
+                      "startLine": 7
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  reports/report.json: |
+    {
+      "format": "dev-sec-skills/sarif-evidence/v1",
+      "generated": "2026-11-01",
+      "inputs": [
+        {
+          "path": "reports/scan.sarif",
+          "sha256": "99096922c7e2ae9f5ce5e1ac01f0a3a3680d0fc705747c6cc01f9391e121eeb6",
+          "engines": [
+            "Semgrep OSS"
+          ],
+          "runs": 1,
+          "results": 1,
+          "fixture": false
+        }
+      ],
+      "engines": [
+        {
+          "id": "semgrep",
+          "name": "Semgrep",
+          "runs": 1,
+          "findings": 1,
+          "unmapped": 0,
+          "cell_mapped": 0
+        },
+        {
+          "id": "codeql",
+          "name": "CodeQL",
+          "runs": 0,
+          "findings": 0,
+          "unmapped": 0,
+          "cell_mapped": 0
+        }
+      ],
+      "present_engines": [
+        "semgrep"
+      ],
+      "findings": [
+        {
+          "id": "F-001",
+          "engine": "semgrep",
+          "engine_name": "Semgrep OSS",
+          "rule_id": "demo.write",
+          "level": "error",
+          "message": "synthetic finding",
+          "path": "src/app.py",
+          "start_line": 7,
+          "end_line": 7,
+          "fingerprint": null,
+          "taxonomy_class": "security",
+          "failure_class": "supply-chain-integrity",
+          "failure_mode": "detect",
+          "cell": null,
+          "mapped": true
+        }
+      ],
+      "unmapped": [],
+      "summary": {
+        "inputs": 1,
+        "fixture_inputs": 0,
+        "findings": 1,
+        "mapped": 1,
+        "unmapped": 0,
+        "duplicates": 0,
+        "cell_mapped": 0,
+        "engines_present": 1,
+        "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "errors": []
+    }
+  rules/demo.yml: |
+    rules:
+      - id: demo.write
+        languages: [generic]
+        severity: ERROR
+        message: A synthetic rule that matches the word synthetic.
+        pattern-regex: 'synthetic'
+  src/app.py: |
+    def write(row):
+        return row
+  tests/rows.rs: |
+    #[test]
+    fn rejects_bad_row() {
+        assert!(check_bad_row().is_none());
+    }
+  docs/README.md: |
+    Synthetic fixture; not evidence about any real project.
+  cells/cells.yaml: |
+    project: demo
+    cells:
+      - id: CELL-001
+        title: A synthetic cell for the static-analysis eval cases.
+        taxonomy_class: security
+        failure_class: supply-chain-integrity
+        failure_mode: detect
+        coverage_status: open
+        detectors:
+          - id: D-DEMO
+            kind: static-analysis
+            status: open
+  mutations/mutations.yaml: |
+    fixtures:
+      - id: MUT-001
+ledger:
+  claims:
+  - id: C-01
+    claim: The synthetic writer rejects a malformed row before indexed access.
+    mechanism: The row parser checks the terminator before indexed access.
+    evidence:
+    - kind: static-analysis
+      date: '2026-11-01'
+      command: semgrep scan --config rules/demo.yml --sarif reports/scan.sarif
+      commit: '{{COMMIT_0}}'
+      static_analysis_runs:
+      - tool: semgrep
+        version: 1.184.0
+        command: semgrep scan --config rules/demo.yml --sarif reports/scan.sarif
+        rules:
+          name: demo
+          source: rules/demo.yml
+          sha256: 9b92cdc452bd3ddb1a02d72c9334b70febfaa2b31023d80db91642f636911222
+        target_commit: '{{COMMIT_0}}'
+        output: reports/scan.sarif
+        output_sha256: 99096922c7e2ae9f5ce5e1ac01f0a3a3680d0fc705747c6cc01f9391e121eeb6
+        report: reports/report.json
+        report_sha256: 1998b1606dbbe7d1a93a95e34b59d868dc166e646b3a895e0839eb38eab8cd19
+        exit_code: 0
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:05+03:00'
+        status: completed
+        triage:
+        - finding: F-001
+          disposition: covered
+          date: '2026-11-01'
+          cell: CELL-001
+          detector: D-DEMO
+          fixture: mutations/mutations.yaml#MUT-001
+        cells: cells/cells.yaml
+    scope:
+      platforms: Synthetic fixture.
+      actors_excluded: []
+    status: static-refinement
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 0
+suite_glob: '**/*.rs'

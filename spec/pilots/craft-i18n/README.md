@@ -83,6 +83,31 @@ records `__asan_init` in the executed binary. The red-team drill
 hidden finding. C-02 stays `tested`; the sanitizer strengthens the evidence
 but does not raise the status.
 
+## Static-analysis channel (V2-36)
+
+C-09 is the first claim in either pilot that is supported by `kind:
+static-analysis` evidence. Semgrep 1.184.0 ran the three MIT rules authored in
+[`spec/static-analysis/rules/`](../../static-analysis/rules/) over the target's
+`.github/` at `5c5c554`, and the normalized report carries five findings:
+two Dependabot update blocks without a `cooldown`, two mutable `uses:` refs
+(`actions/checkout@v7`, a reusable workflow at `@main`) and one
+`secrets: inherit`.
+
+Every finding is triaged `out-of-scope` with a reason. They are real
+supply-chain hygiene gaps, but this pilot's taxonomy is the translation-row
+grammar of `docs/catalog-format.md`; no cell owns that failure class. The
+alternative was to drop them or call them false positives, and both would make
+the record dishonest. `out-of-scope` records the boundary instead. The target
+is read-only here, so no detector or mutation fixture was added and `new` was
+not available.
+
+The record is [`spec/static-analysis/`](../../static-analysis/README.md); the
+claim is C-09. The rule set and both outputs are hashed, the report hashes the
+same SARIF as an input, and `claim_lint` L2 checks the triage bijection. The
+record proves that these findings came from this run, not that the target is
+insecure or clean. The rule set is authored rather than vendored because the
+Semgrep Registry `p/ci` rules are not redistributable.
+
 ## Lint result
 
 ```text
@@ -92,7 +117,7 @@ $ python3 tools/claim_lint.py \
     --run-log-root /home/admini/projects/dev-sec-skills \
     spec/pilots/craft-i18n/claims.yaml
 
-ledger: spec/pilots/craft-i18n/claims.yaml | claims: 8
+ledger: spec/pilots/craft-i18n/claims.yaml | claims: 9
   L1 schema        OK
   L2 evidence      OK
   L3 traceability  OK
@@ -186,7 +211,7 @@ in [`mutations/README.md`](mutations/README.md).
 | Detectors with a mutation fixture | **12 / 13** |
 | Detectors with a documented exemption | 1 (CELL-013) |
 | Cells linked to a claim | 14 / 14 |
-| Claim ledger entries | 8 (C-01…C-08; C-08 is `open`) |
+| Claim ledger entries | 9 (C-01…C-09; C-08 is `open`, C-09 is `static-refinement`) |
 | Duplicate `failure_class` values | none |
 
 | Class | Cells |
@@ -297,6 +322,10 @@ check would have reported a false pass.
   (cargo 1.99.1). No flakiness study was done.
 - The CELL-013 exemption is an argument, not a measurement: the cell is not
   mutation-verified on its own.
+- C-09 measures the target's CI configuration, not its translation rows. All
+  five findings are `out-of-scope`, so the pilot's taxonomy gained no
+  supply-chain cell and no detector; the rule set is authored here and is not
+  the Semgrep `p/ci` benchmark.
 
 ## Reproduction
 
@@ -306,6 +335,7 @@ python3 tools/claim_lint.py \
     --root /home/admini/projects/astraoffice/craft-i18n \
     --suite-glob "crates/craft-i18n-tests/**/*.rs" \
     --run-log-root /home/admini/projects/dev-sec-skills \
+    --tool-output-root /home/admini/projects/dev-sec-skills \
     spec/pilots/craft-i18n/claims.yaml
 
 # cell registry
@@ -322,3 +352,24 @@ python3 spec/pilots/craft-i18n/mutations/run_mutations.py \
 cd spec/pilots/craft-i18n/probes/invisible-characters
 CARGO_TARGET_DIR=/tmp/opencode/craft-i18n-target cargo run --offline -q
 ```
+
+The static-analysis record is replayed from this repository, not from the
+pilot:
+
+```bash
+# rerun the engine, then normalize (paths are relative to the rules directory)
+cd spec/static-analysis/rules
+semgrep scan --config ci-supply-chain-2026-11-07.yml --sarif \
+    --output ../../static-analysis/runs/ci-craft-i18n-2026-11-07.sarif \
+    --metrics off /home/admini/projects/astraoffice/craft-i18n
+
+cd /home/admini/projects/dev-sec-skills
+python3 tools/sarif_evidence.py --config spec/sarif/adapters.yaml --root . \
+    --path-root /home/admini/projects/astraoffice/craft-i18n \
+    --max-unmapped 0 --reject-fixtures \
+    --json spec/static-analysis/runs/ci-craft-i18n-2026-11-07.report.json \
+    spec/static-analysis/runs/ci-craft-i18n-2026-11-07.sarif
+```
+
+A rerun changes the SARIF bytes and therefore every hash in C-09; the record
+and the claim are updated together or not at all.

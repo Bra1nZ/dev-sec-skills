@@ -269,6 +269,13 @@ spec/
     adapters.yaml
     fixtures/
     2026-11-07-report.json
+  static-analysis/
+    README.md
+    rules/
+      ci-supply-chain-2026-11-07.yml
+    runs/
+      ci-craft-i18n-2026-11-07.sarif
+      ci-craft-i18n-2026-11-07.report.json
   proofs/
     README.md
     manifest.yaml
@@ -362,7 +369,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, двенадцать наборов для линтеров и каталог `spec/` с концептом конвейера.
+скилов, тринадцать наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -378,7 +385,7 @@ exit code, дату, обязательный `status` и bound; L6 требуе
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
-Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 53/53
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 70/70
 проходят, включая негативный контроль самого runner'а, кейсы для Rust
 `#[test] fn`, 8 кейсов run-record (валидный, хэш артефакта, хэш лога,
 неисполненный ID, ненулевой exit, отсутствие записи, несовпадение даты,
@@ -394,8 +401,13 @@ exit code, дату, обязательный `status` и bound; L6 требуе
 тестом, id не из `tests`, пустая причина, open claim) и семь кейсов V2-35
 `sanitizer-*` (валидная ASan-запись, clean-запись с finding-строкой в выводе,
 failed-прогон, `unverified` у tested claim, запись без `status`, хэш вывода,
-`sanitizer_runs` не на `kind=test`). Исторический прогон из
-12 кейсов — `evals/iteration-3/RESULTS.md`.
+`sanitizer_runs` не на `kind=test`) и семнадцать кейсов V2-36
+`static-analysis-*` (валидная запись с `covered`-маршрутизацией, реальная
+находка как `out-of-scope`, запись не на `kind=static-analysis`, хэши правил и
+SARIF, `unverified`, `unmapped`, authored fixture, дубль и пропуск в triage,
+несуществующая ячейка, `not-a-bug`/`out-of-scope` без причины,
+`static-refinement` без записи, engine, которого нет в отчёте, SARIF и отчёт
+по URL). Исторический прогон из 12 кейсов — `evals/iteration-3/RESULTS.md`.
 
 Bounded-прогон `tools/bounded_check.py` (V2-28) запускает внешний инструмент
 в отдельной группе процессов и убивает её по wall-clock bound. Запись
@@ -465,7 +477,7 @@ docs-only `02be7ab~1..02be7ab` — 0 rerun. Кейсы —
 Силу гейтов измерили на реальных артефактах (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) берёт леджер
 craft-i18n, его записанный cargo-лог и реестр ячеек, применяет по одной атаке на
-drill и требует ожидаемый exit code и сообщение. 13 из 14 атак блокируются; одна
+drill и требует ожидаемый exit code и сообщение. 14 из 15 атак блокируются; одна
 проходит молча и записана как пробел: пере-датировка прогона (C-13).
 Заимствование реальных тестов другой claim (V2-34) теперь блокирует L6:
 открытая C-08, получившая тесты C-01, падает, даже если sharing объявлен, потому
@@ -519,6 +531,21 @@ targets — `make choke-points` и `make choke-points-record`. Порог CP1 н
 включён в `make verify`, пока шум не снижен; совпадение класса — гипотеза, не
 доказательство и не cell.
 
+Статический анализ становится evidence только с записью и triage (V2-36):
+`schemas/static-analysis-run.schema.json` фиксирует engine, команду, набор
+правил и его хэш, коммит цели, сырой SARIF, нормализованный отчёт и ровно одно
+решение на каждую находку. `covered`/`new` разрешаются в ячейку, детектор и
+mutation fixture; `not-a-bug`/`out-of-scope` требуют причины. `claim_lint` L1
+проверяет форму, L2 — хэши правил и обоих выходов, наличие engine в отчёте,
+нулевые `unmapped` и `fixture_inputs`, биекцию triage с отчётом, L4 требует
+запись для `static-refinement`. Записанный прогон
+[`spec/static-analysis/`](spec/static-analysis/README.md) — Semgrep с тремя
+правилами, написанными здесь; пять находок, все `out-of-scope`, потому что
+таксономия пилота не владеет supply-chain классом. Правила авторские, а не
+vendored: Semgrep Registry Rules License v1.0 запрещает распространение, и
+попытка с `p/ci` в репозиторий не попала. Кейсы канала —
+[`evals/linter/`](evals/linter/): 17 новых; адаптерные — 17.
+
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.
 Для 24 из 27 детекторов есть mutation fixture: названный suite падает ровно на
@@ -530,7 +557,8 @@ targets — `make choke-points` и `make choke-points-record`. Порог CP1 н
 Второй пилот — [`spec/pilots/craft-i18n/`](spec/pilots/craft-i18n/README.md),
 намеренно не-RBAC и не-БД: Rust-крейт, проверяющий каталоги переводов.
 14 ячеек (13 tested, 1 open), 13 детекторов, 12 из 13 с mutation fixture и один
-документированный exemption; claim-леджер из 8 claim'ов, 0 замечаний L1–L6.
+документированный exemption; claim-леджер из 9 claim'ов (C-09 —
+`static-refinement` с записанным static-analysis прогоном), 0 замечаний L1–L6.
 Открытая CELL-002 — реальный пробел: Unicode Cf-символы (U+202E, U+200B,
 U+2066) проходят проверку, а U+0007 и U+FEFF отклоняются.
 

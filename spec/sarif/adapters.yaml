@@ -21,6 +21,9 @@ registries:
 engines:
   - id: semgrep
     name: Semgrep
+    # osemgrep writes "Semgrep OSS" into tool.driver.name; resolve the engine
+    # instead of reporting every finding as unknown-engine.
+    aliases: [Semgrep OSS]
     rules:
       - id: semgrep-subprocess-shell
         match: '^python\.lang\.security\.audit\.subprocess-shell-true'
@@ -45,6 +48,25 @@ engines:
         taxonomy_class: security
         failure_class: exposed-secret-or-weak-crypto
         failure_mode: abort
+      # Rules authored in this repository for the p/ci pilot
+      # (spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml). They are
+      # local rules, not Semgrep Registry rules, so they can be vendored and
+      # hashed by the static-analysis run record.
+      - id: semgrep-authored-mutable-action-ref
+        match: '^dev-sec-skills\.ci\.mutable-action-ref$'
+        taxonomy_class: security
+        failure_class: supply-chain-integrity
+        failure_mode: detect
+      - id: semgrep-authored-secrets-inherit
+        match: '^dev-sec-skills\.ci\.secrets-inherit$'
+        taxonomy_class: security
+        failure_class: exposed-secret-or-weak-crypto
+        failure_mode: detect
+      - id: semgrep-authored-dependabot-missing-cooldown
+        match: '^dev-sec-skills\.ci\.dependabot-missing-cooldown$'
+        taxonomy_class: security
+        failure_class: supply-chain-integrity
+        failure_mode: detect
 
   - id: codeql
     name: CodeQL

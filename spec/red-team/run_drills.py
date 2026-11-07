@@ -302,6 +302,18 @@ def _sanitizer_finding(td):
                           "but its output carries a sanitizer finding line"]}]
 
 
+def _hidden_static_finding(td):
+    """BLOCKED by L2: a real finding the record triaged as a gap disappears."""
+    target = load(LEDGER)
+    runs = claim(target, "C-09")["evidence"][0]["static_analysis_runs"]
+    runs[0]["triage"] = [t for t in runs[0]["triage"]
+                         if t["finding"] != "F-005"]
+    path = os.path.join(td, "ledger.yaml")
+    dump(target, path)
+    return [{"gate": "claim_lint", "argv": lint_args(path), "exit": 1,
+             "contains": ["finding(s) F-005 have no triage entry"]}]
+
+
 def _borrowed_evidence_declared(td):
     """BLOCKED by L6 rule 2 even when both claims declare the shared test."""
     base = load(LEDGER)
@@ -372,6 +384,9 @@ DRILLS = [
      "verdict": "blocked"},
     {"name": "sanitizer-findings-hidden", "build": _sanitizer_finding,
      "attack": "declare a clean ASan run over output that carries an ERROR: AddressSanitizer line",
+     "verdict": "blocked"},
+    {"name": "static-findings-hidden", "build": _hidden_static_finding,
+     "attack": "drop the triage entry for a real static-analysis finding (F-005)",
      "verdict": "blocked"},
 ]
 

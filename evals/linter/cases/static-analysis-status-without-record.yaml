@@ -1,0 +1,96 @@
+# Synthetic fixture - not evidence about any real project.
+name: static-analysis-status-without-record
+description: A claim is labelled static-refinement and cites kind=static-analysis evidence, but no static_analysis_runs
+  record. Prose about an analysis does not say which engine ran over which commit with which rules; L4
+  must require the record.
+git:
+  commits:
+  - message: the synthetic scan target
+    files:
+      src/app.py: |
+        def write(row):
+            return row
+files:
+  reports/scan.sarif: |
+    {
+      "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+      "version": "2.1.0",
+      "runs": [
+        {
+          "tool": {
+            "driver": {
+              "name": "Semgrep OSS",
+              "version": "1.184.0",
+              "rules": [
+                {
+                  "id": "demo.write"
+                }
+              ]
+            }
+          },
+          "results": [
+            {
+              "ruleId": "demo.write",
+              "level": "error",
+              "message": {
+                "text": "synthetic finding"
+              },
+              "locations": [
+                {
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "src/app.py"
+                    },
+                    "region": {
+                      "startLine": 7
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  rules/demo.yml: |
+    rules:
+      - id: demo.write
+        languages: [generic]
+        severity: ERROR
+        message: A synthetic rule that matches the word synthetic.
+        pattern-regex: 'synthetic'
+  src/app.py: |
+    def write(row):
+        return row
+  tests/rows.rs: |
+    #[test]
+    fn rejects_bad_row() {
+        assert!(check_bad_row().is_none());
+    }
+  docs/README.md: |
+    Synthetic fixture; not evidence about any real project.
+ledger:
+  claims:
+  - id: C-01
+    claim: The synthetic writer rejects a malformed row before indexed access.
+    mechanism: The row parser checks the terminator before indexed access.
+    evidence:
+    - kind: static-analysis
+      date: '2026-11-01'
+      command: semgrep scan --config rules/demo.yml --sarif reports/scan.sarif
+      commit: '{{COMMIT_0}}'
+    scope:
+      platforms: Synthetic fixture.
+      actors_excluded: []
+    status: static-refinement
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: none
+  L3: none
+  L4: error
+  L5: none
+exit: 1
+suite_glob: '**/*.rs'

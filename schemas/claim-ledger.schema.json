@@ -46,7 +46,7 @@
       "properties": {
         "kind": {
           "enum": ["proof", "model-check", "test", "static-analysis", "review", "planned"],
-          "description": "Channel of the evidence artifact."
+          "description": "Channel of the evidence artifact. `review` has no machine form by design: it names the artifact a human read and the commit it read, and it supports no status above `reviewed`."
         },
         "artifact": {
           "type": "string",
@@ -93,6 +93,12 @@
           "minItems": 1,
           "description": "Dynamic sanitizer runs over the cited tests (V2-35). Only valid on kind=test evidence. L2 hashes each output, ties finished_at to the evidence date, requires a completed run for a non-open claim, and rejects a clean record whose output carries a sanitizer finding line.",
           "items": { "$ref": "sanitizer-run.schema.json" }
+        },
+        "static_analysis_runs": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Static-analysis engine runs (V2-36). Only valid on kind=static-analysis evidence, and the only evidence that can support static-refinement (L4). L1 checks the record and triage shape; L2 hashes the rule set and both outputs, checks that the normalized report hashes the cited SARIF, that the named engine is present, that no finding is unmapped or authored, that the triage is a bijection with the report's findings, and that covered/new entries resolve their cell, detector and fixture. not-a-bug and out-of-scope entries require a reason.",
+          "items": { "$ref": "static-analysis-run.schema.json" }
         },
         "tool_output": {
           "$ref": "tool-output.schema.json",
