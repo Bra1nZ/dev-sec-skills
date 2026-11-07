@@ -26,7 +26,9 @@ PILOT2_MUTATION_TARGET_DIR ?= /tmp/opencode/craft-i18n-target
 
 # C-02 bounded cross-check: an independent row-grammar model with a path
 # dependency on the second pilot checkout. It needs that checkout and is a
-# bounded model check, not a merge gate, so it is not in `verify`.
+# bounded model check, not a merge gate, so it is not in `verify`. The target
+# directory is a rebuildable cache under /tmp (cleared on reboot); the evidence
+# is committed under spec/proofs/runs/.
 CARGO ?= cargo
 C02_MANIFEST ?= crosscheck/c02-row-model/Cargo.toml
 C02_TARGET_DIR ?= /tmp/opencode/c02-crosscheck-target

@@ -44,6 +44,16 @@ and
 [`spec/proofs/runs/c02-mutants-2026-11-07.json`](../../spec/proofs/runs/c02-mutants-2026-11-07.json),
 both written by `tools/bounded_check.py`.
 
+## Durability
+
+`CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target` is a build cache, not
+evidence. `/tmp` is cleared on reboot; the committed `Cargo.lock` plus the
+local registry cache in `~/.cargo` are enough to rebuild offline (cold, about
+38 s on the machine that recorded the runs). The recorded command embeds the
+cache path but does not require the directory to exist: cargo creates it. The
+evidence itself -- the two JSON records and their captured `.log` files -- is
+committed under `spec/proofs/runs/` and survives a reboot.
+
 ## Files
 
 ```text

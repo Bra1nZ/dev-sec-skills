@@ -81,7 +81,11 @@ run cited by C-02. The same bytes serve as its `run_record` log and its
 
 The nightly toolchain lives under `/tmp/opencode/rustup`, not in the user's
 `~/.rustup`: `/home` was at 99 % and the stable toolchain was left untouched.
-The build target directory is also under `/tmp` and is not archived.
+The build target directory is also under `/tmp` and is not archived. `/tmp` is
+cleared on reboot: replaying this run needs the nightly toolchain reinstalled
+into some `RUSTUP_HOME` and a fresh build, while the committed log and record
+remain the evidence. `--offline` resolves the target crate's dependencies from
+the registry cache in `~/.cargo`, which is outside `/tmp`.
 
 ### What the ASan record proves and what it does not
 

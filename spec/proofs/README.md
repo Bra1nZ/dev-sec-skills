@@ -39,7 +39,9 @@ spec/proofs/
   rejected unless it names an artifact, a `tool_output` record, at least one
   `depends_on` path and at least one assumption.
 - `crosscheck/c02-row-model/` — the independent model, the space generator and
-  the mutation harness; see its `README.md` for the run commands.
+  the mutation harness; see its `README.md` for the run commands. Build targets
+  live under `/tmp/opencode/` and are disposable caches; the records and logs
+  above are committed and do not depend on them.
 - `tools/proof_plan.py` — the planner, read-only on the target repository.
 - `evals/proof-plan/run_evals.py` — 36 synthetic git scenarios.
 - `evals/proof-plan/mutation_selftest.py` — eight mutants of the planner, each
