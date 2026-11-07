@@ -39,7 +39,7 @@ spec/
 
 ## Status
 
-Phase 0: documents, schemas, seed registry, `cell_lint` (CL1–CL6, 30
+Phase 0: documents, schemas, seed registry, `cell_lint` (CL1–CL6, 40
 synthetic adversarial cases, see `evals/cell-lint/`), and two pilot registries.
 The first is `rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4 errors,
 C-18); the second is `craft-i18n`, deliberately non-RBAC and non-database
@@ -73,6 +73,18 @@ ties `finished_at` to the evidence date and rejects a non-zero exit for a
 non-open claim, and L4 rejects a `model-checked` or `proven` claim without one.
 A `model-checked` claim must also state its bound. The record does not check the
 tool's semantics or the soundness of the encoding.
+
+Runtime enforcement (V2-15/V2-16) is a separate evidence kind: a detector with
+`kind: runtime-enforcement` must name the `negative_test` that attempts the
+forbidden action and observes the response, and its cell must name
+`enforced_at` (the choke point), `oracle` (what decides a violation occurred)
+and `violation_response` (what the system does). CL1 checks the shape, CL3
+resolves the test ID against `--suite-glob`, and CL2 caps such a cell at
+`tested`: execution against examples is not a proof. The first adopters are
+`rbac_pg` CELL-001 (a role-less login gets PostgreSQL 42501, negative test F3a)
+and `craft-i18n` CELL-003 (`parse_row` returns `line N: ...`, negative test
+`each_bad_row_is_one_problem`); `make verify` passes the suite glob for both, so
+the IDs resolve rather than being assumed.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

@@ -71,8 +71,8 @@
           "description": "Stable detector ID, referenced by lessons and evidence."
         },
         "kind": {
-          "enum": ["test", "rule", "invariant", "proof", "fuzz", "review"],
-          "description": "Channel of the detector. A test detector needs an artifact or a reproducing command."
+          "enum": ["test", "rule", "invariant", "proof", "fuzz", "review", "runtime-enforcement"],
+          "description": "Channel of the detector. A test or runtime-enforcement detector needs an artifact or a reproducing command. runtime-enforcement means the detector runs the forbidden action and observes the response, not only the happy path."
         },
         "artifact": {
           "type": "string",
@@ -90,6 +90,11 @@
           "type": "string",
           "description": "Why no repository source mutation can falsify this detector (platform semantics, a configuration control, or a core-engine property). A documented exemption is reported as info by CL2 instead of an unverified warning."
         },
+        "negative_test": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Test ID that attempts the forbidden action and observes violation_response. Required for kind=runtime-enforcement (V2-16); CL3 resolves it against the suite when --suite-glob is given."
+        },
         "status": { "$ref": "#/definitions/coverage_status" },
         "last_verified": {
           "type": "string",
@@ -102,6 +107,13 @@
         {
           "if": { "properties": { "kind": { "const": "test" } }, "required": ["kind"] },
           "then": { "anyOf": [{ "required": ["artifact"] }, { "required": ["command"] }] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "runtime-enforcement" } }, "required": ["kind"] },
+          "then": {
+            "required": ["negative_test"],
+            "anyOf": [{ "required": ["artifact"] }, { "required": ["command"] }]
+          }
         }
       ]
     },
@@ -149,6 +161,21 @@
           "type": "string",
           "minLength": 1,
           "description": "Why no declared class or failure mode fits. Required when taxonomy_class or failure_mode is 'other'; the reason is what makes the escape hatch reviewable."
+        },
+        "enforced_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Choke point where the invariant is enforced at runtime (path:line, SQL function, symbol, middleware). Required when a detector has kind=runtime-enforcement (V2-15)."
+        },
+        "oracle": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What decides that a violation occurred: the assertion, probe or log line the negative test inspects. Required with a runtime-enforcement detector."
+        },
+        "violation_response": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The observable response on violation: denial code, rollback, degraded state, or a detection record. Required with a runtime-enforcement detector."
         },
         "detectors": {
           "type": "array",
@@ -202,6 +229,20 @@
             ]
           },
           "then": { "required": ["routing_note"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "detectors": {
+                "contains": {
+                  "properties": { "kind": { "const": "runtime-enforcement" } },
+                  "required": ["kind"]
+                }
+              }
+            },
+            "required": ["detectors"]
+          },
+          "then": { "required": ["enforced_at", "oracle", "violation_response"] }
         }
       ]
     }

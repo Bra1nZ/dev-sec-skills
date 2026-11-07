@@ -39,6 +39,7 @@
 | C-21 | The linter rejects an unrelated commit: the commit resolves but does not describe the artifact's current bytes | L2 compares the artifact with its blob at the cited commit (`git cat-file -e <commit>:<path>`, `git diff --quiet <commit> -- <path>`); a commit that predates the file and a file edited after the commit are errors | `evals/linter/cases/unrelated-commit.yaml`; `tools/claim_lint.py`; a run against `craft-i18n` | The pilot's git tree and a synthetic git-backed case | tested | Outside a git work tree the check is skipped, otherwise synthetic fixtures without `.git` would fail for lacking a repository; the empty model is covered by `empty-claims`, but an empty ledger is now simply an L1 error rather than a separate model
 | C-22 | A claim or cell cannot be removed without a tombstone that states a reason | `retired: [{id, reason, date}]` in the ledger or registry; `status_diff` and CL6 fail when a base ID disappears without a tombstone, when a tombstone names a live ID, and when an earlier tombstone is dropped; L1/CL1 check the shape without a base | `evals/linter/cases/retired-*.yaml`; `evals/cell-lint/cases/removed-without-retired.yaml`, `removed-with-retired.yaml`, `tombstone-dropped.yaml`, `retired-without-reason.yaml`; `evals/status-diff/run_evals.py`; `tools/status_diff.py`, `tools/cell_lint.py` | Synthetic ledgers and git repositories | tested | The shape is checked without a base, the fact of removal only in the diff; the tombstone date is optional and the order of tombstones is not checked; retired entries do not enter U or the coverage count
 | C-23 | A `model-checked` or `proven` status requires the tool's output, not the existence of an artifact | `evidence.tool_output` (`schemas/tool-output.schema.json`): `tool`, `command`, `output` + `output_sha256`, `exit_code`, `finished_at`; L1 checks the shape and commit/command agreement, L2 the output hash, the `finished_at` date and `exit_code=0` for a non-open claim, L4 the absence of `tool_output` for `model-checked`/`proven` and the absence of `bound` for `model-checked` | `evals/linter/cases/tool-output-*.yaml`, `model-checked-without-tool-output.yaml`, `model-checked-without-bound.yaml`; `schemas/tool-output.schema.json`; `tools/claim_lint.py` | Synthetic ledgers with TLC-like output | tested | The tool's semantics and the soundness of the model encoding are not checked; without an external anchor (C-13) a consistent forgery passes; the record is required only for `model-checked`/`proven`, other statuses may still carry it |
+| C-24 | A `runtime-enforcement` detector is not accepted without a negative test and a declared enforcement point | `kind: runtime-enforcement` requires `negative_test` (an ID resolved through `--suite-glob`), and the cell requires `enforced_at`, `oracle` and `violation_response`; CL1 checks the shape, CL3 resolves the ID, CL2 forbids a status above `tested` | `spec/conveyor/cell-registry.schema.json`; `tools/cell_lint.py`; `evals/cell-lint/cases/runtime-enforcement-*.yaml`, `negative-test-*.yaml`; `spec/pilots/rbac_pg/cells.yaml` CELL-001; `spec/pilots/craft-i18n/cells.yaml` CELL-003 | Synthetic registries and two real cells with recorded runs | tested | The ID is resolved only when `--suite-glob` is given (otherwise info); the meaning of `violation_response` is not checked automatically; the mutation fixture remains a separate CL2 requirement |
 
 Registry rules:
 
@@ -378,7 +379,7 @@ sweep is needed, not this paragraph.
 - Concept with a claim registry.
 - Cell registry schema and seed set.
 - Guard grammar specification and its limits.
-- `cell_lint` and adversarial cases: CL1–CL6, 34/34 (C-17).
+- `cell_lint` and adversarial cases: CL1–CL6, 40/40 (C-17).
 - Pilot registry for rbac_pg: 29 cells, 26 non-open, 3 open, 0
   CL1/CL3/CL4 errors (C-18).
 - Second pilot `craft-i18n` (Rust, non-RBAC, non-database): 14 cells,
@@ -394,6 +395,11 @@ sweep is needed, not this paragraph.
   output (`tool`, `command`, `output` + hash, `exit_code`, `finished_at`), not
   only an artifact; L4 rejects such a status without a record, and
   `model-checked` without a `bound`. 7 `tool-output-*` eval cases.
+- Runtime-enforcement evidence (V2-15/V2-16): a `runtime-enforcement` detector needs
+  `negative_test` (the ID resolves through `--suite-glob`), and the cell needs
+  `enforced_at`, `oracle` and `violation_response`; the first real cells are
+  rbac_pg CELL-001 (42501 refusal) and craft-i18n CELL-003 (Problem with a line
+  number).
 - Escape hatch `other` + `routing_note` and the U measurement (V2-25):
   0/43 = 0.0 %, gated at `--max-share 0` in `make verify`. N = 87.5 % and
   U = 0.0 % are fixed with artifacts dated 2026-11-07 (V2-32).
@@ -437,8 +443,8 @@ Not commitments and not status: a task closes only with evidence.
 - [x] V2-12. Assert that the predicted IDs failed, not just any test: both runners compare the failing set with `expect_failures` exactly (`spec/pilots/rbac_pg/mutations/run_mutations.py`, `spec/pilots/craft-i18n/mutations/run_mutations.py`).
 - [x] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled — closed by the mutation fixtures: every tested security detector has a predicted failing run or an exemption (`spec/pilots/rbac_pg/mutations/README.md`).
 - [x] V2-14. Mutation fixtures for the remaining pilot detectors — 25 fixtures, 24 detectors with a fixture and 3 with a documented `mutation_exemption`; all 25 matched (`spec/pilots/rbac_pg/mutations/README.md`).
-- [ ] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell.
-- [ ] V2-16. A "runtime enforcement" evidence kind with a mandatory negative test.
+- [x] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell: required when a detector has `kind: runtime-enforcement`; CL1 checks the shape. First cells — `rbac_pg` CELL-001 and `craft-i18n` CELL-003.
+- [x] V2-16. A `runtime-enforcement` evidence kind with a mandatory negative test: `negative_test` on the detector, CL1 requires a non-empty ID, CL3 resolves it through `--suite-glob` (6 eval cases, including unresolved and unchecked), CL2 caps the cell status at `tested`.
 
 **P2 — continuous loop**
 

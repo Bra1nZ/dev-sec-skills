@@ -75,6 +75,13 @@ classes. `make verify` runs this same command (`--base HEAD` included), so the
 numbers cannot drift from the documented invocation. The registry also
 validates against `spec/conveyor/cell-registry.schema.json` with `jsonschema`.
 
+CELL-001 is the first `runtime-enforcement` cell (V2-15/V2-16): the detector
+names `negative_test: F3a`, and the cell states `enforced_at` (the EXECUTE grant
+on `rbac.apply_policy_document`, with PUBLIC revoked), `oracle` (F3 and F3a
+expect error 42501) and `violation_response` (42501; no policy applied).
+`make verify` passes `--suite-glob setup/*.py`, so F3a resolves in the suite
+instead of being assumed; CL1, CL3 and CL4 stay clean.
+
 An earlier revision of this page reported 22 CL2 warnings. That run predates
 the mutation batch: those warnings no longer exist, and the old output is only
 in git history.

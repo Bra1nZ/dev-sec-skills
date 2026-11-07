@@ -1,0 +1,48 @@
+# Synthetic fixture — not evidence about any real project.
+name: runtime-enforcement-no-negative-test
+description: "The detector claims runtime enforcement but cites no negative test. A\n      happy-path\
+  \ run cannot show that the forbidden action is refused; CL1 must\n      error on the missing negative_test\
+  \ (V2-16).\n"
+files:
+  tests/test_suite.py: "def test_anonymous_write_denied():\n    assert write() == 403\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A role-less session cannot write tenant data.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points:
+    - http
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+    - id: D-RUNTIME
+      kind: runtime-enforcement
+      artifact: tests/test_suite.py
+      command: python3 -m pytest -q
+      status: tested
+      last_verified: '2026-11-05'
+      mutation_fixture: mutations.yaml#MUT-1
+      negative_test: null
+    residual_risk: Synthetic fixture; a platform bypass is outside the model.
+    limitations: No detector has exercised this cell yet.
+    owner: synthetic maintainer
+    last_seen: '2026-11-05'
+    enforced_at: src/server.rs:42 (the write handler's session check)
+    oracle: test_anonymous_write_denied asserts the 403 response
+    violation_response: HTTP 403; no row is written
+args:
+- --max-age-days
+- '3650'
+- --suite-glob
+- '**/*.py'
+expect:
+  CL1: error
+exit: 1

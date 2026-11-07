@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-23; английская версия —
+  утверждений C-01…C-24; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -277,8 +277,9 @@ exit code, дату и bound), `tools/status_diff.py` (гейт эскалаци
 12 кейсов — `evals/iteration-3/RESULTS.md`.
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
-evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон
-`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 34/34,
+evidence, трассировка, таксономия, гейт эскалации статуса; детектор
+`runtime-enforcement` требует негативный тест, а ячейка — `enforced_at`,
+`oracle` и `violation_response`) и шаблон `ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 40/40,
 тоже с негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
 

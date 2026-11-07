@@ -5,14 +5,17 @@ Implements checks over a cell registry (JSON or YAML, see
 spec/conveyor/cell-registry.schema.json):
 
   CL1  structure:     required fields, stable IDs, unique IDs, status/kind/
-                      failure-mode enums, detector fields
+                      failure-mode enums, detector fields; a runtime-enforcement
+                      detector needs a negative_test and the cell needs
+                      enforced_at, oracle and violation_response
   CL2  coverage:      a non-open cell needs a detector; a cell may not claim
                       more than its strongest detector; a detector may not
                       claim more than its kind allows; a detector without a
                       mutation fixture is an error for security and correctness
                       cells and a warning otherwise
   CL3  evidence:      detector artifacts exist, dates are valid, not in the
-                      future, and within the freshness window
+                      future, and within the freshness window; negative_test
+                      IDs resolve when --suite-glob is given
   CL4  traceability:  claim IDs resolve in the claim ledger, a non-open cell
                       has an owner and residual risk, the cell does not claim
                       more than its linked claims; cells that reference claims
@@ -25,7 +28,7 @@ spec/conveyor/cell-registry.schema.json):
 Exit codes: 0 clean (warnings allowed), 1 errors found, 2 tool/usage error.
 
 Usage:
-    python3 tools/cell_lint.py [--root PATH] [--ledger PATH]
+    python3 tools/cell_lint.py [--root PATH] [--ledger PATH] [--suite-glob GLOB]
                                [--max-age-days N] [--base PATH] registry.yaml
 """
 
@@ -43,15 +46,20 @@ except ImportError:  # pragma: no cover
 
 STATUSES = ["open", "reviewed", "static-refinement", "tested", "model-checked", "proven"]
 STATUS_RANK = {s: i for i, s in enumerate(STATUSES)}
-KINDS = {"test", "rule", "invariant", "proof", "fuzz", "review"}
+KINDS = {"test", "rule", "invariant", "proof", "fuzz", "review",
+         "runtime-enforcement"}
 KIND_MAX_RANK = {
     "review": STATUS_RANK["reviewed"],
     "rule": STATUS_RANK["static-refinement"],
     "test": STATUS_RANK["tested"],
     "fuzz": STATUS_RANK["tested"],
+    # V2-16: a runtime-enforcement detector runs the forbidden action and
+    # observes the response; that is execution evidence, not a proof.
+    "runtime-enforcement": STATUS_RANK["tested"],
     "invariant": STATUS_RANK["model-checked"],
     "proof": STATUS_RANK["proven"],
 }
+RUNTIME_ENFORCEMENT = "runtime-enforcement"
 TAXONOMY_CLASSES = {"security", "correctness", "maintainability", "performance", "other"}
 MUTATION_REQUIRED_CLASSES = {"security", "correctness"}
 FAILURE_MODES = {"deny", "abort", "rollback", "safe-degrade", "detect", "other"}
@@ -202,9 +210,17 @@ def check_structure(doc, findings):
             if det.get("status") not in STATUSES:
                 findings.append(Finding("CL1", "error",
                                         "detector %r has unknown status %r" % (did, det.get("status")), who))
-            if det.get("kind") == "test" and not (det.get("artifact") or det.get("command")):
+            if det.get("kind") in ("test", RUNTIME_ENFORCEMENT) and not (
+                    det.get("artifact") or det.get("command")):
                 findings.append(Finding("CL1", "error",
-                                        "test detector %r needs artifact or command" % did, who))
+                                        "%s detector %r needs artifact or command"
+                                        % (det.get("kind"), did), who))
+            if det.get("kind") == RUNTIME_ENFORCEMENT:
+                neg = det.get("negative_test")
+                if not isinstance(neg, str) or not neg.strip():
+                    findings.append(Finding("CL1", "error",
+                                            "runtime-enforcement detector %r requires a non-empty "
+                                            "negative_test (V2-16)" % did, who))
             if "mutation_exemption" in det:
                 exemption = det.get("mutation_exemption")
                 if not isinstance(exemption, str) or not exemption.strip():
@@ -215,6 +231,20 @@ def check_structure(doc, findings):
                     findings.append(Finding("CL1", "warning",
                                             "detector %r has both mutation_fixture and mutation_exemption"
                                             % did, who))
+
+        # V2-15: a cell that claims runtime enforcement must say where the
+        # invariant is enforced, what observes a violation, and what the
+        # system does in response. Without all three the detector only proves
+        # that some code runs.
+        runtime = [det for det in (cell.get("detectors") or [])
+                   if isinstance(det, dict) and det.get("kind") == RUNTIME_ENFORCEMENT]
+        if runtime:
+            for field in ("enforced_at", "oracle", "violation_response"):
+                value = cell.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    findings.append(Finding("CL1", "error",
+                                            "cell has a runtime-enforcement detector; %s must be "
+                                            "a non-empty string (V2-15)" % field, who))
 
         for j, claim_id in enumerate(cell.get("claim_ids") or []):
             if not CLAIM_ID_RE.match(str(claim_id)):
@@ -320,8 +350,23 @@ def check_coverage(cells, findings):
 
 # ------------------------------------------------------------- CL3 evidence
 
-def check_evidence(doc, cells, root, max_age_days, findings):
+def _suite_index(root, suite_glob):
+    """Reuse claim_lint's test-ID index so both tools agree on a test ID.
+
+    A `negative_test` is the same kind of identifier as a claim's `tests`
+    entry: a report name, a pytest function, or a Rust #[test] fn. Defining
+    the resolver once keeps the two contracts from drifting.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import claim_lint
+    return claim_lint.build_suite_index(root, suite_glob), claim_lint.id_resolves
+
+
+def check_evidence(doc, cells, root, max_age_days, findings, suite_glob=None):
     today = date.today()
+    suite = _suite_index(root, suite_glob) if suite_glob else None
 
     def check_date(value, who, label):
         if value is None:
@@ -357,6 +402,15 @@ def check_evidence(doc, cells, root, max_age_days, findings):
             if det.get("status") != "open" and not det.get("last_verified"):
                 findings.append(Finding("CL3", "warning",
                                         "detector %r is non-open but has no last_verified" % did, who))
+            negative = det.get("negative_test")
+            if isinstance(negative, str) and negative.strip():
+                if suite is None:
+                    findings.append(Finding("CL3", "info",
+                                            "negative_test %r was not resolved; pass --suite-glob "
+                                            "to check it" % negative, who))
+                elif not suite[1](negative.strip(), *suite[0]):
+                    findings.append(Finding("CL3", "error",
+                                            "negative_test %r not found in suite" % negative, who))
 
 
 # --------------------------------------------------------- CL4 traceability
@@ -584,6 +638,9 @@ def main():
     ap.add_argument("--require-base", action="store_true",
                     help="fail when --base is absent (use only for the first release)")
     ap.add_argument("--max-age-days", type=int, default=90)
+    ap.add_argument("--suite-glob", default=None,
+                    help="glob for suite files; when given, negative_test IDs are "
+                         "resolved against it (default: not resolved)")
     args = ap.parse_args()
 
     if args.require_base and not args.base:
@@ -605,7 +662,8 @@ def main():
     cells = check_structure(doc, findings)
     if cells:
         check_coverage(cells, findings)
-        check_evidence(doc, cells, root, args.max_age_days, findings)
+        check_evidence(doc, cells, root, args.max_age_days, findings,
+                       args.suite_glob)
         check_traceability(cells, args.ledger, findings)
         check_taxonomy(doc, cells, findings)
         if args.base:

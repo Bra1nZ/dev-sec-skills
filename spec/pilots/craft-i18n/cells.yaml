@@ -60,16 +60,20 @@ cells:
     failure_class: malformed-row
     entry_points: [catalog]
     failure_mode: detect
+    enforced_at: "crates/craft-i18n-tests/src/catalog.rs:47 (parse_row, called by read_catalog)"
+    oracle: "each_bad_row_is_one_problem asserts exactly one problem per bad row, prefixed 'line N:'"
+    violation_response: "read_catalog returns a Problem string 'line N: ...' and the row is not loaded"
     coverage_status: tested
     claim_ids: [C-01, C-02]
     detectors:
       - id: D-ROWS
-        kind: test
+        kind: runtime-enforcement
         artifact: crates/craft-i18n-tests/src/catalog.rs
         command: "cargo test --offline -p craft-i18n-tests"
         status: tested
         last_verified: "2026-11-06"
         mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-002"
+        negative_test: each_bad_row_is_one_problem
         note: "each_bad_row_is_one_problem + bad_row_names_file_and_line; one problem per bad row, named by line."
     residual_risk: "A row can be syntactically valid and still mistranslated; syntax is the only thing checked."
     limitations: "One test bundles twenty malformed rows, so a regression names the test but not the rule."

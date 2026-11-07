@@ -1,0 +1,45 @@
+# Synthetic fixture — not evidence about any real project.
+name: runtime-enforcement-missing-fields
+description: "The detector is runtime-enforcement but the cell names no enforced_at,\n      oracle or\
+  \ violation_response. A detector that runs code without saying what\n      it proves is not enforcement\
+  \ evidence, so CL1 must error on each missing\n      field rather than accept the cell.\n"
+files:
+  tests/test_suite.py: "def test_anonymous_write_denied():\n    assert write() == 403\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A role-less session cannot write tenant data.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points:
+    - http
+    failure_mode: deny
+    coverage_status: tested
+    detectors:
+    - id: D-RUNTIME
+      kind: runtime-enforcement
+      artifact: tests/test_suite.py
+      command: python3 -m pytest -q
+      status: tested
+      last_verified: '2026-11-05'
+      mutation_fixture: mutations.yaml#MUT-1
+      negative_test: test_anonymous_write_denied
+    residual_risk: Synthetic fixture; a platform bypass is outside the model.
+    limitations: No detector has exercised this cell yet.
+    owner: synthetic maintainer
+    last_seen: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+- --suite-glob
+- '**/*.py'
+expect:
+  CL1: error
+exit: 1

@@ -79,6 +79,7 @@ lint-pilot:
 	$(PYTHON) tools/cell_lint.py \
 	  --root "$(PILOT_ROOT)" \
 	  --ledger "$(PILOT_ROOT)/$(PILOT_LEDGER)" \
+	  --suite-glob "$(PILOT_SUITE_GLOB)" \
 	  --base "$$tmp" \
 	  "$(PILOT_REGISTRY)"
 
@@ -122,6 +123,7 @@ lint-pilot2:
 	$(PYTHON) tools/cell_lint.py \
 	  --root "$(PILOT2_ROOT)" \
 	  --ledger "$(abspath $(PILOT2_LEDGER))" \
+	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
 	  $$base \
 	  "$(PILOT2_REGISTRY)"
 

@@ -106,6 +106,14 @@ single info line is the CELL-013 exemption, not a warning. The CL6 run above
 is against the commit that first contains the registry; before that commit the
 gate explicitly reported a first-release skip.
 
+CELL-003 is the first `runtime-enforcement` cell (V2-15/V2-16):
+`kind: runtime-enforcement`, `negative_test: each_bad_row_is_one_problem`,
+`enforced_at` = `parse_row` in `crates/craft-i18n-tests/src/catalog.rs:47`,
+`oracle` = the test asserts exactly one problem per bad row prefixed `line N:`,
+and `violation_response` = `read_catalog` returns the Problem and does not load
+the row. `make verify` passes
+`--suite-glob crates/craft-i18n-tests/**/*.rs`, so the ID resolves.
+
 ### Negative control
 
 The clean run is not vacuous. Three mutations of the environment each exit

@@ -34,7 +34,7 @@
 | 4 | Mutation-покрытие security-детекторов | `run_mutations.py` + реестр (§2.1) | ≥ N = 87,5 % | зафиксировано 2026-11-07: 21/24 = 87,5 %; артефакт — `spec/pilots/*/cells.yaml` и `spec/pilots/*/mutations/README.md` на коммите измерения, записан до первого продуктового прогона |
 | 5 | Для каждого `tested` в security есть либо mutation fixture, либо документированный `mutation_exemption` | фикстура или exemption | 100 % учтено; exemptions перечислены и считаются долгом | измерено 2026-11-06: `rbac_pg` 24 фикстуры + 3 exemption; `craft-i18n` 1 фикстура, 0 exemption |
 | 6 | Доля `unroutable` в таксономии | V2-25 | ≤ U = 0,0 % | зафиксировано 2026-11-07: 0/43; escape hatch (`taxonomy_class`/`failure_mode` = `other` + `routing_note`) реализован и измеряется `tools/unroutable.py --max-share 0`; до escape hatch 0 было структурным, см. §2.1 |
-| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | прогнано 2026-11-07: `claim_lint` 0 error (1 L5-warning и 6 L2-warning в `rbac_pg` — леджер без run_record; 0 warning в `craft-i18n`), `cell-lint` 34/34 и 14/14 кейсов, `linter` 35/35, `status-diff` 13 + 1 известный GAP: сам `status_diff` не видит пере-датировку, а run_record ловит её только при наличии записи и без внешнего anchor (C-13) |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | прогнано 2026-11-07: `claim_lint` 0 error (1 L5-warning и 6 L2-warning в `rbac_pg` — леджер без run_record; 0 warning в `craft-i18n`), `cell-lint` 40/40 и 14/14 кейсов, `linter` 35/35, `status-diff` 13 + 1 известный GAP: сам `status_diff` не видит пере-датировку, а run_record ловит её только при наличии записи и без внешнего anchor (C-13) |
 
 Правило фиксации: значение N или U попадает в таблицу только вместе со ссылкой
 на артефакт измерения. Артефакт должен быть записан **до** первого продуктового
@@ -164,7 +164,7 @@ Baseline записывается до применения решения: то
   (`spec/pilots/craft-i18n/runs/`): хэши лога и артефактов, exit code и
   исполненные ID проверяются на каждом прогоне.
 - N = 87,5 % (21/24) и U = 0,0 % (0/43) зафиксированы в §2.1 артефактами от
-  2026-11-07. `make verify` — exit 0, включая evals 34/34 + 35/35 + 13 с одним
+  2026-11-07. `make verify` — exit 0, включая evals 40/40 + 35/35 + 13 с одним
   известным GAP.
 
 Следствие: **граница заполнена, но продуктовые испытания ещё не открыты.**

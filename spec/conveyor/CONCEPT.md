@@ -38,6 +38,7 @@
 | C-21 | Линтер отвергает «посторонний коммит»: коммит резолвится, но не описывает текущие байты артефакта | L2 сравнивает артефакт с его блобом на процитированном коммите (`git cat-file -e <commit>:<path>`, `git diff --quiet <commit> -- <path>`); коммит, которого артефакт не было, и файл, изменённый после коммита, — ошибка | `evals/linter/cases/unrelated-commit.yaml`; `tools/claim_lint.py`; прогон на `craft-i18n` | Git-дерево пилота и синтетический git-backed кейс | tested | Вне git-дерева проверка пропускается (иначе синтетика без `.git` падала бы за отсутствие репозитория); «пустая модель» закрыта кейсом `empty-claims`, но леджер без claim’ов теперь просто ошибка L1, а не отдельная модель
 | C-22 | Удаление claim’а или ячейки невозможно без надгробия с причиной | `retired: [{id, reason, date}]` в леджере/реестре; `status_diff` и CL6 падают, если base-ID исчез без надгробия, если надгробие называет живой ID и если более раннее надгробие удалено; L1/CL1 проверяют форму без base | `evals/linter/cases/retired-*.yaml`; `evals/cell-lint/cases/removed-without-retired.yaml`, `removed-with-retired.yaml`, `tombstone-dropped.yaml`, `retired-without-reason.yaml`; `evals/status-diff/run_evals.py`; `tools/status_diff.py`, `tools/cell_lint.py` | Синтетические леджеры и git-репозитории | tested | Форма проверяется без base, а факт удаления — только в диффе; дата надгробия опциональна, порядок надгробий не проверяется; retired-записи не входят в U и в подсчёт покрытия
 | C-23 | Статус `model-checked` или `proven` требует вывода инструмента, а не существования артефакта | `evidence.tool_output` (`schemas/tool-output.schema.json`): `tool`, `command`, `output` + `output_sha256`, `exit_code`, `finished_at`; L1 проверяет форму и согласованность commit/command, L2 — хэш вывода, дату `finished_at` и `exit_code=0` для не-open, L4 — отсутствие `tool_output` для `model-checked`/`proven` и отсутствие `bound` для `model-checked` | `evals/linter/cases/tool-output-*.yaml`, `model-checked-without-tool-output.yaml`, `model-checked-without-bound.yaml`; `schemas/tool-output.schema.json`; `tools/claim_lint.py` | Синтетические леджеры с TLC-подобным выводом | tested | Семантика инструмента и корректность кодировки модели не проверяются; без внешнего anchor (C-13) согласованная подделка проходит; запись обязательна только для `model-checked`/`proven`, для остальных статусов поле не запрещено |
+| C-24 | Детектор `runtime-enforcement` не принимается без негативного теста и объявленной точки принуждения | `kind: runtime-enforcement` требует `negative_test` (ID, резолвится через `--suite-glob`), а ячейка — `enforced_at`, `oracle`, `violation_response`; CL1 проверяет форму, CL3 резолвит ID, CL2 не даёт заявить статус выше `tested` | `spec/conveyor/cell-registry.schema.json`; `tools/cell_lint.py`; `evals/cell-lint/cases/runtime-enforcement-*.yaml`, `negative-test-*.yaml`; `spec/pilots/rbac_pg/cells.yaml` CELL-001; `spec/pilots/craft-i18n/cells.yaml` CELL-003 | Синтетические реестры и две реальные ячейки с записанными прогонами | tested | Разрешение ID проверяется только при переданном `--suite-glob` (иначе info); смысл `violation_response` автоматически не верифицируется; mutation fixture остаётся отдельным требованием CL2 |
 
 Правила реестра:
 
@@ -374,7 +375,7 @@ prior-art sweep, а не этот абзац.
 - Концепт с реестром утверждений.
 - Схема реестра ячеек и сид-набор.
 - Спецификация грамматики гвардов и её границ.
-- `cell_lint` и адверсариальные кейсы: CL1–CL6, 34/34 (C-17).
+- `cell_lint` и адверсариальные кейсы: CL1–CL6, 40/40 (C-17).
 - Пилотный реестр rbac_pg: 29 ячеек, 26 non-open, 3 open, 0 ошибок
   CL1/CL3/CL4 (C-18).
 - Второй пилот `craft-i18n` (Rust, не-RBAC, не-БД): 14 ячеек, 13 non-open,
@@ -387,6 +388,10 @@ prior-art sweep, а не этот абзац.
   (`tool`, `command`, `output` + хэш, `exit_code`, `finished_at`), а не только
   артефакт; L4 отвергает такой статус без записи, `model-checked` — без `bound`.
   7 eval-кейсов `tool-output-*`.
+- Runtime-enforcement evidence (V2-15/V2-16): детектор `runtime-enforcement` требует
+  `negative_test` (ID резолвится через `--suite-glob`), ячейка — `enforced_at`,
+  `oracle` и `violation_response`; первые реальные ячейки — rbac_pg CELL-001
+  (отказ 42501) и craft-i18n CELL-003 (Problem с номером строки).
 - Escape hatch `other` + `routing_note` и измерение U (V2-25): 0/43 = 0,0 %;
   гейт `--max-share 0` в `make verify`. Пороги N = 87,5 % и U = 0,0 %
   зафиксированы артефактами 2026-11-07 (V2-32).
@@ -429,8 +434,8 @@ prior-art sweep, а не этот абзац.
 - [x] V2-12. Проверять, что упали именно предсказанные ID, а не любой тест: оба runner'а сравнивают множество упавших тестов с `expect_failures` точно (`spec/pilots/rbac_pg/mutations/run_mutations.py`, `spec/pilots/craft-i18n/mutations/run_mutations.py`).
 - [x] V2-13. Negative control для `tested` в security: записанный прогон с отключённым guard'ом — закрыт mutation fixtures: у каждого tested security-детектора есть предсказанный падающий прогон или exemption (`spec/pilots/rbac_pg/mutations/README.md`).
 - [x] V2-14. Mutation fixtures для оставшихся детекторов пилота — 25 фикстур, 24 детектора с фикстурой и 3 с `mutation_exemption`; все 25 совпали (`spec/pilots/rbac_pg/mutations/README.md`).
-- [ ] V2-15. Поля `enforced_at`, `oracle`, `violation_response` в ячейке.
-- [ ] V2-16. Evidence-kind «runtime enforcement» с обязательным негативным тестом.
+- [x] V2-15. Поля `enforced_at`, `oracle`, `violation_response` в ячейке: обязательны, когда детектор имеет `kind: runtime-enforcement`; CL1 проверяет форму. Первые ячейки — `rbac_pg` CELL-001 и `craft-i18n` CELL-003.
+- [x] V2-16. Evidence-kind `runtime-enforcement` с обязательным негативным тестом: `negative_test` в детекторе, CL1 требует непустой ID, CL3 резолвит его через `--suite-glob` (6 eval-кейсов, включая unresolved и unchecked), CL2 ограничивает статус ячейки уровнем `tested`.
 
 **P2 — непрерывный контур**
 

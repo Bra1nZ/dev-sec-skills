@@ -10,6 +10,7 @@ on: [push, pull_request]
 env:
   REGISTRY: spec/cells.yaml
   LEDGER: docs/claims.yaml
+  SUITE_GLOB: ""   # e.g. "setup/*.py"; enables negative_test ID resolution
   BASE_REF: v1.3   # base ref for the status-escalation gate; last release tag
   FIRST_RELEASE: "0"  # set to "1" only before the first release tag exists
 
@@ -32,6 +33,7 @@ jobs:
         run: |
           ARGS=(--root .)
           if [ -f "$LEDGER" ]; then ARGS+=(--ledger "$LEDGER"); fi
+          if [ -n "$SUITE_GLOB" ]; then ARGS+=(--suite-glob "$SUITE_GLOB"); fi
           if git show "$BASE_REF:$REGISTRY" > /tmp/cells.base.yaml 2>/dev/null; then
             ARGS+=(--base /tmp/cells.base.yaml)
           elif [ "${FIRST_RELEASE:-0}" = "1" ]; then

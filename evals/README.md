@@ -77,9 +77,12 @@ mismatch, count mismatch), two V2-09 controls — `unrelated-commit` and
 `empty-claims` — three V2-05 tombstone cases, and seven V2-10 `tool-output-*`
 cases (valid record, hash mismatch, missing output, non-zero exit, date
 mismatch, no `tool_output` for a model-checked claim, no bound); `evals/cell-lint/`
-runs 34 cases, including the `other` + `routing_note` escape hatch and four V2-05
+runs 40 cases, including the `other` + `routing_note` escape hatch, four V2-05
 cases (removal without a tombstone, removal with one, a dropped tombstone, a
-tombstone with no reason). The status-diff evals cover fail-closed base handling
+tombstone with no reason) and six V2-15/V2-16 cases (a valid runtime-enforcement
+cell, missing `enforced_at`/`oracle`/`violation_response`, no `negative_test`, an
+unresolved negative test, an unchecked one without `--suite-glob`, and a status
+overclaim). The status-diff evals cover fail-closed base handling
 and 13 scenarios in total, five of them for V2-05. Reproduce all three:
 
 ```bash

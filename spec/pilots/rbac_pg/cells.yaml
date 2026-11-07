@@ -43,15 +43,19 @@ cells:
     failure_class: broken-access-control
     entry_points: [admin, "sql:rbac.apply_policy_document"]
     failure_mode: deny
+    enforced_at: "sql/rbac--1.7.sql:3926 - GRANT EXECUTE ON FUNCTION rbac.apply_policy_document(JSONB, BOOLEAN) TO rbac_admin; line 3924 revokes it from PUBLIC"
+    oracle: "setup/test_fstek.py F3 (application role) and F3a (role-less login) expect error 42501"
+    violation_response: "PostgreSQL raises 42501 insufficient_privilege; the policy document is not applied"
     coverage_status: tested
     detectors:
       - id: D-FSTEC-F2F3
-        kind: test
+        kind: runtime-enforcement
         artifact: setup/test_fstek.py
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
         last_verified: "2026-11-06"
         mutation_fixture: "spec/pilots/rbac_pg/mutations/mutations.yaml#MUT-007"
+        negative_test: F3a
         note: "F2, F3, F3a. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL (recorded baseline 2026-10-30). MUT-007 grants EXECUTE on apply_policy_document to rbac_readwrite and fails F3 only."
     claim_ids: [C-01]
     residual_risk: A superuser or the extension owner bypasses the check; rbac_admin is allowed to change the matrix by design.
