@@ -1,0 +1,75 @@
+name: fuzz-nightly
+
+# V2-19: a scheduled replay of the recorded fuzz run. It runs only on a timer
+# and on an explicit dispatch, never on push or pull_request, so a red run is a
+# signal to look, not a merge gate. The workflow replays the committed corpus
+# and seed (spec/fuzz/runs/claim-lint-2026-11-07.json) and fails if the
+# executions_digest moves: the run record must describe exactly these inputs.
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-nightly
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    name: replay recorded fuzz run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Replay the recorded run
+        run: make fuzz-claim-lint FUZZ_OUT=fuzz-run
+
+      - name: Summarize the record
+        if: always()
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python - "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json
+          import os
+          import sys
+
+          out = open(sys.argv[1], "a", encoding="utf-8")
+          try:
+              with open("fuzz-run/record.json", encoding="utf-8") as f:
+                  record = json.load(f)
+          except OSError:
+              print("no fuzz record was written; the replay did not complete",
+                    file=out)
+              raise SystemExit(0)
+          print("| field | value |", file=out)
+          print("| --- | --- |", file=out)
+          for key in ("verdict", "seed", "commit", "executions_digest"):
+              print("| %s | `%s` |" % (key, record.get(key)), file=out)
+          print("| budget | `%s` |" % json.dumps(record.get("budget")),
+                file=out)
+          print("| findings | %d |" % len(record.get("findings") or []),
+                file=out)
+          print("| workflow run | %s |" % os.environ.get("RUN_ID"), file=out)
+          PY
+
+      - name: Upload the run record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-record-${{ github.run_id }}
+          path: fuzz-run/
+          retention-days: 90
+          if-no-files-found: warn

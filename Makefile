@@ -53,6 +53,9 @@ FUZZ_TRIAGE ?= spec/fuzz/triage/claim-lint-2026-11-07.yaml
 FUZZ_CORPUS ?= spec/fuzz/corpus/claim-lint
 FUZZ_SEED ?= 20261107
 FUZZ_RUNS ?= 150
+# Optional output directory for a CI run (V2-19). When set, the replay record
+# and findings are copied there; the default keeps them in the temp dir.
+FUZZ_OUT ?=
 
 # Coverage measurement (V2-20). The record target writes the two JSON
 # snapshots that back the evidence; plain `coverage` only prints, so a merge
@@ -372,7 +375,13 @@ fuzz-claim-lint:
 	  --oracle 'stderr-contains:Traceback (most recent call last)' \
 	  --oracle 'exit-not-in:0,1,2' || exit 1; \
 	$(PYTHON) -c 'import json, sys; a = json.load(open(sys.argv[1])); b = json.load(open(sys.argv[2])); print("recorded digest:", a["executions_digest"][:16], "| replay digest:", b["executions_digest"][:16]); sys.exit(0 if a["executions_digest"] == b["executions_digest"] else "digest mismatch: the replay is not the recorded run")' \
-	  "$(FUZZ_RECORD)" "$$tmp/record.json"
+	  "$(FUZZ_RECORD)" "$$tmp/record.json"; \
+	if [ -n "$(FUZZ_OUT)" ]; then \
+	  mkdir -p "$(FUZZ_OUT)"; \
+	  cp "$$tmp/record.json" "$(FUZZ_OUT)/record.json"; \
+	  if [ -d "$$tmp/findings" ]; then cp -r "$$tmp/findings" "$(FUZZ_OUT)/findings"; fi; \
+	  echo "fuzz record written to $(FUZZ_OUT)"; \
+	fi
 
 mutations-i18n:
 	@echo "== mutation fixtures: craft-i18n (cargo, no stand) =="
