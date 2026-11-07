@@ -1,0 +1,319 @@
+# Second pilot — craft-i18n (storytold), a translation catalog checker in Rust.
+#
+# Non-RBAC and non-database on purpose: the pilot tests whether the cell
+# taxonomy and the gates generalise beyond rbac_pg. Target repository HEAD
+# 5c5c554; the pilot never modifies it.
+#
+#   python3 tools/cell_lint.py \
+#     --root /home/admini/projects/astraoffice/craft-i18n \
+#     --ledger spec/pilots/craft-i18n/claims.yaml \
+#     spec/pilots/craft-i18n/cells.yaml
+project: craft-i18n
+generated: "2026-11-06"
+taxonomy:
+  name: invariant-first-code
+  version: "1"
+  classes:
+    - security
+    - correctness
+    - maintainability
+cells:
+  - id: CELL-001
+    title: Every catalog declares its clean-room provenance in the header.
+    taxonomy_class: security
+    failure_class: missing-provenance-header
+    entry_points: [ci, catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-07]
+    detectors:
+      - id: D-CLEANROOM
+        kind: test
+        artifact: crates/craft-i18n-tests/tests/locales.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-001"
+        note: "missing_clean_room_rule; tree::read inserts a problem when no line starts with '# Clean room:'."
+    residual_risk: "The header is a declaration; the checker cannot prove how the translation was produced."
+    limitations: "A translator can paste the header and still copy text; the control is procedural, not technical."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-002
+    title: A translation cannot hide an invisible formatting character that changes rendering.
+    taxonomy_class: security
+    failure_class: invisible-character-smuggling
+    entry_points: [catalog, ci]
+    failure_mode: detect
+    coverage_status: open
+    claim_ids: [C-08]
+    detectors: []
+    residual_risk: "A bidi override or zero-width character in a translation renders deceptively while every automated check stays green."
+    limitations: "No detector exists. parse_row rejects Cc controls and U+FEFF only; the probe in probes/invisible-characters shows U+202E, U+200B and U+2066 pass and U+FEFF is rejected."
+    owner: unassigned
+    last_seen: "2026-11-06"
+
+  - id: CELL-003
+    title: A row with the wrong column count or an empty field is rejected with its file and line.
+    taxonomy_class: correctness
+    failure_class: malformed-row
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-01, C-02]
+    detectors:
+      - id: D-ROWS
+        kind: test
+        artifact: crates/craft-i18n-tests/src/catalog.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-002"
+        note: "each_bad_row_is_one_problem + bad_row_names_file_and_line; one problem per bad row, named by line."
+    residual_risk: "A row can be syntactically valid and still mistranslated; syntax is the only thing checked."
+    limitations: "One test bundles twenty malformed rows, so a regression names the test but not the rule."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-004
+    title: A translation keeps the source text's placeholders, in any order.
+    taxonomy_class: correctness
+    failure_class: placeholder-mismatch
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-03]
+    detectors:
+      - id: D-PLACEHOLDERS
+        kind: test
+        artifact: crates/craft-i18n-tests/src/catalog.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-003"
+        note: "placeholders_may_reorder + each_bad_row_is_one_problem; sorted {name} sets are compared."
+    residual_risk: "An app can rename the parameter that fills the placeholder without touching the catalog."
+    limitations: "Placeholders inside @id rows are not compared, by design: the source is a command id there."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-005
+    title: Escapes are limited to \n, \t and \\, and CRLF or a BOM do not break a catalog.
+    taxonomy_class: correctness
+    failure_class: bad-escape
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-02]
+    detectors:
+      - id: D-ESCAPES
+        kind: test
+        artifact: crates/craft-i18n-tests/src/catalog.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-004"
+        note: "escapes_unescape + crlf_and_bom_are_ignored; unknown escapes and a trailing backslash are errors."
+    residual_risk: "A translator writing a literal newline instead of \\n gets an invisible-character error, not a hint."
+    limitations: "Only the three documented escapes are accepted; the apps may render others differently."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-006
+    title: A key is defined once per catalog, and its context separates it from a plain row.
+    taxonomy_class: correctness
+    failure_class: duplicate-key
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-02]
+    detectors:
+      - id: D-UNIQUE
+        kind: test
+        artifact: crates/craft-i18n-tests/src/catalog.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-005"
+        note: "each_bad_row_is_one_problem + context_distinguishes_keys; the key is (context, source text)."
+    residual_risk: "Two rows with different contexts can still show the same text to the user."
+    limitations: "Duplicate detection is per file; the same key in an app catalog and common.tsv is an override, not a duplicate."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-007
+    title: An @plural row lists the CLDR cardinal form count its locale reaches.
+    taxonomy_class: correctness
+    failure_class: wrong-plural-count
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-04]
+    detectors:
+      - id: D-PLURALS
+        kind: test
+        artifact: crates/craft-i18n-tests/src/locale.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-006"
+        note: "plural_count_by_locale + plural_form_counts + one_form_locale; CLDR 37 through intl_pluralrules."
+    residual_risk: "The apps run CLDR 48; a locale whose categories changed between versions passes here and renders wrong."
+    limitations: "Only whole numbers 0..=1000 are counted; Hebrew is special-cased for the known CLDR delta."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-008
+    title: An @msg template the apps could never match is rejected.
+    taxonomy_class: correctness
+    failure_class: unmatchable-template
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-03]
+    detectors:
+      - id: D-MSG
+        kind: test
+        artifact: crates/craft-i18n-tests/tests/locales.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-007"
+        note: "msg_templates_one_good_two_bad; rejects an unclosed brace, adjacent placeholders and a literal-free template."
+    residual_risk: "A template that can match but matches the wrong messages passes; the checker does not know the app's call sites."
+    limitations: "The strictest rule from the two known parsers is applied; a third parser could disagree."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-009
+    title: An app row identical to common.tsv is rejected as a no-op override.
+    taxonomy_class: correctness
+    failure_class: redundant-override
+    entry_points: [catalog]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-05]
+    detectors:
+      - id: D-OVERRIDE
+        kind: test
+        artifact: crates/craft-i18n-tests/tests/locales.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-008"
+        note: "redundant_override; compares the whole row, so a differing context is not an override."
+    residual_risk: "A redundant row that differs in escape spelling is not detected as redundant."
+    limitations: "Comparison is exact after unescaping; whitespace differences count as a real override."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-010
+    title: A regional row that changes nothing is rejected, except for script variants and locales without a base directory.
+    taxonomy_class: correctness
+    failure_class: redundant-regional-row
+    entry_points: [catalog, locale-dir]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-05]
+    detectors:
+      - id: D-REGIONAL
+        kind: test
+        artifact: crates/craft-i18n-tests/src/tree.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-009"
+        note: "redundant_regional_row + regional_app_row_compares_with_base_app_then_shared + script_and_baseless_locales_have_no_regional_check."
+    residual_risk: "The checker re-implements the runtime lookup; if craft-libs changes the chain, the redundancy judgement flips silently."
+    limitations: "Only a trailing two-letter or three-digit subtag falls back; other region spellings are out of scope."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-011
+    title: Every locale names its language in that language, or the picker is caught in CI.
+    taxonomy_class: correctness
+    failure_class: missing-language-name
+    entry_points: [catalog, locale-dir]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-07]
+    detectors:
+      - id: D-LANGNAME
+        kind: test
+        artifact: crates/craft-i18n-tests/tests/locales.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-010"
+        note: "missing_language_name; the row may live in common.tsv or any app catalog."
+    residual_risk: "The name can be present and wrong; the checker does not know the language's endonym."
+    limitations: "Presence only, no format or spelling check."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-012
+    title: Locale directories and catalog file names follow the documented layout; dotfiles are ignored.
+    taxonomy_class: correctness
+    failure_class: bad-layout-name
+    entry_points: [locale-dir]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-06]
+    detectors:
+      - id: D-NAMING
+        kind: test
+        artifact: crates/craft-i18n-tests/src/locale.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-011"
+        note: "bad_locale_name + stray_file + bad_app_file_name + locale_names + clean_tree_passes."
+    residual_risk: "A valid locale code can be the wrong locale for the translators' intent. The app-file-name lowercase rule is enforced but not pinned: mutating the check to allow ASCII alphanumeric (uppercase) left every test green, because bad_app_file_name only exercises the underscore in Word_Craft.tsv."
+    limitations: "Case-insensitive filesystems are not exercised in CI."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-013
+    title: The repository's own catalogs pass every rule the checker enforces.
+    taxonomy_class: correctness
+    failure_class: dirty-catalog-tree
+    entry_points: [locales]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-01]
+    detectors:
+      - id: D-REPO
+        kind: test
+        artifact: crates/craft-i18n-tests/tests/locales.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_exemption: "A data-level check on the target's own locales/. No source mutation can change it without first breaking the rule tests it depends on: every mutation that makes a valid catalog fail also fails the fixture tests in the same suite."
+        note: "repository_catalogs_pass; runs check_tree over the checkout."
+    residual_risk: "A catalog can pass every rule and still be a poor or wrong translation."
+    limitations: "The exemption means the check is not mutation-verified on its own; its sensitivity is inferred from the rule cells."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"
+
+  - id: CELL-014
+    title: The coverage report counts each catalog's rows against the largest catalog of the same name and never fails the build.
+    taxonomy_class: maintainability
+    failure_class: misleading-coverage-report
+    entry_points: [ci, report]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-01]
+    detectors:
+      - id: D-COVERAGE
+        kind: test
+        artifact: crates/craft-i18n-tests/src/tree.rs
+        command: "cargo test --offline -p craft-i18n-tests"
+        status: tested
+        last_verified: "2026-11-06"
+        mutation_fixture: "spec/pilots/craft-i18n/mutations/mutations.yaml#MUT-012"
+        note: "coverage_counts_rows_against_largest_locale + coverage_report; unreadable files count as empty."
+    residual_risk: "A high row count says nothing about translation quality; the number can be read as progress."
+    limitations: "The report is printed with --nocapture; CI success does not depend on its values."
+    owner: craft-i18n maintainer
+    last_seen: "2026-11-06"

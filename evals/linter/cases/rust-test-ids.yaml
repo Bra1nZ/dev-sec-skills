@@ -1,0 +1,41 @@
+# Synthetic fixture — not evidence about any real project.
+name: rust-test-ids
+description: >
+  A Rust suite resolves `#[test] fn name` as test evidence, so a ledger over a
+  Rust repository is checked instead of failing every test ID.
+files:
+  "tests/locales.rs": |
+    fn helper() {}
+    #[test]
+    fn missing_language_name() {
+        assert!(true);
+    }
+    #[cfg(test)]
+    mod tests {
+        #[test]
+        fn each_bad_row_is_one_problem() {}
+    }
+  "reports/run.txt": "test result: ok. 2 passed\n"
+  "docs/README.md": "The checker validates every catalog row.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Every locale names its language."
+      mechanism: "The checker requires an @id language.name row."
+      evidence:
+        - kind: test
+          command: "cargo test --offline -p craft-i18n-tests"
+          artifact: "reports/run.txt"
+          tests: ["missing_language_name", "each_bad_row_is_one_problem"]
+          date: "2026-11-01"
+      scope: "Synthetic Rust suite."
+      status: tested
+args: ["--max-age-days", "3650"]
+suite_glob: "**/*.rs"
+expect:
+  L1: none
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+exit: 0

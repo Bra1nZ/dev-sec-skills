@@ -1,0 +1,142 @@
+# Mutation fixtures for the craft-i18n pilot — can each detector fail?
+#
+# Each fixture copies the target, applies one source mutation, runs the checker
+# suite, and requires the set of failing tests to equal `expect_failures`
+# exactly. The target repository is never modified.
+#
+#   python3 spec/pilots/craft-i18n/mutations/run_mutations.py \
+#     --target /home/admini/projects/astraoffice/craft-i18n
+target: craft-i18n
+target_commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+command: ["cargo", "test", "--offline", "--no-fail-fast", "-p", "craft-i18n-tests"]
+fixtures:
+  - id: MUT-001
+    cell: CELL-001
+    detector: D-CLEANROOM
+    artifact: crates/craft-i18n-tests/src/tree.rs
+    source_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+    mutations:
+      - anchor: 'if !text.lines().any(|l| l.starts_with("# Clean room:")) {'
+        replacement: "if false {"
+    expect_failures: [missing_clean_room_rule]
+
+  - id: MUT-002
+    cell: CELL-003
+    detector: D-ROWS
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: "if row.translation.is_empty() {"
+        replacement: "if false {"
+    expect_failures: [each_bad_row_is_one_problem]
+
+  - id: MUT-003
+    cell: CELL-004
+    detector: D-PLACEHOLDERS
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: "fn placeholders(text: &str) -> Vec<&str> {"
+        replacement: |-
+          fn placeholders(text: &str) -> Vec<&str> {
+              return Vec::new();
+    expect_failures: [each_bad_row_is_one_problem]
+
+  - id: MUT-004
+    cell: CELL-005
+    detector: D-ESCAPES
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: 'Some(other) => return Err(format!("unknown escape \\{other}; use \\n, \\t or \\\\")),'
+        replacement: "Some(other) => out.push(other),"
+    expect_failures: [each_bad_row_is_one_problem]
+
+  - id: MUT-005
+    cell: CELL-006
+    detector: D-UNIQUE
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: "if keys.insert((row.context.clone(), row.source.clone())) {"
+        replacement: "if keys.insert((row.context.clone(), row.source.clone())) || true {"
+    expect_failures: [each_bad_row_is_one_problem]
+
+  - id: MUT-006
+    cell: CELL-007
+    detector: D-PLURALS
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: "if translated.len() != forms || translated.iter().any(|f| f.is_empty()) {"
+        replacement: "if translated.iter().any(|f| f.is_empty()) {"
+    expect_failures: [plural_count_by_locale, each_bad_row_is_one_problem]
+
+  - id: MUT-007
+    cell: CELL-008
+    detector: D-MSG
+    artifact: crates/craft-i18n-tests/src/catalog.rs
+    source_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+    mutations:
+      - anchor: |-
+          fn check_template(source: &str) -> Result<(), String> {
+              let mut literal = 0;
+        replacement: |-
+          fn check_template(source: &str) -> Result<(), String> {
+              if true {
+                  return Ok(());
+              }
+              let mut literal = 0;
+    expect_failures: [msg_templates_one_good_two_bad, each_bad_row_is_one_problem]
+
+  - id: MUT-008
+    cell: CELL-009
+    detector: D-OVERRIDE
+    artifact: crates/craft-i18n-tests/src/tree.rs
+    source_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+    mutations:
+      - anchor: "if file != COMMON {"
+        replacement: "if false {"
+    expect_failures: [redundant_override]
+
+  - id: MUT-009
+    cell: CELL-010
+    detector: D-REGIONAL
+    artifact: crates/craft-i18n-tests/src/tree.rs
+    source_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+    mutations:
+      - anchor: "if is_region {"
+        replacement: "if true {"
+    expect_failures: [script_and_baseless_locales_have_no_regional_check, repository_catalogs_pass]
+
+  - id: MUT-010
+    cell: CELL-011
+    detector: D-LANGNAME
+    artifact: crates/craft-i18n-tests/src/tree.rs
+    source_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+    mutations:
+      - anchor: 'let key = ("@id".to_owned(), "language.name".to_owned());'
+        replacement: |-
+          return true;
+              let key = ("@id".to_owned(), "language.name".to_owned());
+    expect_failures: [missing_language_name]
+
+  - id: MUT-011
+    cell: CELL-012
+    detector: D-NAMING
+    artifact: crates/craft-i18n-tests/src/locale.rs
+    source_sha256: "97b8bd6acb1225fecb34d8c350353ed2875e1b68b9808c68247e0a66c92cb113"
+    mutations:
+      - anchor: "if lower == name {"
+        replacement: "if lower == name.to_lowercase() {"
+    expect_failures: [locale_names]
+
+  - id: MUT-012
+    cell: CELL-014
+    detector: D-COVERAGE
+    artifact: crates/craft-i18n-tests/src/tree.rs
+    source_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+    mutations:
+      - anchor: "let rows = read(&dir.join(&file), forms).map_or(0, |(rows, _)| rows.len());"
+        replacement: "let rows = read(&dir.join(&file), forms).map_or(0, |_| 0);"
+    expect_failures: [coverage_counts_rows_against_largest_locale]

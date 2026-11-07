@@ -1,0 +1,32 @@
+# Synthetic fixture — not evidence about any real project.
+name: rust-attr-is-not-a-test
+description: >
+  A Rust function with an attribute that is not a test attribute must not
+  resolve as a test ID. Otherwise a ledger could cite `#[allow(dead_code)] fn
+  helper` as evidence, which would defeat L3 traceability.
+files:
+  "tests/locales.rs": |
+    #[allow(dead_code)]
+    fn helper() {}
+
+    #[test]
+    fn real_test_name() {}
+  "reports/run.txt": "test result: ok. 1 passed\n"
+  "docs/README.md": "The checker validates every catalog row.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Every locale names its language."
+      mechanism: "The checker requires an @id language.name row."
+      evidence:
+        - kind: test
+          command: "cargo test --offline -p craft-i18n-tests"
+          artifact: "reports/run.txt"
+          tests: ["helper"]
+          date: "2026-11-01"
+      scope: "Synthetic Rust suite."
+args: ["--max-age-days", "3650"]
+suite_glob: "**/*.rs"
+expect:
+  L3: error
+exit: 1

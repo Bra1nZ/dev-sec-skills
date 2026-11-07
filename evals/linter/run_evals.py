@@ -36,7 +36,7 @@ def run_case(case_path, claim_lint):
     problems = []
     with _temp_root(case) as (td, ledger_path):
         cmd = [sys.executable, claim_lint,
-               "--root", td, "--suite-glob", "**/*.py"]
+               "--root", td, "--suite-glob", case.get("suite_glob") or "**/*.py"]
         cmd += list(case.get("args") or [])
         cmd += [ledger_path]
         try:

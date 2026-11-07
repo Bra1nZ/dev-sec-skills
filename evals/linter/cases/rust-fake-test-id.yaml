@@ -1,0 +1,29 @@
+# Synthetic fixture — not evidence about any real project.
+name: rust-fake-test-id
+description: >
+  A test ID that no Rust `#[test] fn` declares is an L3 error, so the new
+  extractor cannot be satisfied by a plausible-looking name.
+files:
+  "tests/locales.rs": |
+    #[test]
+    fn real_test_name() {}
+  "reports/run.txt": "test result: ok. 1 passed\n"
+  "docs/README.md": "The checker validates every catalog row.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "Every locale names its language."
+      mechanism: "The checker requires an @id language.name row."
+      evidence:
+        - kind: test
+          command: "cargo test --offline -p craft-i18n-tests"
+          artifact: "reports/run.txt"
+          tests: ["invented_test_name"]
+          date: "2026-11-01"
+      scope: "Synthetic Rust suite."
+      status: tested
+args: ["--max-age-days", "3650"]
+suite_glob: "**/*.rs"
+expect:
+  L3: error
+exit: 1

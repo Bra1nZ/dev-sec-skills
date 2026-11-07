@@ -1,0 +1,5 @@
+bidi override U+202E: rows=1 problems=[] kept="Enregistrer\u{202e}"
+zero-width space U+200B: rows=1 problems=[] kept="Enregistrer\u{200b}"
+left-to-right isolate U+2066: rows=1 problems=[] kept="Enregistrer\u{2066}"
+BOM U+FEFF inside the row: rows=0 problems=["line 1: invisible character '\\u{feff}' in the row; write \\n or \\t, or delete it"] kept=
+control character U+0007 (BEL): rows=0 problems=["line 1: invisible character '\\u{7}' in the row; write \\n or \\t, or delete it"] kept=

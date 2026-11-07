@@ -1,0 +1,15 @@
+[package]
+name = "ci18n-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# The checker under test. Path dependency on the target checkout, pinned by
+# commit in ../../claims.yaml (C-08). Re-run from this directory:
+#
+#   CARGO_TARGET_DIR=/tmp/opencode/craft-i18n-target cargo run --offline -q
+#
+# The target repository must be at commit 5c5c554 for the recorded output to
+# be reproducible; the probe does not modify it.
+[dependencies]
+craft-i18n-tests = { path = "/home/admini/projects/astraoffice/craft-i18n/crates/craft-i18n-tests" }

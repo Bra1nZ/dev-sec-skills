@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-18 (Russian source of truth); English derivative:
+  claims C-01…C-19 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -211,13 +211,15 @@ make verify
 ```
 
 It runs the adversarial suites (`evals/`), CL1–CL6 over the seed registry and
-over the pilot registry together with its claim ledger, L1–L5 over the pilot
-ledger, and the status-escalation gate. The pilot is located by `PILOT_ROOT`
-(defaults to `../rbac_pg`); if it is missing, the command fails instead of
+over both pilot registries together with their claim ledgers, L1–L5 over the
+ledgers, and the status-escalation gates. The pilots are located by
+`PILOT_ROOT` (defaults to `../rbac_pg`) and `PILOT2_ROOT`
+(`../astraoffice/craft-i18n`); if one is missing, the command fails instead of
 skipping the gate.
 
-Mutation runs need a live PostgreSQL with the built extension, so they are
-separate: `make mutations` (or both, `make verify-all`).
+Mutation runs are separate: `make mutations` for `rbac_pg` on a live
+PostgreSQL, `make mutations-i18n` for the `craft-i18n` fixtures (cargo only),
+`make mutations-all` for both, and `make verify-all` for verify plus both.
 
 `make verify` proves internal consistency of the registries, ledgers, and evals,
 not that any property holds and not that a production registry is clean. One
@@ -255,6 +257,14 @@ when the mechanism is removed; the other 3 carry a documented
 `mutation_exemption` because no mutation can break them. The rbac_pg claim
 ledger covers 7 of 29 cells. A clean lint means internal consistency, not that
 a property holds.
+
+The second pilot is
+[`spec/pilots/craft-i18n/`](spec/pilots/craft-i18n/README.md), deliberately
+non-RBAC and non-database: a Rust crate that validates translation catalogs.
+14 cells (13 tested, 1 open), 13 detectors, 12 of 13 with a mutation fixture
+and one documented exemption; an 8-claim ledger with 0 L1–L5 findings. The open
+CELL-002 is a real gap: Unicode Cf characters (U+202E, U+200B, U+2066) pass the
+checker, while U+0007 and U+FEFF are rejected.
 
 For now this is discipline and documentation, not a certificate or a substitute
 for an audit.

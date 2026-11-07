@@ -1,8 +1,9 @@
 # Single local entry point for every static gate (V2-08).
 #
 #   make verify        every gate that needs no external service
-#   make verify-all    verify + the mutation suites on a live stand
-#   make mutations     only the mutation suites (needs a built extension)
+#   make verify-all    verify + both mutation batches (PostgreSQL stand and cargo)
+#   make mutations     only the rbac_pg mutation suite (needs a built extension)
+#   make mutations-i18n  only the craft-i18n mutation fixtures (needs cargo)
 #
 # Nothing here proves a property. A green run means the registries, ledgers,
 # and evals are internally consistent; it is not a certificate.
@@ -14,6 +15,15 @@ PILOT_ROOT ?= ../rbac_pg
 PILOT_REGISTRY ?= spec/pilots/rbac_pg/cells.yaml
 PILOT_LEDGER ?= docs/claims.yaml
 PILOT_SUITE_GLOB ?= setup/*.py
+
+# Second pilot: a Rust crate, no database. Its claim ledger lives here, not in
+# the target, so the target stays unmodified.
+PILOT2_ROOT ?= ../astraoffice/craft-i18n
+PILOT2_REGISTRY ?= spec/pilots/craft-i18n/cells.yaml
+PILOT2_LEDGER ?= spec/pilots/craft-i18n/claims.yaml
+PILOT2_SUITE_GLOB ?= crates/craft-i18n-tests/**/*.rs
+PILOT2_MUTATION_TARGET_DIR ?= /tmp/opencode/craft-i18n-target
+
 # Base ref for the status-escalation gates. HEAD compares the working tree
 # against the last commit; CI uses the release tag instead.
 BASE_REF ?= HEAD
@@ -30,16 +40,19 @@ MUTATION_SHAREDIR ?= /tmp/opencode/pgmut/usr/share/postgresql/15/extension
 # Use Vale when it is installed, otherwise the built-in L5 scanner.
 CLAIM_LINT_ARGS ?= $(shell command -v vale >/dev/null 2>&1 || echo --no-vale)
 
-.PHONY: verify verify-all verify-repo verify-pilot evals lint-seed lint-pilot \
-        claims-pilot status-pilot mutations help
+.PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
+        lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
+        status-pilot2 mutations mutations-i18n mutations-all help
 
-verify: verify-repo verify-pilot
+verify: verify-repo verify-pilot verify-pilot2
 
-verify-all: verify mutations
+verify-all: verify mutations-all
 
 verify-repo: evals lint-seed
 
 verify-pilot: lint-pilot claims-pilot status-pilot
+
+verify-pilot2: lint-pilot2 claims-pilot2 status-pilot2
 
 evals:
 	@echo "== evals: adversarial cases for the linters =="
@@ -94,13 +107,65 @@ mutations:
 	  --ensure-roles \
 	  --sharedir "$(MUTATION_SHAREDIR)"
 
+lint-pilot2:
+	@echo "== CL1-CL5: second pilot registry (craft-i18n) =="
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	@test -f "$(PILOT2_LEDGER)" || { echo "error: pilot ledger not found: $(PILOT2_LEDGER)" >&2; exit 1; }
+	@git rev-parse --verify --quiet "$(BASE_REF)^{commit}" >/dev/null || { echo "error: base ref not found: $(BASE_REF)" >&2; exit 1; }
+	@tmp=$$(mktemp --suffix=.yaml); trap 'rm -f "$$tmp"' EXIT; \
+	if git show "$(BASE_REF):$(PILOT2_REGISTRY)" > "$$tmp" 2>/dev/null; then \
+	  base="--base $$tmp"; \
+	else \
+	  echo "note: no $(PILOT2_REGISTRY) at $(BASE_REF); first release, CL6 base check skipped"; \
+	  base=""; \
+	fi; \
+	$(PYTHON) tools/cell_lint.py \
+	  --root "$(PILOT2_ROOT)" \
+	  --ledger "$(abspath $(PILOT2_LEDGER))" \
+	  $$base \
+	  "$(PILOT2_REGISTRY)"
+
+claims-pilot2:
+	@echo "== L1-L5: second pilot claim ledger (craft-i18n) =="
+	$(PYTHON) tools/claim_lint.py \
+	  --root "$(PILOT2_ROOT)" \
+	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
+	  $(CLAIM_LINT_ARGS) \
+	  "$(PILOT2_LEDGER)"
+
+status-pilot2:
+	@echo "== status diff: second pilot ledger against $(BASE_REF) =="
+	@set -e; \
+	git rev-parse --verify --quiet "$(BASE_REF)^{commit}" >/dev/null || { echo "error: base ref not found: $(BASE_REF)" >&2; exit 1; }; \
+	tmp=$$(mktemp --suffix=.yaml); trap 'rm -f "$$tmp"' EXIT; \
+	if git show "$(BASE_REF):$(PILOT2_LEDGER)" > "$$tmp" 2>/dev/null; then \
+	  $(PYTHON) tools/status_diff.py "$$tmp" "$(PILOT2_LEDGER)"; \
+	else \
+	  echo "note: $(PILOT2_LEDGER) is not in $(BASE_REF); first release, gate skipped"; \
+	  printf 'claims: []\n' > "$$tmp"; \
+	  $(PYTHON) tools/status_diff.py --first-release "$$tmp" "$(PILOT2_LEDGER)"; \
+	fi
+
+mutations-i18n:
+	@echo "== mutation fixtures: craft-i18n (cargo, no stand) =="
+	$(PYTHON) spec/pilots/craft-i18n/mutations/run_mutations.py \
+	  --target "$(PILOT2_ROOT)" \
+	  --target-dir "$(PILOT2_MUTATION_TARGET_DIR)"
+
+mutations-all: mutations mutations-i18n
+
 help:
 	@echo "targets:"
-	@echo "  verify        all static gates (evals, seed registry, pilot registry, claims, status diff)"
-	@echo "  verify-all    verify plus the mutation suites (needs a live stand)"
+	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
+	@echo "  verify-all    verify plus both mutation batches (needs PostgreSQL and cargo)"
 	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
-	@echo "  lint-pilot    CL1-CL6 over the pilot registry with its claim ledger"
-	@echo "  claims-pilot  L1-L5 over the pilot claim ledger"
-	@echo "  status-pilot  status-escalation diff for the pilot ledger"
-	@echo "  mutations     run the mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
+	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
+	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
+	@echo "  claims-pilot  L1-L5 over the rbac_pg claim ledger"
+	@echo "  claims-pilot2 L1-L5 over the craft-i18n claim ledger"
+	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
+	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
+	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
+	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
+	@echo "  mutations-all   both mutation batches"

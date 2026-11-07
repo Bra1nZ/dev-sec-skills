@@ -19,20 +19,21 @@
 | C-02 | `claim_lint.py` реализует проверки L1–L5 над реестром claim'ов | Схема + линтер + fallback-сканер прозы | `tools/claim_lint.py`; `schemas/claim-ledger.schema.json`; `evals/iteration-3/RESULTS.md`; команда `python3 evals/linter/run_evals.py` | JSON/YAML ledger; `.md`-проза | tested | L5-fallback имеет известный разрыв точности; проверка коммита fail-closed вне git-репозитория |
 | C-03 | `status_diff.py` не даёт повысить статус без новой evidence | Сравнение ledger'ов, identity evidence по (kind, commit, artifact, command, tests, date) | `tools/status_diff.py` | Два файла или git-ref | reviewed | Нет адверсариального eval-набора; правило identity — design decision |
 | C-04 | Скилы меняют ответ агента в нужную сторону | Пары `with_skill` / `without_skill` | `evals/iteration-1/RESULTS.md`; `evals/iteration-2/RESULTS.md`; `evals/README.md` | Девять синтетических задач | reviewed | Оценка качественная, по inspection; scored harness нет; размер выборки мал |
-| C-05 | Линтер ловит подделанную трассировку, а runner не проходит вакуумно | Кейс `fake-test-id` + негативный контроль runner'а | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Синтетические fixtures | tested | 12/12 кейсов — контракт линтера, не чистота production-ledger'а |
+| C-05 | Линтер ловит подделанную трассировку, а runner не проходит вакуумно | Кейс `fake-test-id` + негативный контроль runner'а | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Синтетические fixtures | tested | 15/15 кейсов — контракт линтера, не чистота production-ledger'а |
 | C-06 | Продукт продаёт пропускную способность верификации, а не тесты | Слои + маршрутизация + таблица покрытия | Нет | — | open | Нет ни одного измерения throughput, FP rate и задержки; следующий шаг — инструментировать baseline на пилоте |
 | C-07 | L0: AST-дифф маршрутизирует PR в затронутые security-ячейки за секунды | Экстрактор AST + индекс «код → ячейка» | Нет | SQL/C на первом шаге | open | Экстрактор и индекс не построены; ложный negative в маршрутизации — риск; нужен замер precision/recall на пилоте rbac_pg против человеческой разметки |
 | C-08 | L1: engine-agnostic ансамбль через SARIF-адаптеры покрывает ячейки за минуты | Адаптеры SVACE/PVS/Semgrep/CodeQL и др. | Нет | Два-три движка на первом шаге | open | Адаптеры не написаны; «SARIF» — формат, не evidence; нужен triage-сэмпл и правила маршрутизации находок в ячейки |
 | C-09 | L2: регенерация среза формальной модели из неаннотированного кода работает как merge-gate | Ограниченная грамматика гвардов + bounded mc / VC + гейт полноты | Нет; границы языка — `guard-grammar.md` | Только ячейки, выразимые грамматикой | open | Экстрактор — TCB; риск vacuous-модели; грамматика покрывает authorization-срез, не конкурентность и не транзакции; разрыв модель↔код остаётся |
 | C-10 | Само-мутация конвейера — условие его релиза | Внедрённые дефектные и чистые PR + внешний судья | Нет | Релизы конвейера | open | Судья не определён; held-out сюита не развёрнута; без внешнего судьи проверка циклическая |
-| C-11 | Таксономия ограничена сотнями ячеек, уроки живут fixtures | Матрица «класс отказа × точка входа × режим отказа» | `spec/conveyor/cell-registry.schema.json`; `spec/conveyor/cells.seed.yaml`; `spec/pilots/rbac_pg/` | Четыре таксономии | open | «~200» — design estimate; пилот на rbac_pg дал 29 ячеек на одно расширение (25 security, 2 correctness, 1 performance, 1 maintainability), из них 3 open; доля unroutable не измерена |
+| C-11 | Таксономия ограничена сотнями ячеек, уроки живут fixtures | Матрица «класс отказа × точка входа × режим отказа» | `spec/conveyor/cell-registry.schema.json`; `spec/conveyor/cells.seed.yaml`; `spec/pilots/rbac_pg/`; `spec/pilots/craft-i18n/` | Четыре таксономии | open | «~200» — design estimate; пилот на rbac_pg дал 29 ячеек на одно расширение (25 security, 2 correctness, 1 performance, 1 maintainability), из них 3 open; второй пилот на Rust-крейте дал 14 ячеек (2 security, 11 correctness, 1 maintainability) без новых классов; доля unroutable структурно 0 при текущей схеме и потому не измерена |
 | C-12 | Время ревью среднего PR падает с ~45 до ~15 минут | Маршрутизация + растворение проверки в конвейере | Нет | — | open | Нет baseline-измерений; зависит от языка, домена и зрелости тестов; нужно распределение, а не точечная оценка |
 | C-13 | Реестр вердиктов — hash-chain с внешним якорем | Хэш (commit + экстрактор + версии верификаторов + модель + результат), append-only | Нет | Все вердикты | open | Якорь не выбран; реализация не написана; нужна модель угроз для подмены журнала |
 | C-14 | Кирпичи agent-guard и Цитадели переносятся на цепочку поставок кода | broker/default-deny, taint, одноразовые гранты, hash-chain audit | Нет указателей в этом репозитории | Внешние репозитории | open | Этот документ их не подтверждает; нужен указатель «репозиторий + путь/коммит» на каждый кирпич |
 | C-15 | Никто не владеет связкой «provenance-taint + регенерация модели + само-мутация + throughput как продукт» | — | Предварительный обзор категорий, не систематический | Рынок и литература | open | Prior-art sweep не завершён; до внешней публикации утверждение нельзя выносить наружу |
 | C-16 | Классификация low/medium/high в маршрутизации сама является поверхностью атаки | Правила под integrity-контролем + masquerade-тесты + аудит misroutes | Нет | Роутер | open | Правила и квоты не определены; без них «тесты и доки → auto-merge» обходится маскировкой |
 | C-17 | `cell_lint.py` реализует проверки CL1–CL6 над реестром ячеек | Структура, покрытие, evidence, трассировка, таксономия, гейт эскалации + адверсариальный runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; команда `python3 evals/cell-lint/run_evals.py` | JSON/YAML реестр; опционально claim-леджер и базовый реестр | tested | 26/26 синтетических кейсов; production-реестра нет; identity evidence в CL6 — design decision; структурные проверки написаны вручную и могут разойтись со схемой |
-| C-18 | Реестр ячеек разворачивается на реальном репозитории rbac_pg | 29 ячеек; каждая non-open ячейка ссылается на существующий suite или claim-леджер, open-ячейки — на записанные пробелы; артефакты резолвятся; CL1/CL3/CL4 без ошибок | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; команда `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | Один репозиторий rbac_pg, HEAD `492f23c` | tested | Соответствие «ячейка ↔ смысл теста» проверено ревью, не машиной; 10 suite'ов перезапущены на свежем стенде 2026-11-06 (57/22/45/54/20/25/17/20/9 OK и 5 OK/2 GAP); 5/27 детекторов с mutation fixture, 22 без; 22/29 ячеек без claim; lint доказывает внутреннюю согласованность, не истинность свойств |
+| C-18 | Реестр ячеек разворачивается на реальном репозитории rbac_pg | 29 ячеек; каждая non-open ячейка ссылается на существующий suite или claim-леджер, open-ячейки — на записанные пробелы; артефакты резолвятся; CL1/CL3/CL4 без ошибок | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; команда `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | Один репозиторий rbac_pg, HEAD `492f23c` | tested | Соответствие «ячейка ↔ смысл теста» проверено ревью, не машиной; 10 suite'ов перезапущены на свежем стенде 2026-11-06 (57/22/45/54/20/25/17/20/9 OK и 5 OK/2 GAP); 24/27 детекторов с mutation fixture и 3 с документированным `mutation_exemption`; 22/29 ячеек без claim; lint доказывает внутреннюю согласованность, не истинность свойств |
+| C-19 | Реестр ячеек разворачивается на не-RBAC и не-БД репозитории craft-i18n | 14 ячеек; каждая non-open ячейка ссылается на существующий тест, open — на записанный пробел; артефакты резолвятся; CL1–CL5 без ошибок; 12/13 детекторов с mutation fixture, 1 exemption | `spec/pilots/craft-i18n/cells.yaml`; `spec/pilots/craft-i18n/claims.yaml`; `spec/pilots/craft-i18n/mutations/`; команда `python3 tools/cell_lint.py --root /home/admini/projects/astraoffice/craft-i18n --ledger /home/admini/projects/dev-sec-skills/spec/pilots/craft-i18n/claims.yaml spec/pilots/craft-i18n/cells.yaml` | Один Rust-крейт, commit `5c5c554` | tested | Леджер и реестр написаны в dev-sec-skills, а не в целевом репозитории; 14/14 привязка к claim'ам — by construction, не покрытие; охвачены правила чекера, не рендеринг приложений; 12/13 фикстур, 1 exemption |
 
 Правила реестра:
 
@@ -372,6 +373,9 @@ prior-art sweep, а не этот абзац.
 - `cell_lint` и адверсариальные кейсы: CL1–CL6, 26/26 (C-17).
 - Пилотный реестр rbac_pg: 29 ячеек, 26 non-open, 3 open, 0 ошибок
   CL1/CL3/CL4 (C-18).
+- Второй пилот `craft-i18n` (Rust, не-RBAC, не-БД): 14 ячеек, 13 non-open,
+  1 open, 0 ошибок CL1–CL5, 12/13 детекторов с mutation fixture и один
+  документированный exemption; claim-леджер из 8 claim'ов.
 - Калибровка таксономии и production-реестр — не входят в фазу 0.
 
 **Фаза 1.** L0+L1 на собственных репозиториях: AST-экстрактор, SARIF-адаптеры
@@ -401,7 +405,7 @@ prior-art sweep, а не этот абзац.
 - [ ] V2-05. Удалённый claim или cell → error либо обязательное `retired:` с причиной.
 - [x] V2-06. CL2: отсутствие mutation_fixture → error для классов security и correctness — для остальных классов warning, документированный `mutation_exemption` остаётся info (`tools/cell_lint.py`, `evals/cell-lint/cases/mutation-required-*.yaml`).
 - [ ] V2-07. Diff-покрытие: изменённые choke-point пути и символы обязаны отображаться на claim.
-- [x] V2-08. `make verify` — единая локальная точка запуска всех статических гейтов: evals, сид-реестр, пилотный реестр с claim-леджером, леджер пилота, status-diff (`Makefile`). Mutation-прогоны требуют живого стенда и вынесены в `make mutations`.
+- [x] V2-08. `make verify` — единая локальная точка запуска всех статических гейтов: evals, сид-реестр, оба пилотных реестра с claim-леджерами, леджеры, status-diff (`Makefile`). Mutation-прогоны вынесены: `make mutations` (стенд PostgreSQL), `make mutations-i18n` (cargo), `make mutations-all`.
 - [ ] V2-09. Негативные контроли в `evals/linter`: заглушка, пере-датировка, посторонний коммит, пустая модель.
 - [ ] V2-10. `model-checked` и `proven`: требовать вывод инструмента, а не существование артефакта.
 
@@ -426,8 +430,8 @@ prior-art sweep, а не этот абзац.
 - [ ] V2-21. Каталог инвариантов вне БД и ролей: input validation, authn/session, secrets, lifecycle, transactions.
 - [ ] V2-22. AST-экстрактор choke points для обычного кода и маппинг на классы ячеек.
 - [ ] V2-23. SARIF-адаптеры двух-трёх движков как источники evidence.
-- [ ] V2-24. Второй пилот на не-RBAC кодовой базе (веб-сервис или CLI).
-- [ ] V2-25. Проверить, что таксономия не переобучена под FSTEC и БД; измерить долю `unroutable`.
+- [x] V2-24. Второй пилот на не-RBAC кодовой базе (веб-сервис или CLI): `craft-i18n`, Rust-крейт проверки каталогов переводов, 14 ячеек, 13 tested / 1 open, CL1–CL6 без ошибок, 12/13 детекторов с mutation fixture, 8 claim'ов (`spec/pilots/craft-i18n/`).
+- [ ] V2-25. Проверить, что таксономия не переобучена под FSTEC и БД; измерить долю `unroutable`. Первая попытка на двух пилотах даёт 0/43, но это структурно: `cell_lint` не пропускает необъявленный класс или режим, поэтому нужен escape hatch до фиксации U (`product-trials.md` §2.1).
 - [ ] V2-26. Критерий выхода: два пилота, измеренная доля `unroutable`, порог зафиксирован до старта; fixtures у большинства security-детекторов.
 
 **Граница формальной модели**
@@ -439,8 +443,8 @@ prior-art sweep, а не этот абзац.
 
 **Граница продуктовых испытаний**
 
-- [ ] V2-31. Зафиксировать границу в `spec/conveyor/product-trials.md`: критерии входа и протокол замера; числа — только после измерений.
-- [ ] V2-32. Измерить данные для порогов (доля `unroutable` на пилотах, mutation-покрытие) и зафиксировать числа в `product-trials.md` с артефактом измерения.
+- [x] V2-31. Зафиксировать границу в `spec/conveyor/product-trials.md`: критерии входа и протокол замера; числа — только после измерений.
+- [ ] V2-32. Измерить данные для порогов (доля `unroutable` на пилотах, mutation-покрытие) и зафиксировать числа в `product-trials.md` с артефактом измерения. Mutation-покрытие измерено 2026-11-06: 21/24 security-детекторов = 87,5 %; U заблокирован структурой схемы (см. V2-25), порог N не фиксируется до решения по U.
 - [ ] V2-33. Заполнить чек-лист границы при открытии первого продуктового спринта; продуктовые прогоны до заполнения не считаются статистикой.
 
 ## 13. Открытые вопросы и следующий evidence
@@ -448,9 +452,12 @@ prior-art sweep, а не этот абзац.
 1. **Пилот.** Выбран rbac_pg; пилотный реестр собран (C-18): 29 ячеек,
    0 ошибок CL1/CL3/CL4. Все десять suite'ов перезапущены на свежем стенде
    2026-11-06; 24 из 27 детекторов имеют mutation fixture, ещё 3 —
-   документированный `mutation_exemption`, CL2 без предупреждений. Остаётся
-   решить, покрывает ли claim-леджер не только FSTEC-матрицу. Без этого
-   C-07…C-12 остаются гипотезами.
+   документированный `mutation_exemption`, CL2 без предупреждений. Второй
+   пилот `craft-i18n` (Rust, не-RBAC, не-БД) собран 2026-11-06: 14 ячеек,
+   12/13 детекторов с фикстурой, 8 claim'ов, 0 ошибок; его открытая CELL-002
+   фиксирует реальный пробел с Unicode Cf-символами. Остаётся решить,
+   покрывает ли claim-леджер не только FSTEC-матрицу. Без этого C-07…C-12
+   остаются гипотезами.
 2. **Якорь вердиктов.** Rekor/SCITT, in-toto+Sigstore или append-only
    репозиторий. Нужна модель угроз и стоимость эксплуатации.
 3. **Судья само-мутации.** Кто и по какому критерию принимает, что дефектный PR
@@ -479,9 +486,10 @@ prior-art sweep, а не этот абзац.
 | `evals/cell-lint/` | Адверсариальный набор для `cell_lint` |
 | `spec/conveyor/cell-registry.schema.json` | Машиночитаемая ячейка |
 | `spec/pilots/rbac_pg/` | Пилотный реестр: 29 ячеек на реальном репозитории |
+| `spec/pilots/craft-i18n/` | Второй пилот: 14 ячеек на Rust-крейте, не-RBAC и не-БД |
 | `spec/conveyor/guard-grammar.md` | Границы L2 |
 | `spec/conveyor/product-trials.md` | Граница продуктовых испытаний: критерии входа, метрики и протокол замера (draft) |
-| `Makefile` | `make verify` — единая точка запуска статических гейтов (V2-08); `make mutations` — mutation-прогоны на живом стенде |
+| `Makefile` | `make verify` — единая точка запуска статических гейтов (V2-08); `make mutations` (стенд PostgreSQL), `make mutations-i18n` (cargo) и `make mutations-all` — mutation-прогоны |
 
 Этот документ — не сертификация, не аудит и не обещание покрытия. Он фиксирует
 намерение, границы и следующий evidence.

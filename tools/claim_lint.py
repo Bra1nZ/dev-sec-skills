@@ -54,6 +54,13 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # report("F8a ...") — the script-suite convention; def test_foo — pytest.
 REPORT_ID_RE = re.compile(r'\breport\(\s*["\']([A-Za-z][A-Za-z0-9_-]*)')
 DEF_TEST_RE = re.compile(r"\bdef\s+(test_[a-zA-Z0-9_]+)")
+# Rust: a stack of attributes containing a test attribute (usually #[test],
+# also #[tokio::test] and friends) directly before `fn name`. Doc comments and
+# whitespace may sit between the attributes and the fn. Other attributes alone
+# do not make a test: #[allow(...)] fn helper is not evidence.
+RUST_TEST_RE = re.compile(
+    r"(?:#\[[^\]\n]*\]\s*)*#\[(?:[A-Za-z_][A-Za-z0-9_]*::)*test(?:\([^)]*\))?\]"
+    r"\s*(?:#\[[^\]\n]*\]\s*)*(?://[^\n]*\n\s*)*fn\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 # Built-in fallback for L5 (used when Vale is unavailable). English entries
 # mirror references/banned-words.md; Russian entries are calibrated on the
@@ -229,6 +236,7 @@ def build_suite_index(root, suite_glob):
             continue
         report_ids.update(REPORT_ID_RE.findall(text))
         def_names.update(DEF_TEST_RE.findall(text))
+        def_names.update(RUST_TEST_RE.findall(text))
     return report_ids, def_names
 
 
@@ -398,6 +406,9 @@ def main():
     root = args.root or os.path.dirname(os.path.abspath(args.ledger))
     if not os.path.isfile(args.ledger):
         print("ledger not found: %s" % args.ledger, file=sys.stderr)
+        return 2
+    if not os.path.isdir(root):
+        print("root not found: %s" % root, file=sys.stderr)
         return 2
 
     styles_path = os.environ.get(

@@ -1,0 +1,156 @@
+# Claim ledger for the second pilot — craft-i18n (storytold), a translation
+# catalog checker in Rust. Non-RBAC, non-database: the pilot exists to test
+# whether the taxonomy and the gates generalise beyond the rbac_pg case.
+#
+# The ledger is authored here, not in the target repository, so the pilot never
+# modifies it. Claim wording comes from docs/catalog-format.md and the checker's
+# own rules; evidence is the target's test suite at the commit below.
+#
+#   python3 tools/claim_lint.py \
+#     --root /home/admini/projects/astraoffice/craft-i18n \
+#     --suite-glob "crates/craft-i18n-tests/**/*.rs" \
+#     spec/pilots/craft-i18n/claims.yaml
+project: craft-i18n
+generated: "2026-11-06"
+claims:
+  # docs/catalog-format.md, "Rows" and the header rule.
+  - id: C-01
+    claim: "Every checked-in catalog passes the catalog checker, and a row the checker rejects is named by file and line"
+    mechanism: "cargo test -p craft-i18n-tests runs check_tree over locales/ and over fixture trees; read_catalog returns one problem per bad row"
+    status: tested
+    scope:
+      platforms: "Rust 1.90+ / Cargo; catalog format as documented in docs/catalog-format.md at 5c5c554"
+      actors_excluded: ["the apps' runtime lookup (craft-libs), which this checker does not test"]
+    evidence:
+      - kind: test
+        tests: [repository_catalogs_pass, bad_row_names_file_and_line]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/tests/locales.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "The checker proves the documented format rules; it does not prove the apps render the strings correctly."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Rows": columns, duplicate keys, escapes, unknown contexts.
+  - id: C-02
+    claim: "A malformed row — wrong column count, empty source or translation, a duplicate key, an unknown escape or an unknown @context — is rejected, and a valid one still loads"
+    mechanism: "parse_row destructures exactly three columns, rejects empty fields, unknown escapes and reserved contexts; read_catalog keeps a (context, source) key set"
+    status: tested
+    scope:
+      platforms: "Rust 1.90+ / Cargo; row grammar of docs/catalog-format.md"
+      actors_excluded: ["rows the apps write at runtime"]
+    evidence:
+      - kind: test
+        tests: [each_bad_row_is_one_problem, valid_rows_pass, context_distinguishes_keys]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/catalog.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "One test bundles twenty malformed rows; a regression in any one rule fails it, and the test does not say which rule without reading the panic message."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Rows": placeholders, trailing ellipsis, @msg templates.
+  - id: C-03
+    claim: "A translation keeps the source text's placeholders in any order, matches its trailing ellipsis, and an @msg template the apps could never match is rejected"
+    mechanism: "placeholders() compares sorted {name} sets; ends_with('…') compared; check_template rejects an unclosed brace, adjacent placeholders and a literal-free template"
+    status: tested
+    scope:
+      platforms: "Rust 1.90+ / Cargo; @msg rules cross-checked against craft-launcher and vectorcraft parsers"
+      actors_excluded: ["placeholder semantics inside the apps"]
+    evidence:
+      - kind: test
+        tests: [placeholders_may_reorder, each_bad_row_is_one_problem, msg_templates_one_good_two_bad]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/catalog.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "Placeholder names are compared as strings; a renamed parameter in an app is not visible here."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Plurals".
+  - id: C-04
+    claim: "An @plural row lists exactly the CLDR cardinal form count its locale reaches for whole numbers 0..=1000"
+    mechanism: "plural_forms() counts intl_pluralrules cardinal categories over 0..=1000, with pt-PT and Hebrew exceptions; check_plural compares the count"
+    status: tested
+    scope:
+      platforms: "intl_pluralrules 7.0.2 (CLDR 37); the apps use CLDR 48 through icu_plurals"
+      actors_excluded: ["fractional counts", "numbers above 1000"]
+    evidence:
+      - kind: test
+        tests: [plural_count_by_locale, plural_form_counts, one_form_locale]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/locale.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "CLDR 37 in the checker and CLDR 48 in the apps disagree on Hebrew `many`; the code special-cases Hebrew only."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Locales and files": overrides and regional rows.
+  - id: C-05
+    claim: "A row that changes nothing is rejected: an app row equal to common.tsv, and a regional row equal to what the base language already shows"
+    mechanism: "tree::check_tree compares app rows against the shared set; redundant_regional_rows resolves each lookup through base_locale, skipping script variants and locales without a base directory"
+    status: tested
+    scope:
+      platforms: "Rust 1.90+ / Cargo; fallback chain as in craft-libs' I18n::new"
+      actors_excluded: ["regional rows for apps that never fall back"]
+    evidence:
+      - kind: test
+        tests: [redundant_override, redundant_regional_row, regional_app_row_compares_with_base_app_then_shared, script_and_baseless_locales_have_no_regional_check]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/tree.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "The fallback model is re-implemented in the checker; if craft-libs changes its lookup, this becomes wrong silently."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Locales and files" and "Language name".
+  - id: C-06
+    claim: "Locale directories are lowercase BCP 47 and catalog files are common.tsv or <app>.tsv; dotfiles are ignored and any other file fails"
+    mechanism: "check_locale_name round-trips through LanguageIdentifier and requires lowercase; is_catalog_name allows [a-z0-9]+(-[a-z0-9]+)* before .tsv; entries() skips dotfiles"
+    status: tested
+    scope:
+      platforms: "unic-langid 0.9 as pinned in Cargo.lock"
+      actors_excluded: ["case sensitivity on case-insensitive filesystems, which CI does not exercise"]
+    evidence:
+      - kind: test
+        tests: [bad_locale_name, stray_file, bad_app_file_name, locale_names, clean_tree_passes]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/locale.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "Renaming a locale directory changes app behaviour; the checker only enforces the spelling. bad_app_file_name uses Word_Craft.tsv, whose underscore both the lowercase and the alphanumeric rule reject; a mutation that allowed uppercase app file names left the suite green, so the lowercase casing rule is enforced but not pinned by a test."
+    last_verified: "2026-11-06"
+
+  # docs/catalog-format.md, "Header" and "Language name".
+  - id: C-07
+    claim: "Every catalog carries the clean-room header, and every locale names its language in that language"
+    mechanism: "tree::read inserts a problem when no line starts with '# Clean room:'; has_language_name requires an @id language.name row in common.tsv or an app catalog"
+    status: tested
+    scope:
+      platforms: "Rust 1.90+ / Cargo"
+      actors_excluded: ["the legal validity of the clean-room claim, which CI cannot test"]
+    evidence:
+      - kind: test
+        tests: [missing_clean_room_rule, missing_language_name]
+        command: "cargo test --offline -p craft-i18n-tests"
+        artifact: "crates/craft-i18n-tests/src/tree.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "The header is a declaration; the checker cannot tell whether the translation was actually written clean-room."
+    last_verified: "2026-11-06"
+
+  # Open: found during the pilot, recorded as a gap.
+  - id: C-08
+    claim: "A translation cannot hide an invisible formatting character (bidi override, zero-width space) that changes how the UI renders"
+    mechanism: "parse_row rejects Cc control characters and U+FEFF, but not Unicode Cf formatting characters"
+    status: open
+    scope:
+      platforms: "Unicode as implemented by Rust's char::is_control (Cc only)"
+      actors_excluded: ["rendering behaviour of each app's toolkit"]
+    evidence:
+      - kind: review
+        artifact: "crates/craft-i18n-tests/src/catalog.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-06"
+    limitations: "Probe in dev-sec-skills at spec/pilots/craft-i18n/probes/invisible-characters (run 2026-11-06 against 5c5c554): U+202E, U+200B and U+2066 pass and reach the Row; U+FEFF inside a row and Cc U+0007 are rejected. The gap is therefore Unicode Cf formatting characters other than U+FEFF."
+    last_verified: "2026-11-06"
