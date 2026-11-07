@@ -2,10 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://dev-sec-skills.invalid/schemas/sanitizer-run.schema.json",
   "title": "Sanitizer run",
-  "description": "A machine-checkable record of one dynamic sanitizer run (V2-35): AddressSanitizer, UndefinedBehaviorSanitizer, ThreadSanitizer, MemorySanitizer or LeakSanitizer. A sanitizer finding is runtime evidence that a claim about memory or undefined behaviour is false, so the record carries how the run ended and the bytes it printed. L2 hashes the output, ties finished_at to the evidence date, and rejects a record that declares a clean run while the output carries a sanitizer finding line. The record does not prove that the build was instrumented, that the corpus exercised the claim, or that the sanitizer would have caught a different defect; without an external anchor a forger can rewrite the record and its output together (C-13).",
+  "description": "A machine-checkable record of one dynamic sanitizer run (V2-35): AddressSanitizer, UndefinedBehaviorSanitizer, ThreadSanitizer, MemorySanitizer or LeakSanitizer. A sanitizer finding is runtime evidence that a claim about memory or undefined behaviour is false, so the record carries how the run ended and the bytes it printed. L2 hashes the output, ties finished_at to the evidence date, and rejects a record that declares a clean run while the output carries a sanitizer finding line. The record does not prove that the build was instrumented, that the corpus exercised the claim, or that the sanitizer would have caught a different defect; an `anchor` is required (an SSH signature over the record's canonical bytes, tools/anchor_subject.py) and L2 verifies it against the committed allowed_signers, but the key holder can re-sign and a replaced allowed_signers bypasses it (C-13).",
   "type": "object",
   "required": ["tool", "build_flags", "command", "output", "output_sha256",
-               "exit_code", "started_at", "finished_at", "status"],
+               "exit_code", "started_at", "finished_at", "status", "anchor"],
   "additionalProperties": false,
   "properties": {
     "tool": {
@@ -53,6 +53,58 @@
     "status": {
       "enum": ["completed", "unverified", "failed", "error"],
       "description": "How the run ended (V2-28 vocabulary). completed — the process exited before any bound; exit_code is the sanitizer's own. unverified — the run was cut short or the supervisor could not decide; it cannot support a non-open claim. failed — non-zero exit before the bound. error — the wrapper could not start or supervise the process."
+    },
+    "anchor": {
+      "type": "object",
+      "description": "An SSH signature over the canonical bytes of the sanitizer run (tool, version, build flags, command, exit code, timestamps, output hash, status; see tools/anchor_subject.py). The signed subject, its signature and the allowed_signers file are committed and hashed here. L2 recomputes the bytes and verifies the signature, so a record edited after signing stops verifying. The private key is not in the repository. The anchor does not stop the key holder, or anyone who can replace allowed_signers and re-sign: that is the remaining C-13 gap.",
+      "required": ["type", "signer", "namespace", "subject", "subject_sha256",
+                   "signature", "signature_sha256", "allowed_signers", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["ssh-ed25519"],
+          "description": "Signature scheme. Only ssh-ed25519 is implemented."
+        },
+        "signer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identity passed to `ssh-keygen -Y verify -I`; must appear in allowed_signers."
+        },
+        "namespace": {
+          "const": "dev-sec-skills-sanitizer",
+          "description": "Signature namespace (`ssh-keygen -Y sign -n`). Pinned per channel: a static-analysis or run-record signature does not verify here."
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the signed canonical subject, relative to --tool-output-root."
+        },
+        "subject_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the subject bytes. L2 verifies it."
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the detached SSH signature (`ssh-keygen -Y sign` output)."
+        },
+        "signature_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the signature file. L2 verifies it."
+        },
+        "allowed_signers": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the committed allowed_signers file used for verification."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the signature was made. For a backfilled record this is later than the run's finished_at: the signature proves immutability after signing, not the run date."
+        }
+      }
     }
   }
 }

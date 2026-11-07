@@ -42,14 +42,16 @@ The raw evidence is in `spec/static-analysis/runs/`:
 
 ## Anchors
 
-Both self-pilot runs carry an SSH-signature anchor (C-41): the canonical
-subject of each run is in `spec/static-analysis/anchor/`, signed with the
+Both self-pilot static-analysis runs carry an SSH-signature anchor (C-41), as
+does the `run_record` of C-01's detector run: the canonical subject of each is
+in `spec/anchor/`, signed with the
 ed25519 key whose public half is committed as
-`spec/static-analysis/anchor/allowed_signers`. The private key is at
+`spec/anchor/allowed_signers`. The private key is at
 `/tmp/opencode/dev-sec-skills-anchor/key`, outside the repository, and is not
 committed. L2 recomputes the canonical bytes and verifies the signature, so an
 edit to the triage, a hash or a timestamp after signing stops verifying. The
-`forge-anchored-record` red-team drill proves that it does; see
+`forge-anchored-record` (static analysis) and `forge-anchored-test-record`
+(run record) red-team drills prove that it does; see
 `spec/static-analysis/README.md` for the remaining C-13 gaps (key holder,
 `allowed_signers` replacement).
 

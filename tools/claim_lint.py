@@ -151,7 +151,8 @@ RUST_TEST_RE = re.compile(
 
 # Run record (V2-01/V2-02, schemas/run-record.schema.json).
 RUN_RECORD_FIELDS = ("runner", "command", "commit", "exit_code", "started_at",
-                     "finished_at", "log", "log_sha256", "tests_run", "tests_passed")
+                     "finished_at", "log", "log_sha256", "tests_run", "tests_passed",
+                     "anchor")
 # Tool output (V2-10, schemas/tool-output.schema.json): the model checker's or
 # prover's own run. Required fields mirror the schema's `required` list.
 TOOL_OUTPUT_FIELDS = ("tool", "command", "output", "output_sha256",
@@ -163,7 +164,7 @@ TOOL_RUN_STATUSES = ("completed", "unverified", "failed", "error")
 # output instead of a tests list.
 SANITIZER_TOOLS = ("asan", "ubsan", "tsan", "msan", "lsan")
 SANITIZER_FIELDS = ("tool", "build_flags", "command", "output", "output_sha256",
-                    "exit_code", "started_at", "finished_at", "status")
+                    "exit_code", "started_at", "finished_at", "status", "anchor")
 # Finding lines the major sanitizers print when they halt: ASan/LSan/TSan/MSan
 # and a non-recovering UBSan prefix the process id and say ERROR or WARNING.
 # A recoverable UBSan diagnostic ("file:line: runtime error:") is deliberately
@@ -193,6 +194,9 @@ TRIAGE_ROUTED = ("covered", "new")
 ANCHOR_FIELDS = ("type", "signer", "namespace", "subject", "subject_sha256",
                  "signature", "signature_sha256", "allowed_signers", "date")
 ANCHOR_TYPES = ("ssh-ed25519",)
+# A channel fixes the signature namespace: a signature made for a static
+# analysis run must not verify for a test record, and vice versa.
+ANCHOR_NAMESPACES = anchor_subject.NAMESPACES
 FINDING_ID_RE = re.compile(r"^F-[0-9]{3,}$")
 CELL_ID_RE = re.compile(r"^CELL-[0-9]{3,}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -471,6 +475,54 @@ def _test_ran(name, text):
     return False
 
 
+def check_anchor_shape(anchor, cid, tag, channel, findings):
+    """L1 shape for an anchor block on any evidence channel (C-13).
+
+    The same block is required on a static-analysis run, a test run record and
+    a sanitizer run; only the namespace differs, because the signature is
+    scoped to the channel it describes.
+    """
+    if not isinstance(anchor, dict):
+        findings.append(Finding("L1", "error",
+                                "%s anchor is not an object; every evidence record must "
+                                "carry an anchor (C-13)" % tag, cid))
+        return
+    missing_anchor = [f for f in ANCHOR_FIELDS if f not in anchor]
+    if missing_anchor:
+        findings.append(Finding("L1", "error",
+                                "%s anchor missing %s"
+                                % (tag, ", ".join(missing_anchor)), cid))
+    if anchor.get("type") not in ANCHOR_TYPES:
+        findings.append(Finding("L1", "error",
+                                "%s anchor.type=%r is not one of %s"
+                                % (tag, anchor.get("type"),
+                                   ", ".join(ANCHOR_TYPES)), cid))
+    for field in ("signer", "namespace", "subject", "signature",
+                  "allowed_signers"):
+        value = anchor.get(field)
+        if not isinstance(value, str) or not value.strip():
+            findings.append(Finding("L1", "error",
+                                    "%s anchor.%s must be a non-empty string"
+                                    % (tag, field), cid))
+    wanted = ANCHOR_NAMESPACES[channel]
+    if anchor.get("namespace") != wanted:
+        findings.append(Finding("L1", "error",
+                                "%s anchor.namespace=%r is not %r for channel %s"
+                                % (tag, anchor.get("namespace"), wanted, channel), cid))
+    for field in ("subject_sha256", "signature_sha256"):
+        value = anchor.get(field)
+        if not isinstance(value, str) or not SHA256_RE.match(value):
+            findings.append(Finding("L1", "error",
+                                    "%s anchor.%s is not a sha256 hex digest"
+                                    % (tag, field), cid))
+    anchor_date = anchor.get("date")
+    if not isinstance(anchor_date, str) \
+            or not DATE_RE.match(anchor_date) \
+            or _parse_iso(anchor_date) is None:
+        findings.append(Finding("L1", "error",
+                                "%s anchor.date is not YYYY-MM-DD" % tag, cid))
+
+
 def check_run_records_schema(claims, findings):
     for c in claims:
         for ev in c.get("evidence") or []:
@@ -486,6 +538,9 @@ def check_run_records_schema(claims, findings):
             if missing:
                 findings.append(Finding("L1", "error",
                                         "run_record missing %s" % ", ".join(missing), c["id"]))
+            if "anchor" in rr:
+                check_anchor_shape(rr.get("anchor"), c["id"], "run_record",
+                                   "run-record", findings)
             ev_commit, rr_commit = ev.get("commit"), rr.get("commit")
             if ev_commit and rr_commit and str(ev_commit) != str(rr_commit):
                 findings.append(Finding("L1", "error",
@@ -647,6 +702,10 @@ def check_sanitizer_runs_schema(claims, findings):
                     findings.append(Finding("L1", "error",
                                             "sanitizer_runs[%d] missing %s"
                                             % (k, ", ".join(missing)), cid))
+                if "anchor" in run:
+                    check_anchor_shape(run.get("anchor"), cid,
+                                       "sanitizer_runs[%d]" % k, "sanitizer",
+                                       findings)
                 if run.get("tool") not in SANITIZER_TOOLS:
                     findings.append(Finding("L1", "error",
                                             "sanitizer_runs[%d] tool %r is not one of %s"
@@ -850,41 +909,9 @@ def check_static_analysis_runs_schema(claims, findings):
                     if note is not None and not isinstance(note, str):
                         findings.append(Finding("L1", "error",
                                                 "%s note must be a string" % etag, cid))
-                anchor = run.get("anchor")
-                if not isinstance(anchor, dict):
-                    findings.append(Finding("L1", "error",
-                                            "%s anchor is not an object; every static-analysis "
-                                            "run must carry an anchor (C-13)" % tag, cid))
-                else:
-                    missing_anchor = [f for f in ANCHOR_FIELDS if f not in anchor]
-                    if missing_anchor:
-                        findings.append(Finding("L1", "error",
-                                                "%s anchor missing %s"
-                                                % (tag, ", ".join(missing_anchor)), cid))
-                    if anchor.get("type") not in ANCHOR_TYPES:
-                        findings.append(Finding("L1", "error",
-                                                "%s anchor.type=%r is not one of %s"
-                                                % (tag, anchor.get("type"),
-                                                   ", ".join(ANCHOR_TYPES)), cid))
-                    for field in ("signer", "namespace", "subject", "signature",
-                                  "allowed_signers"):
-                        value = anchor.get(field)
-                        if not isinstance(value, str) or not value.strip():
-                            findings.append(Finding("L1", "error",
-                                                    "%s anchor.%s must be a non-empty string"
-                                                    % (tag, field), cid))
-                    for field in ("subject_sha256", "signature_sha256"):
-                        value = anchor.get(field)
-                        if not isinstance(value, str) or not SHA256_RE.match(value):
-                            findings.append(Finding("L1", "error",
-                                                    "%s anchor.%s is not a sha256 hex digest"
-                                                    % (tag, field), cid))
-                    anchor_date = anchor.get("date")
-                    if not isinstance(anchor_date, str) \
-                            or not DATE_RE.match(anchor_date) \
-                            or _parse_iso(anchor_date) is None:
-                        findings.append(Finding("L1", "error",
-                                                "%s anchor.date is not YYYY-MM-DD" % tag, cid))
+                if "anchor" in run:
+                    check_anchor_shape(run.get("anchor"), cid, tag,
+                                       "static-analysis", findings)
                 if needs_registry and not run.get("cells"):
                     findings.append(Finding("L1", "error",
                                             "%s triage routes a finding to a cell but the run "
@@ -912,6 +939,11 @@ def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
             findings.append(Finding("L2", "error",
                                     "run_record finished_at date %s does not match evidence date %s"
                                     % (end.date().isoformat(), ev_date), cid))
+
+    # The anchor is checked before the log: a URL log can skip the hash check,
+    # but the signature still has to describe this record.
+    _check_anchor(rr, claim, run_log_root, "run_record", findings,
+                  channel="run-record")
 
     text = None
     log = rr.get("log")
@@ -1061,6 +1093,9 @@ def _check_sanitizer_run(ev, run, claim, tool_output_root, index, findings):
                                     "%s finished_at date %s does not match evidence date %s"
                                     % (tag, end.date().isoformat(), ev_date), cid))
 
+    _check_anchor(run, claim, tool_output_root, tag, findings,
+                  channel="sanitizer")
+
     output = run.get("output")
     if not isinstance(output, str) or not output:
         return
@@ -1122,15 +1157,19 @@ def _fixture_ids(path):
     return {item.get("id") for item in items if isinstance(item, dict)}
 
 
-def _check_anchor(run, claim, tool_output_root, tag, findings):
+def _check_anchor(run, claim, tool_output_root, tag, findings,
+                  channel="static-analysis"):
     """L2: the signature covers the record, not some other bytes.
 
-    The signed subject is a canonical function of the run (engine, command,
-    rules, commit, both hashes, exit code, timestamps, status and triage). L2
-    recomputes it and compares, then asks ssh-keygen to verify the signature
-    against the committed allowed_signers. An editor who changes a finding's
-    disposition, a hash or a timestamp without the private key cannot make both
-    checks pass. The key holder, or anyone who can replace allowed_signers and
+    The signed subject is a canonical function of the record for its channel:
+    a static-analysis run signs engine, command, rules, commit, both hashes,
+    exit code, timestamps, status, cells and triage; a test run record signs
+    its runner, commit, log and artifact hashes and counts; a sanitizer run
+    signs its tool, flags, output hash and outcome. L2 recomputes the bytes,
+    checks the namespace belongs to the channel, and asks ssh-keygen to verify
+    the signature against the committed allowed_signers. An editor who changes
+    a field the subject covers without the private key cannot make both checks
+    pass. The key holder, or anyone who can replace allowed_signers and
     re-sign, still can; that is the C-13 gap the docs state.
     """
     cid = claim["id"]
@@ -1138,6 +1177,11 @@ def _check_anchor(run, claim, tool_output_root, tag, findings):
     anchor = run.get("anchor")
     if not isinstance(anchor, dict):
         return  # L1 already reported the missing shape
+    wanted = ANCHOR_NAMESPACES[channel]
+    if anchor.get("namespace") != wanted:
+        findings.append(Finding("L2", "error",
+                                "%s anchor namespace %r is not %r for channel %s"
+                                % (tag, anchor.get("namespace"), wanted, channel), cid))
 
     def resolve(value):
         if not isinstance(value, str) or not value.strip():
@@ -1165,7 +1209,7 @@ def _check_anchor(run, claim, tool_output_root, tag, findings):
                                 "%s anchor signature_sha256 mismatch for %s"
                                 % (tag, anchor.get("signature")), cid))
 
-    expected = anchor_subject.subject_bytes(run)
+    expected = anchor_subject.record_subject_bytes(channel, run)
     actual = open(subject_path, "rb").read()
     if actual != expected:
         findings.append(Finding("L2", "error",

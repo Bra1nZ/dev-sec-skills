@@ -1,6 +1,6 @@
 {
   "format": "dev-sec-skills/red-team/v1",
-  "date": "2026-11-07",
+  "date": "2026-11-08",
   "ledger": "spec/pilots/craft-i18n/claims.yaml",
   "registry": "spec/pilots/craft-i18n/cells.yaml",
   "drills": [
@@ -56,9 +56,14 @@
     },
     {
       "name": "redate-the-same-run",
+      "verdict": "blocked",
+      "attack": "shift the run date by one day and escalate reviewed -> tested"
+    },
+    {
+      "name": "redate-and-resign",
       "verdict": "allowed",
-      "attack": "shift the run date by one day and escalate reviewed -> tested",
-      "gap": "the evidence identity includes the date, so a shifted date is new evidence"
+      "attack": "re-date the run, replace allowed_signers and re-sign with a fresh key",
+      "gap": "the anchor binds a record to a key; whoever can replace allowed_signers can re-sign"
     },
     {
       "name": "borrow-another-claims-evidence",
@@ -84,11 +89,16 @@
       "name": "forge-anchored-record",
       "verdict": "blocked",
       "attack": "rewrite a finding's disposition after the anchor was signed"
+    },
+    {
+      "name": "forge-anchored-test-record",
+      "verdict": "blocked",
+      "attack": "rename the runner of a signed test run record"
     }
   ],
   "summary": {
-    "drills": 16,
-    "blocked": 15,
+    "drills": 18,
+    "blocked": 17,
     "allowed": 1,
     "failed": 0
   }

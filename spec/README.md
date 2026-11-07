@@ -80,9 +80,9 @@ spec/
       c02-mutants-2026-11-07.json     # P-02 tool_output record
       c02-mutants-2026-11-07.log      # captured stdout, hash-checked
   red-team/
-    README.md                     # 16 attacks on the real pilot artifacts, 1 recorded gap
+    README.md                     # 18 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
-    2026-11-07-drills.json        # recorded result: 15 blocked, 1 allowed
+    2026-11-08-drills.json        # recorded result: 17 blocked, 1 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -201,10 +201,11 @@ to it after the pinned commit is not a diff here; the pin is declared and
 Gate strength is measured against the real artifacts, not only fixtures (C-35):
 `spec/red-team/run_drills.py` takes the committed craft-i18n ledger, its cargo
 log and the cell registry, applies one attack per drill, and requires the exit
-code and the expected message. Twelve of thirteen attacks are blocked; the
-record is `spec/red-team/2026-11-07-drills.json`. One stays green and is
-recorded as a gap: re-dating a run (identity includes the date, so a shifted
-date is "new evidence", the C-13 hole). Borrowing another claim's real tests is
+code and the expected message. Seventeen of eighteen attacks are blocked; the
+record is `spec/red-team/2026-11-08-drills.json`. One stays green and is
+recorded as a gap: re-dating a run **and** replacing `allowed_signers` to
+re-sign it (the C-13 hole). Re-dating alone no longer passes: the run-record
+anchor covers `started_at`/`finished_at`, so the edit fails L2. Borrowing another claim's real tests is
 now blocked by L6 (V2-34): a shared test must be declared with a reason, and a
 non-open claim must keep at least one test of its own, so declaring the sharing
 does not reopen the gap. An `allowed` drill fails the harness if a future gate

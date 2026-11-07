@@ -1,0 +1,16 @@
+# Synthetic fixture — not evidence about any real project.
+name: run-record-anchor-tampered
+extends: run-record-valid.yaml
+description: A valid anchored run record is edited after signing (its runner
+  changes). The subject still hashes and the signature still exists, but the
+  canonical bytes no longer describe the record, so L2 must error. This is the
+  re-dating/rewriting case the run-record anchor exists to catch.
+tamper_anchor: subject
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

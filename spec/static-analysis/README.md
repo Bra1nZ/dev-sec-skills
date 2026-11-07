@@ -40,11 +40,13 @@ disposition.
   self-pilot run at `d0c25c2`, three findings.
 - `runs/ci-dev-sec-skills-postfix-2026-11-07.{sarif,report.json}` — the
   control run at `67d0aec`, zero findings.
-- `anchor/allowed_signers` — the committed public key that pins the anchor
-  signer. The private key is not in the repository.
-- `anchor/ci-dev-sec-skills-{prefix,postfix}-2026-11-07.json{,.sig}` and
-  `anchor/ci-craft-i18n-2026-11-07.json{,.sig}` — canonical subjects and their
-  detached signatures, one pair per anchored run.
+- `spec/anchor/` (shared with the other evidence channels) — the committed
+  `allowed_signers`, the three static-analysis subjects
+  (`ci-dev-sec-skills-{prefix,postfix}-2026-11-07`, `ci-craft-i18n-2026-11-07`)
+  and their detached signatures, plus nine run-record and one sanitizer pairs.
+  The private key is not in the repository. The directory moved out of
+  `spec/static-analysis/` because it no longer belongs to one channel; the
+  signed bytes carry no path, so the signatures stayed valid.
 
 The claim that cites this run is C-09 in
 `spec/pilots/craft-i18n/claims.yaml`. Its triage is embedded in the record, as
@@ -202,8 +204,9 @@ every finding has exactly one disposition; and that a routed entry resolves.
 A URL for the SARIF or the report is rejected for a non-open claim: without
 local bytes neither the hash nor the triage can be checked. The `covered` and
 `new` paths are exercised by the linter evals, and the self-pilot above
-exercises `new` for real; `covered` (a finding an existing detector already
-caught) is still synthetic-only.
+exercises `new` for real. `covered` is real too, but only through a cross-pilot
+route: craft-i18n F-003/F-004 are covered by the self-pilot's D-PINNED-ACTIONS
+detector, which was run read-only over the craft-i18n workflow directory.
 
 It does not prove that a finding is exploitable, that `out-of-scope` is a
 harmless finding, or that the engine would catch a different defect. The rules
@@ -213,30 +216,48 @@ rewrite, but it does not remove the key-holder and `allowed_signers` gaps.
 
 ## Anchor: what it narrows and what it does not
 
-Every static-analysis run carries an `anchor`: an ed25519 SSH signature over
-the canonical bytes of the record. `tools/anchor_subject.py` defines those
-bytes (engine and version, command, rule hashes, target commit, both output
-hashes, exit code, timestamps, status, the `cells` registry and the whole
-triage list);
-`tools/anchor_run.py` signs and verifies; L2 recomputes the bytes and calls
-`ssh-keygen -Y verify` against `spec/static-analysis/anchor/allowed_signers`.
-The anchor is checked before the output paths, so a URL output cannot bypass
-it.
+Three evidence channels carry an `anchor`: a static-analysis run, a test
+`run_record` and a sanitizer run. Each is an ed25519 SSH signature over the
+canonical bytes of its record, and each uses its own signature namespace, so a
+signature made for one channel does not verify for another.
+`tools/anchor_subject.py` defines the bytes per channel:
+
+- static-analysis — engine and version, command, rule hashes, target commit,
+  both output hashes, exit code, timestamps, status, the `cells` registry and
+  the whole triage list;
+- run_record — runner, command, commit, exit code, timestamps, log and artifact
+  hashes, test counts;
+- sanitizer — tool and version, build flags, command, exit code, timestamps,
+  output hash, status.
+
+`tools/anchor_run.py keygen|create|verify --channel {static-analysis,run-record,sanitizer}`
+signs and verifies; L2 recomputes the bytes, checks the namespace belongs to the
+channel and calls `ssh-keygen -Y verify` against `spec/anchor/allowed_signers`.
+The anchor is checked before the output or log paths, so a URL output cannot
+bypass it. The anchor directory is shared: `spec/anchor/` holds the committed
+`allowed_signers` and 13 subject/signature pairs (3 static-analysis, 9
+run_record, 1 sanitizer). The subject carries no path, so moving the directory
+did not invalidate any signature.
 
 The private key lives at `/tmp/opencode/dev-sec-skills-anchor/key`, outside
 the repository, and is never committed. That is what makes an edit after
-signing detectable: changing a disposition, a hash or a timestamp changes the
-canonical bytes, and a forger without the key cannot produce a matching
-signature. The `forge-anchored-record` red-team drill flips one triage
-disposition and is blocked with `anchor subject does not describe this
-record`.
+signing detectable: changing a disposition, a hash, a runner name or a
+timestamp changes the canonical bytes, and a forger without the key cannot
+produce a matching signature. Two red-team drills cover it:
+`forge-anchored-record` flips one triage disposition, and
+`forge-anchored-test-record` renames a signed runner; both are blocked with
+`anchor subject does not describe this record`.
+
+Ten of the 13 anchors are a backfill: the records date from 2026-11-07 and were
+signed on 2026-11-08, so the signature proves the record has not changed since
+signing, not that the run happened on the day it claims.
 
 The gap C-13 records is narrower, not closed. The key holder can re-sign any
 edit, and anyone who can replace `allowed_signers` and re-sign can do the
-same. There is no transparency log, timestamping or key revocation. The anchor
-covers hashes, not the `output`/`report` paths or `rules.source`, and it covers
-`static_analysis_runs` only: test run records, sanitizer, proof and review
-records are not anchored.
+same: the `redate-and-resign` drill performs exactly that and every gate stays
+green. There is no transparency log, timestamping or key revocation. The anchor
+covers hashes, not the `output`/`report`/`log` paths or `rules.source`, and
+proof and review records are not anchored.
 
 Verification is offline. `ssh-keygen` must be on `PATH`; when it is missing a
 non-open claim gets an error and an open claim gets info, so the failure is
@@ -267,4 +288,8 @@ python3 tools/anchor_run.py verify \
     --ledger spec/pilots/dev-sec-skills/claims.yaml --claim C-01 --run 1
 python3 tools/anchor_run.py verify \
     --ledger spec/pilots/craft-i18n/claims.yaml --claim C-09 --run 0
+python3 tools/anchor_run.py verify --channel run-record \
+    --ledger spec/pilots/craft-i18n/claims.yaml --claim C-01 --run 0
+python3 tools/anchor_run.py verify --channel sanitizer \
+    --ledger spec/pilots/craft-i18n/claims.yaml --claim C-02 --run 0
 ```

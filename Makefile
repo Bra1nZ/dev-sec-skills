@@ -123,7 +123,7 @@ PROOF_HEAD ?= HEAD
 # Red-team drills. Synthetic evals check known violations; the drills attack the
 # real craft-i18n ledger, its committed cargo log and the cell registry. They
 # need that checkout and are a point-in-time audit, so they are not in `verify`.
-RED_TEAM_RECORD ?= spec/red-team/2026-11-07-drills.json
+RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
 
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 verify-self evals lint-seed \
         lint-pilot lint-pilot2 lint-self claims-pilot claims-pilot2 claims-self status-pilot \
@@ -518,4 +518,4 @@ help:
 	@echo "  crosscheck-c02  independent row model vs read_catalog over the declared bounded space"
 	@echo "  crosscheck-c02-mutants  every named model edit must be detected"
 	@echo "  red-team      attack the real pilot ledger/log/registry; 13 blocked, 1 recorded gap"
-	@echo "  red-team-record  rewrite spec/red-team/2026-11-07-drills.json"
+	@echo "  red-team-record  rewrite spec/red-team/2026-11-08-drills.json"

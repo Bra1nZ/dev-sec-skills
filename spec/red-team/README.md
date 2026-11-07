@@ -3,7 +3,7 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Fifteen attacks are blocked by the check named for them; one
+what happened. Seventeen attacks are blocked by the check named for them; one
 passes with every gate green, and that one is the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 16 attacks, one mutation each
-  2026-11-07-drills.json       # recorded result: 15 blocked, 1 allowed
+  run_drills.py                # the 18 attacks, one mutation each
+  2026-11-08-drills.json       # recorded result: 17 blocked, 1 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -26,7 +26,7 @@ spec/red-team/
 - Not in `make verify`: the drills need the craft-i18n checkout at the recorded
   commit, and this is a point-in-time audit of gate strength, not a merge gate.
 
-## Results, 2026-11-07
+## Results, 2026-11-08 (re-measured; first run 2026-11-07)
 
 | Drill | Attack | Result |
 | --- | --- | --- |
@@ -40,31 +40,37 @@ spec/red-team/
 | `cell-detector-artifact-missing` | point the runtime detector at a missing path | blocked by CL3 |
 | `cell-runtime-without-response` | drop `violation_response` | blocked by CL1 (V2-15) |
 | `stale-proof-passes-gate` | declare a proof whose record predates a change to its dependency | blocked by `--require-fresh` (V2-29) |
-| `redate-the-same-run` | shift the run date one day, escalate `reviewed` → `tested` | **allowed** |
+| `redate-the-same-run` | shift the run date one day, escalate `reviewed` → `tested` | blocked by the run-record anchor (C-41) |
 | `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | blocked by L6 (V2-34) |
 | `borrow-and-declare-sharing` | borrow one test, declare it shared, still call C-08 `tested` | blocked by L6 rule 2 (V2-34) |
 | `sanitizer-findings-hidden` | declare a clean ASan run over output with `ERROR: AddressSanitizer:` | blocked by L2 (V2-35) |
 | `static-findings-hidden` | drop the triage entry for a real static-analysis finding (F-005) | blocked by L2 (V2-36) |
 | `forge-anchored-record` | rewrite a finding's disposition after the anchor was signed | blocked by L2 anchor verification (C-41) |
+| `forge-anchored-test-record` | rename the runner of a signed test run record | blocked by L2 anchor verification (C-41) |
+| `redate-and-resign` | re-date the run, replace `allowed_signers`, re-sign with a fresh key | **allowed** — the recorded C-13 gap |
 
 ## The one silent path
 
-### Re-dating
+### Re-dating and re-signing
 
 Evidence identity is `(kind, commit, artifact, command, tests, date)`. Shifting
-the date makes the evidence "new", so `status_diff` accepts the escalation, and
-`claim_lint` accepts it because `finished_at` is compared with the evidence date
-and not with anything external. The same log, the same artifacts, one day
-later, and a `reviewed` claim becomes `tested`.
+the date makes the evidence "new", so `status_diff` accepts the escalation. On
+its own the linter also accepted it while `finished_at` was compared with the
+evidence date and not with anything external: the same log, one day later, and a
+`reviewed` claim became `tested`.
 
-This is the known C-13 gap: without an external anchor, a consistent forgery is
-indistinguishable from a real re-run. The drill makes it concrete on a real
-ledger rather than in a fixture.
+The run-record anchor (C-41) now closes the silent version of that attack. The
+signature covers `started_at` and `finished_at`, so `redate-the-same-run` fails
+L2 with `anchor subject does not describe this record`; `status_diff` still
+reports the escalation as legitimate, which is why the anchor check, not the
+diff, is what blocks it.
 
-The C-41 anchor does not close this drill: it covers `static_analysis_runs`, and
-the re-dating drill edits test evidence (`run_record`), which has no anchor. A
-re-dated static-analysis run would fail the anchor check unless the key holder
-re-signs it, and then it is a new signed record rather than a silent edit.
+What the anchor cannot stop is an actor who can also replace `allowed_signers`.
+`redate-and-resign` does exactly that: it re-dates the run, generates a fresh
+key, writes its public half into a replacement `allowed_signers`, signs the new
+bytes with `anchor_run.py create` and points the record at them. Every gate is
+green. This is the measured C-13 gap: the anchor binds a record to a key, not to
+a timestamping authority, a transparency log or a revocation list.
 
 ## Forging an anchored record, now blocked
 
@@ -76,9 +82,11 @@ recomputes the canonical bytes and reports `anchor subject does not describe
 this record` before the signature check.
 
 The gap is narrower, not gone: the key holder can re-sign any edit, and
-replacing `allowed_signers` plus a new signature defeats verification entirely.
-There is no transparency log or timestamping. Test run records, sanitizer,
-proof and review records are still unanchored.
+replacing `allowed_signers` plus a new signature defeats verification entirely
+(`redate-and-resign` measures it). There is no transparency log or timestamping.
+Test run records and sanitizer runs now carry their own anchors
+(`forge-anchored-test-record` is the negative case); proof and review records
+remain unanchored.
 
 ## Borrowing, now blocked
 
@@ -102,7 +110,7 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 15 blocked drills show that those specific checks fire on real artifacts,
+- The 17 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
 - The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
   starts blocking it, the drill fails and the gap entry must be updated, so this

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://dev-sec-skills.invalid/schemas/static-analysis-run.schema.json",
   "title": "Static analysis run",
-  "description": "A machine-checkable record of one static-analysis engine run (V2-36): the engine and its exact command, the rule set and its hash, the target commit, the raw engine output (SARIF), the normalized report and one triage entry per finding. A static-analysis finding is a review queue entry, not a verdict: it may be a true positive, a false positive, or a failure class no detector owns. The record therefore cannot support a `static-refinement` claim until every finding has a disposition: `covered` or `new` with a cell, detector and fixture that resolve; `not-a-bug` with a reason; or `out-of-scope` with a reason when the finding is real but the cited taxonomy does not own the failure class. L2 hashes the rule set and both outputs, ties `finished_at` to the evidence date, rejects an authored-fixture input and an unclassified finding (`unmapped`) for a non-open claim, and checks the triage bijection and routing. The record does not prove that the engine would have found a different defect; without an external anchor a forger can rewrite the record and its outputs together (C-13).",
+  "description": "A machine-checkable record of one static-analysis engine run (V2-36): the engine and its exact command, the rule set and its hash, the target commit, the raw engine output (SARIF), the normalized report and one triage entry per finding. A static-analysis finding is a review queue entry, not a verdict: it may be a true positive, a false positive, or a failure class no detector owns. The record therefore cannot support a `static-refinement` claim until every finding has a disposition: `covered` or `new` with a cell, detector and fixture that resolve; `not-a-bug` with a reason; or `out-of-scope` with a reason when the finding is real but the cited taxonomy does not own the failure class. L2 hashes the rule set and both outputs, ties `finished_at` to the evidence date, rejects an authored-fixture input and an unclassified finding (`unmapped`) for a non-open claim, and checks the triage bijection and routing. The record does not prove that the engine would have found a different defect; an `anchor` is required (an SSH signature over the record's canonical bytes, tools/anchor_subject.py) and L2 verifies it against the committed allowed_signers, but the key holder can re-sign and a replaced allowed_signers bypasses it (C-13).",
   "type": "object",
   "required": ["tool", "command", "rules", "target_commit", "output",
                "output_sha256", "report", "report_sha256", "exit_code",
@@ -116,9 +116,8 @@
           "description": "Identity passed to `ssh-keygen -Y verify -I`; must appear in allowed_signers."
         },
         "namespace": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Signature namespace (`ssh-keygen -Y sign -n`)."
+          "const": "dev-sec-skills-static-analysis",
+          "description": "Signature namespace (`ssh-keygen -Y sign -n`). Pinned per channel: a run-record or sanitizer signature does not verify here."
         },
         "subject": {
           "type": "string",

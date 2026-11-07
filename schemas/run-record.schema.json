@@ -2,10 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://dev-sec-skills.invalid/schemas/run-record.schema.json",
   "title": "Run record",
-  "description": "A machine-checkable record of one executed evidence run. It ties a claim's evidence to a concrete command, commit, exit code and output log, so re-dating the ledger or citing a test that never ran fails the linter. It does not prove the run was not fabricated: without an external anchor (C-13) a forger can rewrite both the record and the log.",
+  "description": "A machine-checkable record of one executed evidence run. It ties a claim's evidence to a concrete command, commit, exit code and output log, so re-dating the ledger or citing a test that never ran fails the linter. An `anchor` is required: an SSH signature over the record's canonical bytes (see tools/anchor_subject.py) that L2 verifies against the committed allowed_signers, so an edit after signing stops verifying. It still does not prove the run was not fabricated: the key holder can re-sign, and replacing allowed_signers with a new signer bypasses the check (C-13).",
   "type": "object",
   "required": ["runner", "command", "commit", "exit_code", "started_at",
-               "finished_at", "log", "log_sha256", "tests_run", "tests_passed"],
+               "finished_at", "log", "log_sha256", "tests_run", "tests_passed",
+               "anchor"],
   "additionalProperties": false,
   "properties": {
     "runner": {
@@ -61,6 +62,58 @@
       "type": "integer",
       "minimum": 1,
       "description": "Number of executed tests that passed. Must equal tests_run for a passing run."
+    },
+    "anchor": {
+      "type": "object",
+      "description": "An SSH signature over the canonical bytes of the run record (runner, command, commit, exit code, timestamps, log and optional artifact hashes, test counts; see tools/anchor_subject.py). The signed subject, its signature and the allowed_signers file are committed and hashed here. L2 recomputes the bytes and verifies the signature, so a record edited after signing stops verifying. The private key is not in the repository. The anchor does not stop the key holder, or anyone who can replace allowed_signers and re-sign: that is the remaining C-13 gap.",
+      "required": ["type", "signer", "namespace", "subject", "subject_sha256",
+                   "signature", "signature_sha256", "allowed_signers", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["ssh-ed25519"],
+          "description": "Signature scheme. Only ssh-ed25519 is implemented."
+        },
+        "signer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identity passed to `ssh-keygen -Y verify -I`; must appear in allowed_signers."
+        },
+        "namespace": {
+          "const": "dev-sec-skills-run-record",
+          "description": "Signature namespace (`ssh-keygen -Y sign -n`). Pinned per channel: a static-analysis or sanitizer signature does not verify here."
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the signed canonical subject, relative to --run-log-root."
+        },
+        "subject_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the subject bytes. L2 verifies it."
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the detached SSH signature (`ssh-keygen -Y sign` output)."
+        },
+        "signature_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the signature file. L2 verifies it."
+        },
+        "allowed_signers": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the committed allowed_signers file used for verification."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the signature was made. For a backfilled record this is later than the run's finished_at: the signature proves immutability after signing, not the run date."
+        }
+      }
     }
   }
 }

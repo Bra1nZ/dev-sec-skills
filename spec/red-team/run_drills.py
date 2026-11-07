@@ -228,7 +228,14 @@ def _stale_proof(td):
 
 
 def _redated_run(td):
-    """ALLOWED: shift the run's date, add no new run, escalate reviewed->tested."""
+    """BLOCKED by L2: shift the run's date without re-signing the anchor.
+
+    Before the run record carried an anchor this attack passed: evidence
+    identity includes the date, so `status_diff` saw a new evidence entry and
+    accepted `reviewed -> tested`. The signature now covers `started_at` and
+    `finished_at`, so the same edit no longer verifies. `status_diff` on its own
+    still accepts the escalation; the block comes from the anchor.
+    """
     base = load(LEDGER)
     target = copy.deepcopy(base)
     for ledger, day in ((base, "2026-11-05"), (target, "2026-11-06")):
@@ -245,10 +252,58 @@ def _redated_run(td):
     dump(base, base_path)
     dump(target, target_path)
     return [
-        {"gate": "claim_lint", "argv": lint_args(target_path), "exit": 0,
-         "contains": ["L2 evidence      OK"]},
+        {"gate": "claim_lint", "argv": lint_args(target_path), "exit": 1,
+         "contains": ["anchor subject does not describe this record"]},
         {"gate": "status_diff", "argv": status_args(base_path, target_path),
          "exit": 0, "contains": ["C-01: reviewed -> tested with 1 new evidence entry"]},
+    ]
+
+
+def _redate_and_resign(td):
+    """ALLOWED (recorded C-13 gap): re-date the run, replace the signer, re-sign.
+
+    The attacker does what the anchor cannot prevent: shifts the date, writes a
+    fresh key, puts its public half in a replacement `allowed_signers`, signs
+    the new bytes with `anchor_run.py create` and points the record at them.
+    Every gate goes green. The drill records the residual gap instead of only
+    asserting it in prose: the anchor binds a record to a key, not to a
+    timestamping authority or a transparency log.
+    """
+    base = load(LEDGER)
+    target = copy.deepcopy(base)
+    for ledger, day in ((base, "2026-11-05"), (target, "2026-11-06")):
+        c = claim(ledger, "C-01")
+        c["status"] = "reviewed" if ledger is base else "tested"
+        c["evidence"][0]["date"] = day
+        rr = c["evidence"][0]["run_record"]
+        for field in ("started_at", "finished_at"):
+            stamp = datetime.fromisoformat(rr[field]).replace(
+                year=int(day[:4]), month=int(day[5:7]), day=int(day[8:10]))
+            rr[field] = stamp.isoformat()
+        c["last_verified"] = day
+    path = os.path.join(td, "ledger.yaml")
+    dump(target, path)
+    key = os.path.join(td, "key")
+    allowed = os.path.join(td, "allowed_signers")
+    code, out = run([PY, "tools/anchor_run.py", "keygen", "--out-dir", td,
+                     "--key", key, "--signer", "drill-anchor"])
+    if code != 0:
+        raise SystemExit("drill keygen failed: %s" % out)
+    code, out = run([PY, "tools/anchor_run.py", "create", "--ledger", path,
+                     "--claim", "C-01", "--channel", "run-record", "--run", "0",
+                     "--key", key, "--signer", "drill-anchor",
+                     "--out-dir", td, "--allowed-signers", allowed,
+                     "--id", "redated-c01", "--base", REPO,
+                     "--date", "2026-11-06"])
+    if code != 0:
+        raise SystemExit("drill signing failed: %s" % out)
+    block = yaml.safe_load(out)
+    record = claim(target, "C-01")["evidence"][0]["run_record"]
+    record["anchor"] = block["anchor"]
+    dump(target, path)
+    return [
+        {"gate": "claim_lint", "argv": lint_args(path), "exit": 0,
+         "contains": ["L2 evidence      OK"]},
     ]
 
 
@@ -333,6 +388,23 @@ def _forge_anchored_record(td):
              "contains": ["anchor subject does not describe this record"]}]
 
 
+def _forge_anchored_test_record(td):
+    """BLOCKED by L2: edit a signed run-record field without re-signing.
+
+    The attacker renames the runner of C-01's test run record after the anchor
+    was signed. The log still hashes to the recorded value, the counts still
+    agree with the log summary and the commit is real, so every non-anchor
+    check passes; only the signature covers the runner string itself.
+    """
+    target = load(LEDGER)
+    record = claim(target, "C-01")["evidence"][0]["run_record"]
+    record["runner"] = "cargo test (rewritten after signing)"
+    path = os.path.join(td, "ledger.yaml")
+    dump(target, path)
+    return [{"gate": "claim_lint", "argv": lint_args(path), "exit": 1,
+             "contains": ["anchor subject does not describe this record"]}]
+
+
 def _borrowed_evidence_declared(td):
     """BLOCKED by L6 rule 2 even when both claims declare the shared test."""
     base = load(LEDGER)
@@ -393,8 +465,11 @@ DRILLS = [
      "verdict": "blocked"},
     {"name": "redate-the-same-run", "build": _redated_run,
      "attack": "shift the run date by one day and escalate reviewed -> tested",
+     "verdict": "blocked"},
+    {"name": "redate-and-resign", "build": _redate_and_resign,
+     "attack": "re-date the run, replace allowed_signers and re-sign with a fresh key",
      "verdict": "allowed",
-     "gap": "the evidence identity includes the date, so a shifted date is new evidence"},
+     "gap": "the anchor binds a record to a key; whoever can replace allowed_signers can re-sign"},
     {"name": "borrow-another-claims-evidence", "build": _borrowed_evidence,
      "attack": "give the open C-08 claim C-01's real tests and call it tested",
      "verdict": "blocked"},
@@ -409,6 +484,10 @@ DRILLS = [
      "verdict": "blocked"},
     {"name": "forge-anchored-record", "build": _forge_anchored_record,
      "attack": "rewrite a finding's disposition after the anchor was signed",
+     "verdict": "blocked"},
+    {"name": "forge-anchored-test-record",
+     "build": _forge_anchored_test_record,
+     "attack": "rename the runner of a signed test run record",
      "verdict": "blocked"},
 ]
 

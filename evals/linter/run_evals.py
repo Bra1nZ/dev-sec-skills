@@ -42,7 +42,6 @@ if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 import anchor_subject  # noqa: E402
 
-ANCHOR_NAMESPACE = "dev-sec-skills-static-analysis"
 _ANCHOR_KEY = None
 
 FINDING_RE = re.compile(r"^\s*\[(L\d)\]\s+(error|warning|info)\b")
@@ -87,12 +86,13 @@ def _anchor_key():
 
 
 def _inject_anchors(root, ledger, case):
-    """Sign every static-analysis run the case does not sign itself.
+    """Sign every evidence record the case does not sign itself.
 
-    The anchor contract is mandatory, so the synthetic cases must carry one.
+    The anchor contract is mandatory for static-analysis runs, test run
+    records and sanitizer runs, so the synthetic cases must carry one.
     Injecting it here keeps each case about the check it names, and the two
-    `tamper_anchor` modes turn the injection into a negative case: the record
-    is edited (or the signature replaced) after signing.
+    `tamper_anchor` modes turn the injection into a negative case: a signed
+    field is edited (or the signature replaced) after signing.
     """
     if case.get("no_anchor"):
         return ledger
@@ -104,41 +104,54 @@ def _inject_anchors(root, ledger, case):
         handle.write("eval-anchor %s\n" % public)
 
     tamper = case.get("tamper_anchor")
+    tamper_field = {"static-analysis": "version", "run-record": "runner",
+                    "sanitizer": "version"}
+
+    def sign(record, channel, stem):
+        namespace = anchor_subject.NAMESPACES[channel]
+        subject = os.path.join(anchor_dir, stem + ".json")
+        with open(subject, "wb") as handle:
+            handle.write(anchor_subject.record_subject_bytes(channel, record))
+        subprocess.run(["ssh-keygen", "-Y", "sign", "-f", key,
+                        "-n", namespace, subject],
+                       check=True, capture_output=True)
+        signature = subject + ".sig"
+        record["anchor"] = {
+            "type": "ssh-ed25519",
+            "signer": "eval-anchor",
+            "namespace": namespace,
+            "subject": os.path.relpath(subject, root),
+            "subject_sha256": _sha256_file(subject),
+            "signature": os.path.relpath(signature, root),
+            "signature_sha256": _sha256_file(signature),
+            "allowed_signers": os.path.relpath(allowed, root),
+            "date": "2026-11-01",
+        }
+        if tamper == "signature":
+            with open(signature, "w", encoding="utf-8") as handle:
+                handle.write("not a signature\n")
+        elif tamper == "subject":
+            # Edit a field the anchor covers but no other L1/L2 check
+            # compares, so the failure is the anchor, not a side effect.
+            field = tamper_field[channel]
+            record[field] = str(record.get(field, "")) + "-tampered"
+
     for claim in ledger.get("claims") or []:
         if not isinstance(claim, dict):
             continue
-        for evidence in claim.get("evidence") or []:
+        cid = claim.get("id", "C")
+        for ei, evidence in enumerate(claim.get("evidence") or []):
             if not isinstance(evidence, dict):
                 continue
             for index, run in enumerate(evidence.get("static_analysis_runs") or []):
-                if not isinstance(run, dict) or run.get("anchor"):
-                    continue
-                subject = os.path.join(anchor_dir, "%s-%d.json"
-                                       % (claim.get("id", "C"), index))
-                with open(subject, "wb") as handle:
-                    handle.write(anchor_subject.subject_bytes(run))
-                subprocess.run(["ssh-keygen", "-Y", "sign", "-f", key,
-                                "-n", ANCHOR_NAMESPACE, subject],
-                               check=True, capture_output=True)
-                signature = subject + ".sig"
-                run["anchor"] = {
-                    "type": "ssh-ed25519",
-                    "signer": "eval-anchor",
-                    "namespace": ANCHOR_NAMESPACE,
-                    "subject": os.path.relpath(subject, root),
-                    "subject_sha256": _sha256_file(subject),
-                    "signature": os.path.relpath(signature, root),
-                    "signature_sha256": _sha256_file(signature),
-                    "allowed_signers": os.path.relpath(allowed, root),
-                    "date": "2026-11-01",
-                }
-                if tamper == "signature":
-                    with open(signature, "w", encoding="utf-8") as handle:
-                        handle.write("not a signature\n")
-                elif tamper == "subject":
-                    # Edit a field the anchor covers but no other L1/L2 check
-                    # compares, so the failure is the anchor, not a side effect.
-                    run["version"] = str(run.get("version", "")) + "-tampered"
+                if isinstance(run, dict) and not run.get("anchor"):
+                    sign(run, "static-analysis", "%s-%d" % (cid, index))
+            record = evidence.get("run_record")
+            if isinstance(record, dict) and not record.get("anchor"):
+                sign(record, "run-record", "%s-e%d-run" % (cid, ei))
+            for k, run in enumerate(evidence.get("sanitizer_runs") or []):
+                if isinstance(run, dict) and not run.get("anchor"):
+                    sign(run, "sanitizer", "%s-e%d-san%d" % (cid, ei, k))
     return ledger
 
 

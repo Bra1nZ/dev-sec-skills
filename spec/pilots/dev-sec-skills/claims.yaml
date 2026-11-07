@@ -50,11 +50,11 @@ claims:
               type: ssh-ed25519
               signer: dev-sec-skills-anchor-2026-11-07
               namespace: dev-sec-skills-static-analysis
-              subject: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json
+              subject: spec/anchor/ci-dev-sec-skills-prefix-2026-11-07.json
               subject_sha256: fabf31421f905c7e70dd5eea1171adff1494a5ff237c37417a6fa87e8f3f9633
-              signature: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json.sig
+              signature: spec/anchor/ci-dev-sec-skills-prefix-2026-11-07.json.sig
               signature_sha256: cee7d7b922f5d0abcc8efb09077eadb9f274ed4b0737e4b7c55097db3eb6a2ac
-              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              allowed_signers: spec/anchor/allowed_signers
               date: "2026-11-08"
             cells: "spec/pilots/dev-sec-skills/cells.yaml"
             triage:
@@ -104,11 +104,11 @@ claims:
               type: ssh-ed25519
               signer: dev-sec-skills-anchor-2026-11-07
               namespace: dev-sec-skills-static-analysis
-              subject: spec/static-analysis/anchor/ci-dev-sec-skills-postfix-2026-11-07.json
+              subject: spec/anchor/ci-dev-sec-skills-postfix-2026-11-07.json
               subject_sha256: 9df2eb2953f0d04b48a83bcdb0908bc8016e42af6d1d8b1719ba31600df1d4b3
-              signature: spec/static-analysis/anchor/ci-dev-sec-skills-postfix-2026-11-07.json.sig
+              signature: spec/anchor/ci-dev-sec-skills-postfix-2026-11-07.json.sig
               signature_sha256: 328679f627d038d0d938d9a51160d031a4c52fcd2abdf71c5c37bc4dc5381270
-              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              allowed_signers: spec/anchor/allowed_signers
               date: "2026-11-07"
             triage: []
       - kind: test
@@ -129,5 +129,15 @@ claims:
           artifact_sha256: "85b48341171dada1c6ba164f4966285ac27a350adcdbf04a244aa7f78153eb57"
           tests_run: 3
           tests_passed: 3
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c01-2026-11-07.json
+            subject_sha256: f1936cfac4851f74bc87c6ca97fb68cd57cab7cd30a37fdc3553fd8bf6306fca
+            signature: spec/anchor/run-record-dev-sec-skills-c01-2026-11-07.json.sig
+            signature_sha256: f216125081c9b370bf34a69f067c1a9496036c4e18de587c59b16088b0741825
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     residual_risk: "A commit SHA fixes the action bytes, not the intent of the action or the integrity of the runner that fetches it. A ref can be pinned to a malicious commit that was reviewed once; the detector cannot tell a reviewed SHA from an unreviewed one."
     limitations: "Text scan of .github/workflows, not a proof about the pinned code. The rule set is authored here, not the Semgrep `p/ci` benchmark; a different rule set would produce a different queue. The pre-fix and post-fix runs are one engine and one rule set. The GitHub-side schedule of fuzz-nightly has not fired yet (V2-19), so the workflow's runtime behavior is unobserved. Without an external anchor (C-13) a forger can rewrite the record and both outputs together."

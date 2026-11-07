@@ -60,9 +60,14 @@ the bytes on disk fails as an unrelated commit, so moving the ledger's commit
 field to an older point in the history does not make stale evidence look
 verified.
 
-The record is not proof of the run. The log and the record are both local, so a
-forger can rewrite them together; only an external anchor (C-13) would close
-that. The pilot records the limit rather than hiding it.
+The record is not proof of the run. Each `run_record` and the ASan run now
+carry an SSH-signature anchor (C-41) over their canonical bytes, committed in
+`spec/anchor/`, so editing a runner name, a hash or a timestamp after signing
+fails L2. That narrows, but does not close, C-13: ten of these anchors were
+created on 2026-11-08 over records dated 2026-11-07, so they prove the record
+has not changed since signing, not when the run happened; and whoever can
+replace `allowed_signers` and re-sign bypasses the check entirely. The pilot
+records the limit rather than hiding it.
 
 ### Sanitizer run (V2-35)
 

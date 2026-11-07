@@ -40,6 +40,16 @@ claims:
           artifact_sha256: "18f6789707765aa10816a302d80b6d1d883db1c74bc5bc006fabed759aadc1a9"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c01-2026-11-07.json
+            subject_sha256: ffe48277bdd33ec0c18abc80cf9829d319ab6c758e75633785f54b7de1619e4a
+            signature: spec/anchor/run-record-craft-i18n-c01-2026-11-07.json.sig
+            signature_sha256: 44cc7721947cb5a573d4d658d9f52e6b8a634d79812c56e41e0290fd97688e33
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "The checker proves the documented format rules; it does not prove the apps render the strings correctly."
     last_verified: "2026-11-07"
 
@@ -73,6 +83,16 @@ claims:
           artifact_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c02a-2026-11-07.json
+            subject_sha256: c78b1bc8227af73c07d6330091db79340cd0ed5e685baf1cd12bddf0de5561e8
+            signature: spec/anchor/run-record-craft-i18n-c02a-2026-11-07.json.sig
+            signature_sha256: 06e9a0dddbdff62e564e785ab8108960e81dd5ce5160b2217ea5cd83b7b72290
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
       - kind: test
         tests: [each_bad_row_is_one_problem, valid_rows_pass, context_distinguishes_keys]
         shared_tests:
@@ -92,6 +112,16 @@ claims:
             output: "spec/pilots/craft-i18n/runs/asan-test-2026-11-07.log"
             output_sha256: "e90240b269aad9d6b1ba87ef92e2f2ee24700ab03d3f508683d408ff8a17fe7e"
             status: completed
+            anchor:
+              type: ssh-ed25519
+              signer: dev-sec-skills-anchor-2026-11-07
+              namespace: dev-sec-skills-sanitizer
+              subject: spec/anchor/sanitizer-craft-i18n-c02-2026-11-07.json
+              subject_sha256: 389bcbdcd92ef86bb8ff0a9ad4435801af2b0ea8cb5f4a0a75efe638653de5b9
+              signature: spec/anchor/sanitizer-craft-i18n-c02-2026-11-07.json.sig
+              signature_sha256: dbfe79635a6ee6124ba2f5312ca642e2bc620077af67d23dc8942ba2c344dde2
+              allowed_signers: spec/anchor/allowed_signers
+              date: "2026-11-08"
         run_record:
           runner: "cargo test"
           command: "RUSTUP_HOME=/tmp/opencode/rustup RUSTUP_TOOLCHAIN=nightly CARGO_TARGET_DIR=/tmp/opencode/craft-i18n-asan-target RUSTFLAGS=-Zsanitizer=address cargo test --offline -p craft-i18n-tests --target x86_64-unknown-linux-gnu"
@@ -103,6 +133,16 @@ claims:
           log_sha256: "e90240b269aad9d6b1ba87ef92e2f2ee24700ab03d3f508683d408ff8a17fe7e"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c02b-2026-11-07.json
+            subject_sha256: 9e91f7d0759d84d713ddad96ae1c2be8187d77e23f57f062573d6aea850e5fda
+            signature: spec/anchor/run-record-craft-i18n-c02b-2026-11-07.json.sig
+            signature_sha256: 77417da7557e54df40f6d25fd33a60df947901b62b49c15ecfdbfbab33f92f64
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
       - kind: model-check
         command: "env CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target cargo run --offline --release --quiet --manifest-path crosscheck/c02-row-model/Cargo.toml"
         artifact: "crates/craft-i18n-tests/src/catalog.rs"
@@ -156,6 +196,16 @@ claims:
           artifact_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c03-2026-11-07.json
+            subject_sha256: c78b1bc8227af73c07d6330091db79340cd0ed5e685baf1cd12bddf0de5561e8
+            signature: spec/anchor/run-record-craft-i18n-c03-2026-11-07.json.sig
+            signature_sha256: 06e9a0dddbdff62e564e785ab8108960e81dd5ce5160b2217ea5cd83b7b72290
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "Placeholder names are compared as strings; a renamed parameter in an app is not visible here."
     last_verified: "2026-11-07"
 
@@ -186,6 +236,16 @@ claims:
           artifact_sha256: "97b8bd6acb1225fecb34d8c350353ed2875e1b68b9808c68247e0a66c92cb113"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c04-2026-11-07.json
+            subject_sha256: ac0e379882fe3540820423f8c1389993d945e2ab8eb6f63ccec3f17e3929c94e
+            signature: spec/anchor/run-record-craft-i18n-c04-2026-11-07.json.sig
+            signature_sha256: e2e93455f93d385448531cdbb74fa1ea29ff17b2f08c55f7cbaefdccf361b9dd
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "CLDR 37 in the checker and CLDR 48 in the apps disagree on Hebrew `many`; the code special-cases Hebrew only."
     last_verified: "2026-11-07"
 
@@ -216,6 +276,16 @@ claims:
           artifact_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c05-2026-11-07.json
+            subject_sha256: b9c29ba0d25cb74bd246c1f1d43a004e34e6e47a70b2217224131edfc9a9ae12
+            signature: spec/anchor/run-record-craft-i18n-c05-2026-11-07.json.sig
+            signature_sha256: 577b20d97fd9544453008cf7e313410fec2ee08563d9a7eca5c3cce4162a8c94
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "The fallback model is re-implemented in the checker; if craft-libs changes its lookup, this becomes wrong silently."
     last_verified: "2026-11-07"
 
@@ -246,6 +316,16 @@ claims:
           artifact_sha256: "97b8bd6acb1225fecb34d8c350353ed2875e1b68b9808c68247e0a66c92cb113"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c06-2026-11-07.json
+            subject_sha256: ac0e379882fe3540820423f8c1389993d945e2ab8eb6f63ccec3f17e3929c94e
+            signature: spec/anchor/run-record-craft-i18n-c06-2026-11-07.json.sig
+            signature_sha256: e2e93455f93d385448531cdbb74fa1ea29ff17b2f08c55f7cbaefdccf361b9dd
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "Renaming a locale directory changes app behaviour; the checker only enforces the spelling. bad_app_file_name uses Word_Craft.tsv, whose underscore both the lowercase and the alphanumeric rule reject; a mutation that allowed uppercase app file names left the suite green, so the lowercase casing rule is enforced but not pinned by a test."
     last_verified: "2026-11-07"
 
@@ -276,6 +356,16 @@ claims:
           artifact_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
           tests_run: 26
           tests_passed: 26
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-07
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-craft-i18n-c07-2026-11-07.json
+            subject_sha256: b9c29ba0d25cb74bd246c1f1d43a004e34e6e47a70b2217224131edfc9a9ae12
+            signature: spec/anchor/run-record-craft-i18n-c07-2026-11-07.json.sig
+            signature_sha256: 577b20d97fd9544453008cf7e313410fec2ee08563d9a7eca5c3cce4162a8c94
+            allowed_signers: spec/anchor/allowed_signers
+            date: "2026-11-08"
     limitations: "The header is a declaration; the checker cannot tell whether the translation was actually written clean-room."
     last_verified: "2026-11-07"
 
@@ -335,11 +425,11 @@ claims:
               type: ssh-ed25519
               signer: dev-sec-skills-anchor-2026-11-07
               namespace: dev-sec-skills-static-analysis
-              subject: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json
+              subject: spec/anchor/ci-craft-i18n-2026-11-07.json
               subject_sha256: 70123d0e8fcdddd53106671f818c14f92152c569798ce63f8b6c7b3d2026f675
-              signature: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json.sig
+              signature: spec/anchor/ci-craft-i18n-2026-11-07.json.sig
               signature_sha256: daf9d2a90f28c3ff1f7b4269e46bb493999534e2b111e0a7756c7f83c6a4448b
-              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              allowed_signers: spec/anchor/allowed_signers
               date: "2026-11-08"
             triage:
               - finding: F-001

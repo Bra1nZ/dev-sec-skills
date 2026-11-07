@@ -1,0 +1,15 @@
+# Synthetic fixture — not evidence about any real project.
+name: run-record-anchor-missing
+extends: run-record-valid.yaml
+description: A complete test run record whose anchor block is absent. The
+  signature is mandatory for run records (C-13), so L1 must error even when
+  the log hash, counts and cited tests are correct.
+no_anchor: true
+expect:
+  L1: error
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

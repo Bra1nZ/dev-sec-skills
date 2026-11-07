@@ -1,0 +1,15 @@
+# Synthetic fixture — not evidence about any real project.
+name: sanitizer-anchor-tampered
+extends: sanitizer-valid.yaml
+description: A valid anchored sanitizer run is edited after signing (its
+  toolchain version changes). The record still points at the same output hash,
+  but the canonical bytes no longer describe it, so L2 must error.
+tamper_anchor: subject
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1
