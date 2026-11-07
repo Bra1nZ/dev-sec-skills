@@ -1,0 +1,62 @@
+# Synthetic fixture — not evidence about any real project.
+name: run-record-nonzero-exit
+description: "The run exited 1 and the log shows a failed test, but the claim is\n      status=tested.\
+  \ A failing run cannot support a non-open status; L2 must\n      error even though the record and the\
+  \ log agree with each other.\n"
+files:
+  tests/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n\n\ndef test_audit():\n\
+    \    report(\"F2 audit log records the denial\")\n\n\ndef test_other():\n    report(\"F3 unrelated\
+    \ check\")\n"
+  reports/run.txt: '=============================== test session starts ===============================
+
+    collected 2 items
+
+
+    test_auth ... ok
+
+    test_audit ... FAILED
+
+
+    ========================= 1 failed, 1 passed in 0.12s =========================
+
+    '
+  docs/README.md: 'The checker validates every request before dispatch.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: The auth gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      artifact: reports/run.txt
+      tests:
+      - test_auth
+      date: '2026-11-01'
+      run_record:
+        runner: pytest
+        command: python3 -m pytest -v
+        commit: 0123456789abcdef0123456789abcdef01234567
+        exit_code: 1
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:05+03:00'
+        log: reports/run.txt
+        log_sha256: e6deb3c7befa8c49ca50d1ba5145518981e50e53ac3eb2ba89b3a7304f28d2c6
+        artifact_sha256: e6deb3c7befa8c49ca50d1ba5145518981e50e53ac3eb2ba89b3a7304f28d2c6
+        tests_run: 2
+        tests_passed: 1
+    scope: Single module, synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+exit: 1
+suite_glob: '**/*.py'

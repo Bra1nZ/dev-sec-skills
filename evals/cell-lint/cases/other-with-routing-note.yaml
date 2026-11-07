@@ -1,0 +1,38 @@
+# Synthetic fixture — not evidence about any real project.
+name: other-with-routing-note
+description: "Escape hatch — failure_mode 'other' with a routing_note. CL1 accepts it\n      and CL5 does\
+  \ not reject it as an undeclared class. The cell is open, so it\n      needs limitations. This is the\
+  \ shape tools/unroutable.py counts.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A failure that fits no declared class or mode.
+    taxonomy_class: security
+    failure_class: synthetic-other
+    entry_points:
+    - http
+    failure_mode: other
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+    routing_note: The failure is a policy question, not a runtime refusal.
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: none
+  CL2: none
+  CL3: none
+  CL4: none
+  CL5: info
+exit: 0

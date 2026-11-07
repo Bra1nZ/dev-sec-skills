@@ -11,7 +11,7 @@
 #     --suite-glob "crates/craft-i18n-tests/**/*.rs" \
 #     spec/pilots/craft-i18n/claims.yaml
 project: craft-i18n
-generated: "2026-11-06"
+generated: "2026-11-07"
 claims:
   # docs/catalog-format.md, "Rows" and the header rule.
   - id: C-01
@@ -27,9 +27,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/tests/locales.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "18f6789707765aa10816a302d80b6d1d883db1c74bc5bc006fabed759aadc1a9"
+          tests_run: 26
+          tests_passed: 26
     limitations: "The checker proves the documented format rules; it does not prove the apps render the strings correctly."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Rows": columns, duplicate keys, escapes, unknown contexts.
   - id: C-02
@@ -45,9 +57,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/catalog.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+          tests_run: 26
+          tests_passed: 26
     limitations: "One test bundles twenty malformed rows; a regression in any one rule fails it, and the test does not say which rule without reading the panic message."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Rows": placeholders, trailing ellipsis, @msg templates.
   - id: C-03
@@ -63,9 +87,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/catalog.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "f62acd3be8c78ea8c47d129cbeec37d2e11458046281ea65447c3f29bb8f888f"
+          tests_run: 26
+          tests_passed: 26
     limitations: "Placeholder names are compared as strings; a renamed parameter in an app is not visible here."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Plurals".
   - id: C-04
@@ -81,9 +117,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/locale.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "97b8bd6acb1225fecb34d8c350353ed2875e1b68b9808c68247e0a66c92cb113"
+          tests_run: 26
+          tests_passed: 26
     limitations: "CLDR 37 in the checker and CLDR 48 in the apps disagree on Hebrew `many`; the code special-cases Hebrew only."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Locales and files": overrides and regional rows.
   - id: C-05
@@ -99,9 +147,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/tree.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+          tests_run: 26
+          tests_passed: 26
     limitations: "The fallback model is re-implemented in the checker; if craft-libs changes its lookup, this becomes wrong silently."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Locales and files" and "Language name".
   - id: C-06
@@ -117,9 +177,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/locale.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "97b8bd6acb1225fecb34d8c350353ed2875e1b68b9808c68247e0a66c92cb113"
+          tests_run: 26
+          tests_passed: 26
     limitations: "Renaming a locale directory changes app behaviour; the checker only enforces the spelling. bad_app_file_name uses Word_Craft.tsv, whose underscore both the lowercase and the alphanumeric rule reject; a mutation that allowed uppercase app file names left the suite green, so the lowercase casing rule is enforced but not pinned by a test."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # docs/catalog-format.md, "Header" and "Language name".
   - id: C-07
@@ -135,9 +207,21 @@ claims:
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/tree.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
-        date: "2026-11-06"
+        date: "2026-11-07"
+        run_record:
+          runner: "cargo test"
+          command: "cargo test --offline -p craft-i18n-tests"
+          commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+          exit_code: 0
+          started_at: "2026-11-07T13:38:13+03:00"
+          finished_at: "2026-11-07T13:38:32+03:00"
+          log: "spec/pilots/craft-i18n/runs/cargo-test-2026-11-07.log"
+          log_sha256: "9007f42ddc8659f9e0fb8add511ff93f8098dd18512f9c2ef3926b330d84d10d"
+          artifact_sha256: "66c8ae9a43f553545ead55331e7f22b73cc64aeada5f20398be6894990ce0253"
+          tests_run: 26
+          tests_passed: 26
     limitations: "The header is a declaration; the checker cannot tell whether the translation was actually written clean-room."
-    last_verified: "2026-11-06"
+    last_verified: "2026-11-07"
 
   # Open: found during the pilot, recorded as a gap.
   - id: C-08

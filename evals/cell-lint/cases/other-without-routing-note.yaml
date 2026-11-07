@@ -1,0 +1,33 @@
+# Synthetic fixture — not evidence about any real project.
+name: other-without-routing-note
+description: "failure_mode 'other' without routing_note. The escape hatch is not a\n      free pass: CL1\
+  \ must error, because an unexplained 'other' is exactly the\n      unroutable cell the measurement is\
+  \ meant to expose.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A failure that fits no declared class or mode.
+    taxonomy_class: security
+    failure_class: synthetic-other
+    entry_points:
+    - http
+    failure_mode: other
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: error
+exit: 1

@@ -1,0 +1,50 @@
+# Synthetic fixture — not evidence about any real project.
+name: run-record-missing
+description: "A kind=test claim without a run_record. L2 must warn (migration debt,\n      V2-02) but\
+  \ the run stays green: the missing record is visible, not fatal.\n      This is the state of the rbac_pg\
+  \ ledger, which lives in the target and is\n      not modified by this repository.\n"
+files:
+  tests/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n\n\ndef test_audit():\n\
+    \    report(\"F2 audit log records the denial\")\n\n\ndef test_other():\n    report(\"F3 unrelated\
+    \ check\")\n"
+  reports/run.txt: '=============================== test session starts ===============================
+
+    collected 2 items
+
+
+    test_auth ... ok
+
+    test_audit ... ok
+
+
+    =============================== 2 passed in 0.12s ===============================
+
+    '
+  docs/README.md: 'The checker validates every request before dispatch.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: The auth gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      artifact: reports/run.txt
+      tests:
+      - test_auth
+      date: '2026-11-01'
+    scope: Single module, synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: warning
+  L3: none
+  L4: none
+  L5: none
+exit: 0
+suite_glob: '**/*.py'

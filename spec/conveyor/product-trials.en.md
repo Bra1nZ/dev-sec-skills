@@ -33,10 +33,10 @@ it is not "met by default".
 | 1 | All gates run by one command | `make verify` (V2-08) | exit 0 | measured 2026-11-06: exit 0 |
 | 2 | The `rbac_pg` pilot is clean | `cell_lint` | 0 error | measured 2026-11-06: 0 error / 0 warning |
 | 3 | A second pilot on non-RBAC code | V2-24 | 0 CL1–CL6 errors | measured 2026-11-06: `cell_lint` 0 error / 0 warning / 1 info (14 cells, 13 `tested`, 1 `open`), CL6 OK against the commit that first contains the registry; `claim_lint` 0 error |
-| 4 | Mutation coverage of security detectors | `run_mutations.py` + registry (§2.1) | ≥ N | to-measure: N fixed after V2-32; input measured 2026-11-06 (21/24 = 87.5 %) |
+| 4 | Mutation coverage of security detectors | `run_mutations.py` + registry (§2.1) | ≥ N = 87.5 % | fixed 2026-11-07: 21/24 = 87.5 %; artifact — `spec/pilots/*/cells.yaml` and `spec/pilots/*/mutations/README.md` at the measurement commit, recorded before the first product run |
 | 5 | Every `tested` security detector has either a mutation fixture or a documented `mutation_exemption` | fixture or exemption | 100 % accounted for; exemptions are listed and count as debt | measured 2026-11-06: `rbac_pg` 24 fixtures + 3 exemptions; `craft-i18n` 1 fixture, 0 exemptions |
-| 6 | `unroutable` share in the taxonomy | V2-25 | ≤ U | to-measure: U fixed after V2-32; first attempt 0/43 is structural, see §2.1 |
-| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-06: `claim_lint` 0 error (1 L5 warning on `rbac_pg`, 0 on `craft-i18n`), `cell-lint` 26/26 and 14/14 cases, `linter` 15/15, `status-diff` 8 + 1 known GAP; the `rbac_pg` escalation gate is in first-release mode, the `craft-i18n` diff reports no status changes |
+| 6 | `unroutable` share in the taxonomy | V2-25 | ≤ U = 0.0 % | fixed 2026-11-07: 0/43; the escape hatch (`taxonomy_class`/`failure_mode` = `other` + `routing_note`) exists and is measured by `tools/unroutable.py --max-share 0`; before the hatch, 0 was structural, see §2.1 |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-07: `claim_lint` 0 error (1 L5 and 7 L2 warnings on `rbac_pg` — the ledger has no run_record; 0 warnings on `craft-i18n`), `cell-lint` 30/30 and 14/14 cases, `linter` 23/23, `status-diff` 8 + 1 known GAP: `status_diff` alone cannot see re-dating, and a run_record catches it only when present; without an external anchor (C-13) a consistent forgery passes |
 
 Fixing rule: N or U enters the table only with a reference to the measurement
 artifact. The artifact must be recorded **before** the first product run. If the
@@ -59,40 +59,44 @@ can be counted in different ways.
   not "verified by mutation". The target N is set after V2-32 and may not be
   lower than the value already reached on the pilots without a new artifact.
 - **U — the `unroutable` share of the taxonomy.** Numerator: cells whose
-  failure class routes neither into `taxonomy.classes` nor into a known
-  failure mode. Denominator: all cells of all pilots on the measurement date.
-  This is the taxonomy share (V2-25), not the share of guards outside the L2
-  grammar: the latter is counted separately per `guard-grammar.en.md` (C-13)
-  and does not enter U.
+  `taxonomy_class` is `other` or whose `failure_mode` is `other` (the V2-25
+  escape hatch; both require a non-empty `routing_note`). Denominator: all
+  cells of all pilots on the measurement date. This is the taxonomy share
+  (V2-25), not the share of guards outside the L2 grammar: the latter is
+  counted separately per `guard-grammar.en.md` (C-13) and does not enter U.
+  `tools/unroutable.py` computes it; `make verify` runs it with
+  `--max-share 0`, so any `other` cell fails the gate until a new artifact and
+  a new threshold are recorded.
 
 Both formulas are repeated verbatim in the measurement artifact, so the number
 cannot be recalculated under a different formula.
 
-#### Measured inputs, 2026-11-06 (V2-32, inputs only)
+#### Fixed thresholds, 2026-11-07 (V2-32)
 
-Artifact: the two registries and their recorded fixture runs —
-`spec/pilots/rbac_pg/cells.yaml` + `mutations/README.md`,
-`spec/pilots/craft-i18n/cells.yaml` + `mutations/README.md`, both at this
-commit.
+Artifacts: the registries `spec/pilots/rbac_pg/cells.yaml` and
+`spec/pilots/craft-i18n/cells.yaml`; the recorded mutation runs in
+`spec/pilots/*/mutations/README.md`; for U, the output of `make unroutable`
+(0/29 and 0/14) at this commit.
 
-| Pilot | Security detectors, non-open | With fixture | With exemption | N |
-|---|---|---|---|---|
-| `rbac_pg` | 23 | 20 | 3 | 20/23 = 87.0 % |
-| `craft-i18n` | 1 | 1 | 0 | 1/1 = 100 % |
-| **Both** | **24** | **21** | **3** | **21/24 = 87.5 %** |
+| Metric | Formula | Value | Threshold |
+|---|---|---|---|
+| N | non-open `security` detectors with a `mutation_fixture` / all non-open `security` detectors | 21/24 = 87.5 % | **N = 87.5 %** |
+| U | cells with `taxonomy_class=other` or `failure_mode=other` / all cells | 0/43 = 0.0 % | **U = 0.0 %** |
 
-These are inputs for the threshold, not the threshold: N is fixed after V2-32
-and may not be below 87.5 % without a new artifact. The three exemptions are
-debt, not coverage.
+N may not be below 87.5 % without a new artifact. The three exemptions are
+debt, not coverage: 20/23 and 1/1 give 21/24, not 24/24.
 
-The first attempt at U counted 0 unroutable cells out of 29 + 14 = 43. That
-number is **structural, not evidence**: `cell_lint` CL5 rejects a
-`taxonomy_class` that is not declared in `taxonomy.classes`, and CL1 rejects an
-unknown `failure_mode`, so a cell that does not route cannot reach a counted
-registry. Under the current schema U can only be 0. A usable measurement needs
-an explicit escape hatch (for example `taxonomy_class: other` with a reason, or
-counting failure classes that map to no declared mode), decided before the
-number is fixed. U stays `to-measure`.
+U = 0 is an observation, not a structural impossibility. Before V2-25 the
+schema rejected an undeclared class and an unknown mode, so a cell could not
+"fail to route" and reach the count: 0 was a property of the linter. After
+V2-25 `other` is reachable, requires `routing_note` and is counted, yet none of
+the 43 cells uses it. Any use raises U and fails `make verify` until the
+threshold is revisited with a new artifact and an entry in §7.
+
+Measurement bounds: two pilots (29 + 14 cells), one PostgreSQL extension and
+one Rust crate; the sample is not representative of every stack. N counts the
+existence of a fixture, not its quality; U counts the registry taxonomy only,
+not guards outside L2.
 
 ## 3. Improvement measurement protocol
 
@@ -153,21 +157,31 @@ Enforcement starts as this document. A linter for §2 is added after the criteri
 stabilise (V2-33); until then the checklist is filled by hand when a product
 sprint opens.
 
-## 6. Current state (2026-11-06)
+## 6. Current state (2026-11-07)
 
-- `rbac_pg`: 24 detectors with a mutation fixture and 3 with a documented
-  `mutation_exemption`; `make verify` — exit 0: `cell_lint` 0 error / 0 warning,
-  `claim_lint` 0 error, evals 26/26 and 12/12. The pilot escalation gate is
-  still in first-release mode: the ledger is newer than `v1.3.1`.
-- The second pilot on non-RBAC code has not started.
-- The `unroutable` share has not been measured.
-- Thresholds N and U are not fixed.
+- `rbac_pg`: 29 cells; 24 detectors with a mutation fixture and 3 with a
+  documented `mutation_exemption`; `cell_lint` 0 error / 0 warning,
+  `claim_lint` 0 error and 7 L2 warnings — the ledger lives in the target
+  repository, has no run_record, and is not modified by this repository. The
+  escalation gate is in first-release mode: the ledger is newer than `v1.3.1`.
+- `craft-i18n`: 14 cells; 12 fixtures and 1 exemption; `cell_lint` 0 error,
+  `claim_lint` 0 error / 0 warning. All 7 test claims carry a run_record
+  (`spec/pilots/craft-i18n/runs/`): log and artifact hashes, exit code and
+  executed IDs are checked on every run.
+- N = 87.5 % (21/24) and U = 0.0 % (0/43) are fixed in §2.1 with artifacts from
+  2026-11-07. `make verify` — exit 0, including evals 30/30 + 23/23 + 8 with
+  one known GAP.
 
-Consequence: **product trials are not open.** Any product run before §2 is
-filled remains exploration and does not enter the improvement statistics.
+Consequence: **the boundary is filled, but product trials are not open yet.**
+The thresholds are fixed before the first product run; opening requires §5
+(including the §3.2 baseline) and the V2-33 checklist. Any product run before
+that remains exploration and does not enter the improvement statistics.
 
 ## 7. Document changes
 
 | Date | Change | Artifact | Reason |
 |---|---|---|---|
 | 2026-11-06 | Draft created: entry criteria and protocol | this file | V2-31 |
+| 2026-11-07 | V2-01/V2-02: run_record in the schema and L1/L2 checks; all 7 craft-i18n test claims carry log and artifact hashes | `spec/pilots/craft-i18n/runs/`, `claims.yaml` | run-record |
+| 2026-11-07 | V2-25: the `other` + `routing_note` escape hatch; U measured and gated at `--max-share 0` | `tools/unroutable.py`, `cell-registry.schema.json` | V2-25 |
+| 2026-11-07 | V2-32: N = 87.5 %, U = 0.0 % fixed with artifacts | §2.1 | V2-32 |

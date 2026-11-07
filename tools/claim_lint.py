@@ -6,9 +6,11 @@ schemas/claim-ledger.schema.json):
 
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
-                     status=open requires limitations
+                     status=open requires limitations, run_record shape
   L2  evidence:      artifact paths exist, commits resolvable, dates within
-                     the freshness window
+                     the freshness window, run_record log and artifact hashes
+                     match, the run exited 0 for a non-open claim, every cited
+                     test appears in the captured log with a status
   L3  traceability:  every test ID in kind=test evidence exists in the suite
   L4  consistency:   status matches the strongest evidence channel; stronger
                      evidence than the status is a warning
@@ -16,16 +18,25 @@ schemas/claim-ledger.schema.json):
                      Vale (if installed; styles/RussianAbsolutes package),
                      fallback to the built-in line scanner.
 
+A run_record (schemas/run-record.schema.json) is optional: a kind=test record
+without one gets an L2 warning, because re-dating and citing a test that never
+ran stay invisible. With one, L2 hashes the log and the artifact and checks
+that the cited test IDs appear in the log. This detects re-dating and edited
+logs only if the forger does not also rewrite the record; without an external
+anchor (C-13) a consistent forgery passes.
+
 Exit codes: 0 clean (warnings allowed), 1 errors found, 2 tool/usage error.
 
 Usage:
     python3 tools/claim_lint.py [--root PATH] [--suite-glob GLOB]
                                 [--max-age-days N] [--docs-glob GLOB]
-                                [--no-vale] ledger.json|yaml
+                                [--run-log-root PATH] [--no-vale]
+                                ledger.json|yaml
 """
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -61,6 +72,17 @@ DEF_TEST_RE = re.compile(r"\bdef\s+(test_[a-zA-Z0-9_]+)")
 RUST_TEST_RE = re.compile(
     r"(?:#\[[^\]\n]*\]\s*)*#\[(?:[A-Za-z_][A-Za-z0-9_]*::)*test(?:\([^)]*\))?\]"
     r"\s*(?:#\[[^\]\n]*\]\s*)*(?://[^\n]*\n\s*)*fn\s+([A-Za-z_][A-Za-z0-9_]*)")
+
+# Run record (V2-01/V2-02, schemas/run-record.schema.json).
+RUN_RECORD_FIELDS = ("runner", "command", "commit", "exit_code", "started_at",
+                     "finished_at", "log", "log_sha256", "tests_run", "tests_passed")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+URL_RE = re.compile(r"^[a-z]+://")
+# Summary lines the run-record cross-check understands. cargo prints one per
+# test binary, so the counts are summed; pytest prints one per run.
+CARGO_SUMMARY_RE = re.compile(
+    r"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed;", re.MULTILINE)
+PYTEST_SUMMARY_LINE_RE = re.compile(r"^=+ .*\bin [0-9.]+s.*=+$")
 
 # Built-in fallback for L5 (used when Vale is unavailable). English entries
 # mirror references/banned-words.md; Russian entries are calibrated on the
@@ -193,12 +215,198 @@ def check_schema(ledger, findings):
     return [c for c in claims if isinstance(c, dict)]
 
 
-# ------------------------------------------------------- L2 evidence health
+# ------------------------------------------------ run records (V2-01/V2-02)
 
-def check_evidence(claims, root, max_age_days, findings):
-    today = date.today()
+def _sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _parse_iso(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _log_summary(text):
+    """(passed, failed) from a cargo or pytest summary, or None."""
+    cargo = CARGO_SUMMARY_RE.findall(text)
+    if cargo:
+        return (sum(int(p) for p, _ in cargo), sum(int(f) for _, f in cargo))
+    for line in reversed(text.splitlines()):
+        if PYTEST_SUMMARY_LINE_RE.match(line):
+            passed = re.search(r"(\d+) passed", line)
+            failed = re.search(r"(\d+) failed", line)
+            if passed:
+                return (int(passed.group(1)), int(failed.group(1)) if failed else 0)
+    return None
+
+
+def _test_ran(name, text):
+    """A cited test ID must sit on a line that carries a run status.
+
+    The runner must name each test: cargo does this by default; pytest needs
+    -v or -rA. A log that never names a test cannot support the citation.
+    """
+    for line in text.splitlines():
+        if name in line:
+            low = line.lower()
+            if ("... ok" in low or "... failed" in low or "... ignored" in low
+                    or "passed" in low or "failed" in low):
+                return True
+    return False
+
+
+def check_run_records_schema(claims, findings):
     for c in claims:
         for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("kind") != "test":
+                continue
+            rr = ev.get("run_record")
+            if rr is None:
+                continue
+            if not isinstance(rr, dict):
+                findings.append(Finding("L1", "error", "run_record is not an object", c["id"]))
+                continue
+            missing = [f for f in RUN_RECORD_FIELDS if f not in rr]
+            if missing:
+                findings.append(Finding("L1", "error",
+                                        "run_record missing %s" % ", ".join(missing), c["id"]))
+            ev_commit, rr_commit = ev.get("commit"), rr.get("commit")
+            if ev_commit and rr_commit and str(ev_commit) != str(rr_commit):
+                findings.append(Finding("L1", "error",
+                                        "run_record commit %s does not match evidence commit %s"
+                                        % (rr_commit, ev_commit), c["id"]))
+            if ev.get("command") and rr.get("command") and ev["command"] != rr["command"]:
+                findings.append(Finding("L1", "error",
+                                        "run_record command does not match evidence command", c["id"]))
+            for field in ("log_sha256", "artifact_sha256"):
+                value = rr.get(field)
+                if value is not None and not SHA256_RE.match(str(value)):
+                    findings.append(Finding("L1", "error",
+                                            "run_record %s is not a sha256 hex digest" % field, c["id"]))
+            artifact = ev.get("artifact")
+            if artifact and not URL_RE.match(artifact) and not rr.get("artifact_sha256"):
+                findings.append(Finding("L1", "error",
+                                        "run_record needs artifact_sha256 for local artifact %s"
+                                        % artifact, c["id"]))
+            tr, tp = rr.get("tests_run"), rr.get("tests_passed")
+            if not isinstance(tr, int) or not isinstance(tp, int):
+                findings.append(Finding("L1", "error",
+                                        "run_record tests_run/tests_passed must be integers", c["id"]))
+            else:
+                if tr < 1 or tp < 1:
+                    findings.append(Finding("L1", "error",
+                                            "run_record tests_run/tests_passed must be >= 1", c["id"]))
+                if tp > tr:
+                    findings.append(Finding("L1", "error",
+                                            "run_record tests_passed (%d) exceeds tests_run (%d)"
+                                            % (tp, tr), c["id"]))
+                cited = len(set(ev.get("tests") or []))
+                if cited > tr:
+                    findings.append(Finding("L1", "error",
+                                            "more cited test IDs (%d) than executed tests (%d)"
+                                            % (cited, tr), c["id"]))
+            if not isinstance(rr.get("exit_code"), int):
+                findings.append(Finding("L1", "error",
+                                        "run_record exit_code must be an integer", c["id"]))
+            for field in ("started_at", "finished_at"):
+                value = rr.get(field)
+                if value is not None and _parse_iso(value) is None:
+                    findings.append(Finding("L1", "error",
+                                            "run_record %s is not an ISO 8601 timestamp" % field, c["id"]))
+
+
+# ------------------------------------------------------- L2 evidence health
+
+def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
+    cid = claim["id"]
+    status = claim.get("status")
+
+    if isinstance(rr.get("exit_code"), int) and rr["exit_code"] != 0 and status != "open":
+        findings.append(Finding("L2", "error",
+                                "run_record exit_code=%s cannot support status=%s"
+                                % (rr["exit_code"], status), cid))
+
+    start, end = _parse_iso(rr.get("started_at")), _parse_iso(rr.get("finished_at"))
+    if start and end:
+        if start > end:
+            findings.append(Finding("L2", "error",
+                                    "run_record started_at is after finished_at", cid))
+        ev_date = ev.get("date")
+        if ev_date and DATE_RE.match(str(ev_date)) and end.date().isoformat() != str(ev_date):
+            findings.append(Finding("L2", "error",
+                                    "run_record finished_at date %s does not match evidence date %s"
+                                    % (end.date().isoformat(), ev_date), cid))
+
+    text = None
+    log = rr.get("log")
+    if log:
+        if URL_RE.match(str(log)):
+            findings.append(Finding("L2", "info",
+                                    "run_record log is a URL; its hash is not checked", cid))
+        else:
+            path = str(log) if os.path.isabs(str(log)) else os.path.join(run_log_root, str(log))
+            if not os.path.exists(path):
+                findings.append(Finding("L2", "error", "run_record log not found: %s" % log, cid))
+            else:
+                actual = _sha256_file(path)
+                if rr.get("log_sha256") and actual != rr["log_sha256"]:
+                    findings.append(Finding("L2", "error",
+                                            "run_record log_sha256 mismatch for %s" % log, cid))
+                if path not in log_cache:
+                    with open(path, encoding="utf-8", errors="replace") as f:
+                        log_cache[path] = f.read()
+                text = log_cache[path]
+
+    artifact = ev.get("artifact")
+    if artifact and rr.get("artifact_sha256"):
+        if URL_RE.match(artifact):
+            findings.append(Finding("L2", "info",
+                                    "artifact is a URL; its sha256 is not checked", cid))
+        else:
+            p = os.path.join(root, artifact)
+            if os.path.exists(p) and _sha256_file(p) != rr["artifact_sha256"]:
+                findings.append(Finding("L2", "error",
+                                        "run_record artifact_sha256 mismatch for %s" % artifact, cid))
+
+    if text is not None:
+        for tid in ev.get("tests") or []:
+            if not _test_ran(tid, text):
+                findings.append(Finding("L2", "error",
+                                        "test %r is cited but not executed in the run log" % tid, cid))
+        summary = _log_summary(text)
+        if summary is None:
+            findings.append(Finding("L2", "info",
+                                    "run log has no recognizable summary; counts not cross-checked", cid))
+        else:
+            passed, failed = summary
+            tr, tp = rr.get("tests_run"), rr.get("tests_passed")
+            if isinstance(tr, int) and isinstance(tp, int) and (passed + failed != tr or passed != tp):
+                findings.append(Finding("L2", "error",
+                                        "run_record counts (%d run, %d passed) disagree with log (%d run, %d passed)"
+                                        % (tr, tp, passed + failed, passed), cid))
+            rc = rr.get("exit_code")
+            if isinstance(rc, int) and ((rc == 0) != (failed == 0)):
+                findings.append(Finding("L2", "error",
+                                        "run_record exit_code=%d disagrees with the log's %d failed test(s)"
+                                        % (rc, failed), cid))
+
+
+def check_evidence(claims, root, max_age_days, findings, run_log_root=None):
+    run_log_root = run_log_root or root
+    today = date.today()
+    log_cache = {}
+    for c in claims:
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict):
+                continue
             artifact = ev.get("artifact")
             if artifact and not re.match(r"^[a-z]+://", artifact):
                 p = os.path.join(root, artifact)
@@ -223,6 +431,13 @@ def check_evidence(claims, root, max_age_days, findings):
                         findings.append(Finding("L2", "warning",
                                                 "stale evidence: %s (%d days old, window %d)"
                                                 % (d, (today - d).days, max_age_days), c["id"]))
+            if ev.get("kind") == "test" and ev.get("run_record") is None:
+                findings.append(Finding("L2", "warning",
+                                        "kind=test has no run_record: re-dating and a cited test "
+                                        "that never ran are not detectable (V2-02)", c["id"]))
+            elif isinstance(ev.get("run_record"), dict):
+                _check_run_record(ev, ev["run_record"], c, root, run_log_root,
+                                  log_cache, findings)
 
 
 # --------------------------------------------------------- L3 traceability
@@ -399,6 +614,9 @@ def main():
     ap.add_argument("--suite-glob", default="*.py", help="glob for suite files (default: *.py)")
     ap.add_argument("--docs-glob", default="*.md", help="glob for prose docs (default: *.md)")
     ap.add_argument("--max-age-days", type=int, default=90)
+    ap.add_argument("--run-log-root", default=None,
+                    help="directory that run_record.log paths are relative to "
+                         "(default: --root)")
     ap.add_argument("--no-vale", action="store_true",
                     help="skip Vale and use the built-in L5 scanner")
     args = ap.parse_args()
@@ -424,7 +642,9 @@ def main():
     findings = []
     claims = check_schema(ledger or {}, findings)
     if claims:
-        check_evidence(claims, root, args.max_age_days, findings)
+        check_run_records_schema(claims, findings)
+        run_log_root = args.run_log_root or root
+        check_evidence(claims, root, args.max_age_days, findings, run_log_root)
         report_ids, def_names = build_suite_index(root, args.suite_glob)
         check_traceability(claims, report_ids, def_names, findings)
         check_consistency(claims, report_ids, def_names, findings)

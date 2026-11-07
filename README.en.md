@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-19 (Russian source of truth); English derivative:
+  claims C-01…C-20 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -92,7 +92,11 @@ registry, and an explicit promise boundary for L2.
 - [`spec/conveyor/product-trials.md`](spec/conveyor/product-trials.md) — the
   product-trial boundary: entry criteria, metrics and measurement protocol;
   English derivative: [`product-trials.en.md`](spec/conveyor/product-trials.en.md).
-  Trials are not open yet.
+  N = 87.5 % and U = 0.0 % are fixed with artifacts; trials are not open yet —
+  opening needs the baseline plus the V2-33 checklist.
+- [`schemas/run-record.schema.json`](schemas/run-record.schema.json) — one
+  executed run: commit, command, exit code, log and artifact hashes, counts.
+  Checked by L1/L2 (`claim_lint`).
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — pilot registry with
   29 cells: 26 non-open, 3 open, 0 CL1/CL3/CL4 errors. 24 of 27 detectors have a
   mutation fixture and 3 more carry a documented `mutation_exemption`
@@ -243,10 +247,14 @@ Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md). Planned:
 executable checks for static analysis and trigger evals.
 
-The executable part also includes `tools/cell_lint.py` (CL1–CL6: structure,
-coverage, evidence, traceability, taxonomy, status-escalation gate) and the
-`ci/cell-lint.yml` template. Its cases are in
-[`evals/cell-lint/`](evals/cell-lint/): 26/26, with a runner negative control.
+The executable part also includes `tools/claim_lint.py` (L1–L5; L2 verifies
+run-record hashes, exit code, date and executed IDs), `tools/cell_lint.py`
+(CL1–CL6: structure, coverage, evidence, traceability, taxonomy,
+status-escalation gate), `tools/unroutable.py` (the `unroutable` share) and the
+`ci/cell-lint.yml` template. The linter cases are in
+[`evals/linter/`](evals/linter/): 23/23, including 8 run-record cases. The
+cell-lint cases are in [`evals/cell-lint/`](evals/cell-lint/): 30/30, with a
+runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
 
 The pilot registry on a real repository is

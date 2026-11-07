@@ -20,7 +20,7 @@
 | C-02 | `claim_lint.py` implements checks L1–L5 over a claim ledger | Schema + linter + prose fallback scanner | `tools/claim_lint.py`; `schemas/claim-ledger.schema.json`; `evals/iteration-3/RESULTS.md`; command `python3 evals/linter/run_evals.py` | JSON/YAML ledger; `.md` prose | tested | The L5 fallback has a known accuracy gap; the commit check fails closed outside a git repository |
 | C-03 | `status_diff.py` prevents raising a status without new evidence | Ledger comparison; evidence identity by (kind, commit, artifact, command, tests, date) | `tools/status_diff.py` | Two files or a git ref | reviewed | No adversarial eval set; the identity rule is a design decision |
 | C-04 | The skills change an agent's answer in the intended direction | `with_skill` / `without_skill` pairs | `evals/iteration-1/RESULTS.md`; `evals/iteration-2/RESULTS.md`; `evals/README.md` | Nine synthetic tasks | reviewed | Qualitative inspection; no scored harness; small sample |
-| C-05 | The linter catches a forged trace and the runner does not pass vacuously | `fake-test-id` case + runner negative control | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Synthetic fixtures | tested | 15/15 cases prove the linter contract, not that any production ledger is clean |
+| C-05 | The linter catches a forged trace and the runner does not pass vacuously | `fake-test-id` case + runner negative control | `evals/linter/cases/fake-test-id.yaml`; `evals/iteration-3/RESULTS.md` | Synthetic fixtures | tested | 23/23 cases prove the linter contract, not that any production ledger is clean |
 | C-06 | The product sells verification throughput, not tests | Layers + routing + coverage table | None | — | open | No measurement of throughput, false-positive rate, or latency; next step is to instrument a baseline on the pilot |
 | C-07 | L0: an AST diff routes a PR to the affected security cells in seconds | AST extractor + code-to-cell index | None | SQL/C first | open | Extractor and index are not built; a false negative in routing is a risk; needs precision/recall measurement on the rbac_pg pilot against human labelling |
 | C-08 | L1: an engine-agnostic ensemble through SARIF adapters covers cells in minutes | Adapters for SVACE/PVS/Semgrep/CodeQL and others | None | Two or three engines first | open | Adapters are not written; "SARIF" is a format, not evidence; needs a triage sample and rules that route findings into cells |
@@ -32,9 +32,10 @@
 | C-14 | The agent-guard and Citadel building blocks transfer to the code supply chain | Broker/default-deny, taint, one-shot grants, hash-chain audit | No pointers in this repository | External repositories | open | This document does not confirm them; each block needs a "repository + path/commit" pointer |
 | C-15 | No one owns the combination of PR-level provenance taint + model regeneration + self-mutation + throughput as a product | — | Preliminary survey of categories, not systematic | Market and literature | open | The prior-art sweep is incomplete; this claim must not leave the building before it is done |
 | C-16 | The low/medium/high routing classifier is itself an attack surface | Rules under integrity control + masquerade tests + misroute audit | None | Router | open | Rules and quotas are undefined; without them "docs and tests → auto-merge" can be bypassed by masquerading |
-| C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 26/26 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
+| C-17 | `cell_lint.py` implements checks CL1–CL6 over the cell registry | Structure, coverage, evidence, traceability, taxonomy, escalation gate + adversarial runner | `tools/cell_lint.py`; `evals/cell-lint/`; `evals/iteration-4/RESULTS.md`; command `python3 evals/cell-lint/run_evals.py` | JSON/YAML registry; optional claim ledger and base registry | tested | 30/30 synthetic cases; no production registry; CL6 evidence identity is a design decision; structural checks are hand-coded and may drift from the schema |
 | C-18 | The cell registry instantiates on a real repository, rbac_pg | 29 cells; every non-open cell links to an existing suite or the claim ledger, open cells link to recorded gaps in their limitations; artifacts resolve; CL1/CL3/CL4 have no errors | `spec/pilots/rbac_pg/cells.yaml`; `spec/pilots/rbac_pg/README.md`; `spec/pilots/rbac_pg/mutations/`; command `python3 tools/cell_lint.py --root /home/admini/projects/rbac_pg --ledger /home/admini/projects/rbac_pg/docs/claims.yaml spec/pilots/rbac_pg/cells.yaml` | One repository, rbac_pg at HEAD `492f23c` | tested | The cell-to-test meaning was checked by review, not by machine; all 10 suites were re-run on a fresh stand on 2026-11-06 (57/22/45/54/20/25/17/20/9 OK and 5 OK/2 GAP); 24/27 detectors have a mutation fixture and 3 a documented `mutation_exemption`; 22/29 cells have no claim; lint proves internal consistency, not that a property holds |
 | C-19 | The cell registry instantiates on a non-RBAC, non-database repository, craft-i18n | 14 cells; every non-open cell links to an existing test, open cells link to a recorded gap; artifacts resolve; CL1–CL5 have no errors; 12/13 detectors have a mutation fixture, 1 an exemption | `spec/pilots/craft-i18n/cells.yaml`; `spec/pilots/craft-i18n/claims.yaml`; `spec/pilots/craft-i18n/mutations/`; command `python3 tools/cell_lint.py --root /home/admini/projects/astraoffice/craft-i18n --ledger /home/admini/projects/dev-sec-skills/spec/pilots/craft-i18n/claims.yaml spec/pilots/craft-i18n/cells.yaml` | One Rust crate, commit `5c5c554` | tested | The ledger and registry are authored in dev-sec-skills, not in the target; 14/14 claim linkage is by construction, not coverage; the checker's rules are covered, not the apps' rendering; 12/13 fixtures, 1 exemption |
+| C-20 | The linter detects re-dating and a citation of a test that never ran when evidence carries a run_record | L2 recomputes the log and artifact sha256, matches `finished_at` to the evidence date, compares the exit code and summary counts, and requires every cited ID in the log | `evals/linter/cases/run-record-*.yaml`; `spec/pilots/craft-i18n/runs/`; `tools/claim_lint.py` | Synthetic cargo/pytest fixtures and one real `craft-i18n` run | tested | Without an external anchor (C-13) a consistent record+log forgery passes; the `rbac_pg` ledger without run_records gets warnings, not verification |
 
 Registry rules:
 
@@ -374,7 +375,7 @@ sweep is needed, not this paragraph.
 - Concept with a claim registry.
 - Cell registry schema and seed set.
 - Guard grammar specification and its limits.
-- `cell_lint` and adversarial cases: CL1–CL6, 26/26 (C-17).
+- `cell_lint` and adversarial cases: CL1–CL6, 30/30 (C-17).
 - Pilot registry for rbac_pg: 29 cells, 26 non-open, 3 open, 0
   CL1/CL3/CL4 errors (C-18).
 - Second pilot `craft-i18n` (Rust, non-RBAC, non-database): 14 cells,
@@ -383,6 +384,12 @@ sweep is needed, not this paragraph.
 - Mutation fixtures for 24 of 27 rbac_pg detectors and 12 of 13 craft-i18n
   detectors, with reproduced baselines and the predicted failing tests
   (`spec/pilots/*/mutations/`).
+- Run-record evidence (V2-01/V2-02): schema, L1/L2 checks, 8 eval cases; all 7
+  craft-i18n test claims carry log and artifact hashes, the date, the exit code
+  and executed IDs. L2 catches re-dating and an unexecuted citation.
+- Escape hatch `other` + `routing_note` and the U measurement (V2-25):
+  0/43 = 0.0 %, gated at `--max-share 0` in `make verify`. N = 87.5 % and
+  U = 0.0 % are fixed with artifacts dated 2026-11-07 (V2-32).
 - Taxonomy calibration and a production registry are not part of phase 0.
 
 **Phase 1.** L0+L1 on our own repositories: AST extractor, SARIF adapters for
@@ -406,21 +413,21 @@ Not commitments and not status: a task closes only with evidence.
 
 **P0 — evidence integrity**
 
-- [ ] V2-01. Run-record schema: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps.
-- [ ] V2-02. `claim_lint`: verify the run record (hashes, executed IDs, exit_code) instead of string evidence.
+- [x] V2-01. Run-record schema: commit, artifact_sha256, log_sha256, runner, command, exit_code, tests_run, tests_passed, timestamps (`schemas/run-record.schema.json`, `$ref` from `schemas/claim-ledger.schema.json`).
+- [x] V2-02. `claim_lint` verifies the run record instead of string evidence: L1 checks the shape and commit/command agreement, L2 the log and artifact hashes, the `finished_at` date, the exit code, the summary counts, and that every cited ID appears in the log. 8 eval cases (`run-record-*`); all 7 `craft-i18n` test claims carry a recorded log (`spec/pilots/craft-i18n/runs/`); the `rbac_pg` ledger has no records, so its 7 L2 warnings are visible debt.
 - [x] V2-03. `status_diff`: missing or unknown base ref → error; only `--first-release` is exempt.
 - [x] V2-04. `cell_lint`: missing base registry → error via `--require-base`, not a gate-less run.
 - [ ] V2-05. Removed claim or cell → error, or a mandatory `retired:` with a reason.
 - [x] V2-06. CL2: missing mutation_fixture → error for security and correctness classes — warning for the other classes, and a documented `mutation_exemption` stays info (`tools/cell_lint.py`, `evals/cell-lint/cases/mutation-required-*.yaml`).
 - [ ] V2-07. Diff coverage: changed choke-point paths and symbols must map to a claim.
 - [x] V2-08. `make verify` as the single local entry point for all static gates: evals, the seed registry, both pilot registries with their claim ledgers, the ledgers themselves, and the status diffs (`Makefile`). Mutation runs are separate: `make mutations` (PostgreSQL stand), `make mutations-i18n` (cargo), `make mutations-all`.
-- [ ] V2-09. Negative controls in `evals/linter`: stub test, re-dating, unrelated commit, empty model.
+- [ ] V2-09. Negative controls in `evals/linter`: stub test, re-dating, unrelated commit, empty model. Re-dating is covered by `run-record-date-mismatch` and `run-record-log-hash`; the unrelated commit and the empty model remain.
 - [ ] V2-10. `model-checked` and `proven`: require tool output, not artifact existence.
 
 **P1 — enforcement**
 
 - [ ] V2-11. `run_mutations.py` in CI for changed cells.
-- [ ] V2-12. Assert that the predicted IDs failed, not just any test.
+- [x] V2-12. Assert that the predicted IDs failed, not just any test: both runners compare the failing set with `expect_failures` exactly (`spec/pilots/rbac_pg/mutations/run_mutations.py`, `spec/pilots/craft-i18n/mutations/run_mutations.py`).
 - [x] V2-13. Negative control for `tested` in security: a recorded run with the guard disabled — closed by the mutation fixtures: every tested security detector has a predicted failing run or an exemption (`spec/pilots/rbac_pg/mutations/README.md`).
 - [x] V2-14. Mutation fixtures for the remaining pilot detectors — 25 fixtures, 24 detectors with a fixture and 3 with a documented `mutation_exemption`; all 25 matched (`spec/pilots/rbac_pg/mutations/README.md`).
 - [ ] V2-15. `enforced_at`, `oracle`, `violation_response` fields in a cell.
@@ -439,8 +446,8 @@ Not commitments and not status: a task closes only with evidence.
 - [ ] V2-22. AST choke-point extractor for ordinary code and mapping to cell classes.
 - [ ] V2-23. SARIF adapters for two or three engines as evidence sources.
 - [x] V2-24. A second pilot on a non-RBAC codebase (web service or CLI): `craft-i18n`, a Rust crate that checks translation catalogs; 14 cells, 13 `tested` / 1 `open`, CL1–CL6 clean, 12/13 detectors with a mutation fixture, 8 claims (`spec/pilots/craft-i18n/`).
-- [ ] V2-25. Check that the taxonomy is not overfit to FSTEC and databases; measure the `unroutable` share. The first attempt on two pilots gives 0/43, but that is structural: `cell_lint` rejects an undeclared class or mode, so an escape hatch is needed before U is fixed (`product-trials.en.md` §2.1).
-- [ ] V2-26. Exit criterion: two pilots, a measured `unroutable` share, a threshold fixed before the start; fixtures for most security detectors.
+- [x] V2-25. The taxonomy was checked on a non-RBAC pilot; the `unroutable` share is measurable through an escape hatch: `taxonomy_class` or `failure_mode` = `other` with a mandatory `routing_note`, `tools/unroutable.py`, and a `--max-share 0` gate in `make verify`. Measured 0/43 = 0.0 %; before the hatch, 0 was structural (`product-trials.en.md` §2.1).
+- [x] V2-26. Exit criterion met: two pilots (`rbac_pg`, `craft-i18n`), U measured (0/43), N and U fixed before the first product run, 21/24 security detectors with a fixture.
 
 **Formal-model boundary**
 
@@ -452,7 +459,7 @@ Not commitments and not status: a task closes only with evidence.
 **Product-trial boundary**
 
 - [x] V2-31. Fix the boundary in `spec/conveyor/product-trials.en.md`: entry criteria and the measurement protocol; numbers only after measurement.
-- [ ] V2-32. Measure the threshold inputs (the `unroutable` share of the pilots, mutation coverage) and record the numbers in `product-trials.en.md` with the measurement artifact. Mutation coverage was measured on 2026-11-06: 21/24 security detectors = 87.5 %; U is blocked by the schema (see V2-25), so N is not fixed before the U decision.
+- [x] V2-32. The threshold inputs were measured and recorded in `product-trials.en.md` §2.1 with artifacts: N = 87.5 % (21/24), U = 0.0 % (0/43), date 2026-11-07.
 - [ ] V2-33. Fill the boundary checklist when the first product sprint opens; product runs before that do not count as statistics.
 
 ## 13. Open questions and next evidence

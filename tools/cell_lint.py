@@ -52,9 +52,9 @@ KIND_MAX_RANK = {
     "invariant": STATUS_RANK["model-checked"],
     "proof": STATUS_RANK["proven"],
 }
-TAXONOMY_CLASSES = {"security", "correctness", "maintainability", "performance"}
+TAXONOMY_CLASSES = {"security", "correctness", "maintainability", "performance", "other"}
 MUTATION_REQUIRED_CLASSES = {"security", "correctness"}
-FAILURE_MODES = {"deny", "abort", "rollback", "safe-degrade", "detect"}
+FAILURE_MODES = {"deny", "abort", "rollback", "safe-degrade", "detect", "other"}
 CELL_ID_RE = re.compile(r"^CELL-[0-9]{3,}$")
 DETECTOR_ID_RE = re.compile(r"^D-[A-Za-z0-9._-]+$")
 CLAIM_ID_RE = re.compile(r"^C-[0-9]{2,}$")
@@ -156,6 +156,15 @@ def check_structure(doc, findings):
         if cell.get("failure_mode") not in FAILURE_MODES:
             findings.append(Finding("CL1", "error",
                                     "unknown failure_mode %r" % cell.get("failure_mode"), who))
+
+        # Escape hatch (V2-25): 'other' is allowed only with a reason, so an
+        # unroutable cell is visible and countable instead of being silently
+        # mapped onto a declared class.
+        if cell.get("taxonomy_class") == "other" or cell.get("failure_mode") == "other":
+            note = cell.get("routing_note")
+            if not isinstance(note, str) or not note.strip():
+                findings.append(Finding("CL1", "error",
+                                        "taxonomy_class/failure_mode 'other' requires a non-empty routing_note", who))
 
         status = cell.get("coverage_status")
         if status not in STATUSES:
@@ -379,9 +388,12 @@ def check_taxonomy(doc, cells, findings):
         who = cell.get("id", "-")
         cls = cell.get("taxonomy_class")
         used.add(cls)
-        if classes and cls not in classes:
+        if classes and cls not in classes and cls != "other":
             findings.append(Finding("CL5", "error",
                                     "taxonomy_class %r is not declared in taxonomy.classes" % cls, who))
+        if cls == "other" or cell.get("failure_mode") == "other":
+            findings.append(Finding("CL5", "info",
+                                    "cell uses the 'other' escape hatch; counted by tools/unroutable.py", who))
 
         title = cell.get("title")
         if title:

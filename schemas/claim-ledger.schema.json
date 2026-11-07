@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "dev-sec-skills/schemas/claim-ledger.schema.json",
+  "$id": "https://dev-sec-skills.invalid/schemas/claim-ledger.schema.json",
   "title": "Evidence-first claim ledger",
   "description": "Machine-readable claim ledger. Every material claim carries a mechanism, evidence, scope, and status. The checkable subset of this schema is enforced by tools/claim_lint.py (checks L1-L4); check L5 scans prose documents for unqualified absolutes.",
   "type": "object",
@@ -56,6 +56,10 @@
           "items": { "type": "string" },
           "minItems": 1,
           "description": "Test IDs that attempt the violation. Required when kind=test. Lint check L3 verifies each ID exists in the suite."
+        },
+        "run_record": {
+          "$ref": "run-record.schema.json",
+          "description": "Machine-checkable record of the executed run (V2-01). Optional, but a kind=test record without one gets an L2 warning; with one, L2 checks the log and artifact hashes, the exit code, and that every cited test appears in the log."
         },
         "note": { "type": "string" }
       },

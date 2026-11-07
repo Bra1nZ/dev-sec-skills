@@ -1,0 +1,35 @@
+# Synthetic fixture — not evidence about any real project.
+name: other-taxonomy-class
+description: "taxonomy_class 'other' with a routing_note while taxonomy.classes\n      lists only 'security'.\
+  \ CL5 must accept 'other' without declaring it in\n      every taxonomy, otherwise the escape hatch\
+  \ would be unusable; the\n      routing_note keeps it reviewable.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A failure that fits no declared class or mode.
+    taxonomy_class: other
+    failure_class: synthetic-other
+    entry_points:
+    - http
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+    routing_note: The failure class is outside the four declared classes.
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: none
+  CL5: info
+exit: 0

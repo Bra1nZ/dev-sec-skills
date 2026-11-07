@@ -39,7 +39,7 @@ spec/
 
 ## Status
 
-Phase 0: documents, schema, seed registry, `cell_lint` (CL1–CL6, 26
+Phase 0: documents, schemas, seed registry, `cell_lint` (CL1–CL6, 30
 synthetic adversarial cases, see `evals/cell-lint/`), and two pilot registries.
 The first is `rbac_pg` (29 cells, 26 non-open, 3 open, 0 CL1/CL3/CL4 errors,
 C-18); the second is `craft-i18n`, deliberately non-RBAC and non-database
@@ -58,18 +58,27 @@ no claim that the conveyor exists. Every material statement in `CONCEPT.md`
 carries a status from the evidence-first ladder; design intents are `open` and
 carry limitations.
 
-Product trials are not open: the `unroutable` share and the numeric thresholds
-N and U are recorded as `to-measure` in `conveyor/product-trials.md` (the N
-input is measured; U is structurally zero under the current schema, see §2.1),
-and no product run counts as improvement statistics until that boundary is
-filled.
+Run-record evidence (V2-01/V2-02) is part of the contract: `claim_lint` L1
+checks the record's shape and commit/command agreement, L2 recomputes the log
+and artifact SHA-256, matches the run date to the evidence date, and requires
+every cited test ID in the log. The seven `craft-i18n` test claims carry one
+(`pilots/craft-i18n/runs/`); the `rbac_pg` ledger has none and gets 7 visible
+L2 warnings.
+
+The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
+or `failure_mode` = `other`, with a mandatory `routing_note`) and
+`tools/unroutable.py`; `make verify` gates it at 0 %. N = 87.5 % (21/24) and
+U = 0.0 % (0/43) are fixed with artifacts dated 2026-11-07 in
+`conveyor/product-trials.md` §2.1. The boundary is filled, but product trials
+are still not open: §5 (baseline plus the V2-33 checklist) runs at the first
+product sprint, and no product run counts as improvement statistics before it.
 
 ## Reading order
 
 1. `CONCEPT.md` — thesis, trust policy, layers, taxonomy, verdicts, ceiling.
 2. `cell-registry.schema.json` — the machine-readable shape of a cell.
 3. `cells.seed.yaml` — uncalibrated seed cells, all `open`.
-4. `guard-grammar.md` — what L2 can and cannot model.
+4. `guard-grammar.md` — what L2 can and cannot model. `../../schemas/run-record.schema.json` — the shape of one executed run.
 5. `product-trials.md` — when the solution may leave the pilot, and how an
    improvement is measured.
 6. `../../tools/cell_lint.py` — the executable subset of the cell contract;

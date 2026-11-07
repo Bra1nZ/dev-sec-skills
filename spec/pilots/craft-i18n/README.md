@@ -47,12 +47,26 @@ detector fails when its mechanism is removed. CELL-013 carries a documented
 `locales/`, and every source mutation that would make those catalogs fail also
 fails the rule tests in the same suite. `open` means no detector exists.
 
+Since 2026-11-07 every `kind=test` evidence item carries a `run_record`
+(V2-02): the command, commit, exit code, timestamps, the SHA-256 of the log and
+of the artifact, and the executed/passed counts. The captured log is
+[`runs/cargo-test-2026-11-07.log`](runs/README.md) (26 tests, all passed).
+`claim_lint` hashes the log and the source file it cites, checks that
+`finished_at` belongs to the evidence date, and requires every cited test ID to
+appear on a log line with a status. Re-dating the ledger or citing a test that
+did not run now fails L2 without touching the target.
+
+The record is not proof of the run. The log and the record are both local, so a
+forger can rewrite them together; only an external anchor (C-13) would close
+that. The pilot records the limit rather than hiding it.
+
 ## Lint result
 
 ```text
 $ python3 tools/claim_lint.py \
     --root /home/admini/projects/astraoffice/craft-i18n \
     --suite-glob "crates/craft-i18n-tests/**/*.rs" \
+    --run-log-root /home/admini/projects/dev-sec-skills \
     spec/pilots/craft-i18n/claims.yaml
 
 ledger: spec/pilots/craft-i18n/claims.yaml | claims: 8
@@ -260,6 +274,7 @@ check would have reported a false pass.
 python3 tools/claim_lint.py \
     --root /home/admini/projects/astraoffice/craft-i18n \
     --suite-glob "crates/craft-i18n-tests/**/*.rs" \
+    --run-log-root /home/admini/projects/dev-sec-skills \
     spec/pilots/craft-i18n/claims.yaml
 
 # cell registry

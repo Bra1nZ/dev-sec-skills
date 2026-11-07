@@ -70,8 +70,12 @@ whether a claim ledger is honest or whether a test can actually fail.
 ## Executable linters
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
-`tools/cell_lint.py`. The status-diff evals cover fail-closed base handling.
-Reproduce all three:
+`tools/cell_lint.py`. The live suites have grown beyond those iterations:
+`evals/linter/` runs 23 cases, including 8 `run-record-*` cases (valid record,
+artifact hash, log hash, unexecuted test, non-zero exit, missing record, date
+mismatch, count mismatch); `evals/cell-lint/` runs 30 cases, including the
+`other` + `routing_note` escape hatch. The status-diff evals cover fail-closed
+base handling. Reproduce all three:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -82,7 +86,10 @@ python3 evals/status-diff/run_evals.py
 All runners need PyYAML. A passing run means the contract holds on synthetic
 adversarial fixtures, not that a production ledger or registry is clean.
 `status-diff` prints `GAP` for the re-dating scenario while that hole remains
-open.
+open: the tool compares evidence identities and cannot tell a genuinely new run
+from a re-dated one. A `run_record` lets `claim_lint` L2 catch re-dating in the
+ledger, but without an external anchor (C-13) a consistent forgery of the record
+and the log still passes.
 
 ## Reproduce
 

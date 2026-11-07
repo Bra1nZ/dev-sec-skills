@@ -1,0 +1,61 @@
+# Synthetic fixture — not evidence about any real project.
+name: run-record-log-hash
+description: "The recorded log_sha256 does not match the log bytes. Re-dating the\n      ledger or editing\
+  \ the log must not survive L2; the hash is the anchor.\n"
+files:
+  tests/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n\n\ndef test_audit():\n\
+    \    report(\"F2 audit log records the denial\")\n\n\ndef test_other():\n    report(\"F3 unrelated\
+    \ check\")\n"
+  reports/run.txt: '=============================== test session starts ===============================
+
+    collected 2 items
+
+
+    test_auth ... ok
+
+    test_audit ... ok
+
+
+    =============================== 2 passed in 0.12s ===============================
+
+    '
+  docs/README.md: 'The checker validates every request before dispatch.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: The auth gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      artifact: reports/run.txt
+      tests:
+      - test_auth
+      date: '2026-11-01'
+      run_record:
+        runner: pytest
+        command: python3 -m pytest -v
+        commit: 0123456789abcdef0123456789abcdef01234567
+        exit_code: 0
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:05+03:00'
+        log: reports/run.txt
+        log_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+        artifact_sha256: 2d584c74e44d4645e999880fbad724e17934b759035630357b678ad87d3b2531
+        tests_run: 2
+        tests_passed: 2
+    scope: Single module, synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+exit: 1
+suite_glob: '**/*.py'

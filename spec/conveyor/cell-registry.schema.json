@@ -114,8 +114,8 @@
           "description": "Falsifiable statement of the failure class this cell covers."
         },
         "taxonomy_class": {
-          "enum": ["security", "correctness", "maintainability", "performance"],
-          "description": "Top-level class from the taxonomy."
+          "enum": ["security", "correctness", "maintainability", "performance", "other"],
+          "description": "Top-level class from the taxonomy. 'other' is an escape hatch: it must carry routing_note and is counted by tools/unroutable.py, so it cannot quietly grow."
         },
         "failure_class": {
           "type": "string",
@@ -128,8 +128,13 @@
           "description": "Paths that must be covered, e.g. http, batch, import, admin, migration, recovery, background-job."
         },
         "failure_mode": {
-          "enum": ["deny", "abort", "rollback", "safe-degrade", "detect"],
-          "description": "Required behavior when the cell is exercised: refuse, abort, roll back, degrade safely, or detect and report."
+          "enum": ["deny", "abort", "rollback", "safe-degrade", "detect", "other"],
+          "description": "Required behavior when the cell is exercised: refuse, abort, roll back, degrade safely, or detect and report. 'other' is an escape hatch: it must carry routing_note and is counted by tools/unroutable.py."
+        },
+        "routing_note": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why no declared class or failure mode fits. Required when taxonomy_class or failure_mode is 'other'; the reason is what makes the escape hatch reviewable."
         },
         "detectors": {
           "type": "array",
@@ -174,6 +179,15 @@
             "required": ["detectors"],
             "properties": { "detectors": { "minItems": 1 } }
           }
+        },
+        {
+          "if": {
+            "anyOf": [
+              { "properties": { "taxonomy_class": { "const": "other" } }, "required": ["taxonomy_class"] },
+              { "properties": { "failure_mode": { "const": "other" } }, "required": ["failure_mode"] }
+            ]
+          },
+          "then": { "required": ["routing_note"] }
         }
       ]
     }

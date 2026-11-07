@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/run-record.schema.json",
+  "title": "Run record",
+  "description": "A machine-checkable record of one executed evidence run. It ties a claim's evidence to a concrete command, commit, exit code and output log, so re-dating the ledger or citing a test that never ran fails the linter. It does not prove the run was not fabricated: without an external anchor (C-13) a forger can rewrite both the record and the log.",
+  "type": "object",
+  "required": ["runner", "command", "commit", "exit_code", "started_at",
+               "finished_at", "log", "log_sha256", "tests_run", "tests_passed"],
+  "additionalProperties": false,
+  "properties": {
+    "runner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Test runner or tool that produced the output, e.g. 'cargo test', 'pytest', 'python3 setup/test_fstek.py'."
+    },
+    "command": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact command that was executed, including flags."
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$",
+      "description": "Commit the run executed at. Must equal the evidence commit."
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Process exit code. A non-zero code cannot support a non-open status."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset, e.g. 2026-11-07T12:00:00+03:00."
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with an offset. Its local date must equal the evidence date."
+    },
+    "log": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the captured output, relative to the project root (or a URL, in which case the hash is not checked)."
+    },
+    "log_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the log bytes. Lint check L2 verifies it."
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the evidence artifact at run time. Required when the evidence names a local artifact; L2 verifies it."
+    },
+    "tests_run": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of tests executed (not ignored, not filtered out)."
+    },
+    "tests_passed": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of executed tests that passed. Must equal tests_run for a passing run."
+    }
+  }
+}

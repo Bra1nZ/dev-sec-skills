@@ -1,0 +1,33 @@
+# Synthetic fixture — not evidence about any real project.
+name: unknown-failure-mode
+description: "A made-up failure_mode with a routing_note. The escape hatch accepts\n      only the literal\
+  \ 'other': an unknown mode is still a CL1 error, so the\n      taxonomy cannot grow by typo.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A failure that fits no declared class or mode.
+    taxonomy_class: security
+    failure_class: synthetic-other
+    entry_points:
+    - http
+    failure_mode: teleport
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+    routing_note: Not a real mode; must be rejected.
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: error
+exit: 1

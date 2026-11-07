@@ -2,7 +2,9 @@
 name: rust-test-ids
 description: >
   A Rust suite resolves `#[test] fn name` as test evidence, so a ledger over a
-  Rust repository is checked instead of failing every test ID.
+  Rust repository is checked instead of failing every test ID. L2 warns only
+  because this fixture has no run_record (V2-02); Rust IDs and traceability are
+  the subject here, and run-record-* cases cover the record itself.
 files:
   "tests/locales.rs": |
     fn helper() {}
@@ -34,7 +36,7 @@ args: ["--max-age-days", "3650"]
 suite_glob: "**/*.rs"
 expect:
   L1: none
-  L2: none
+  L2: warning
   L3: none
   L4: none
   L5: none

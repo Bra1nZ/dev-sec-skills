@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-19; английская версия —
+  утверждений C-01…C-20; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -92,7 +92,11 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 - [`spec/conveyor/product-trials.md`](spec/conveyor/product-trials.md) — граница
   продуктовых испытаний: критерии входа, метрики и протокол замера; английская
   версия — [`product-trials.en.md`](spec/conveyor/product-trials.en.md).
-  Испытания пока не открыты.
+  Пороги N = 87,5 % и U = 0,0 % зафиксированы с артефактами; испытания ещё не
+  открыты — открытие требует baseline и чек-листа V2-33.
+- [`schemas/run-record.schema.json`](schemas/run-record.schema.json) — запись
+  одного исполненного прогона: commit, команда, exit code, хэши лога и
+  артефакта, счётчики. Проверяется в L1/L2 (`claim_lint`).
 - [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md) — пилотный реестр на
   29 ячеек: 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4. Для 24 из 27 детекторов
   есть mutation fixture, ещё 3 — документированный `mutation_exemption`
@@ -254,16 +258,20 @@ evals, а не истинность свойств и не чистоту produc
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md).
 
 Исполняемая часть: `tools/claim_lint.py` (L1–L5 над claim-леджером, Vale-first
-для прозы, встроенный сканер как fallback), `tools/status_diff.py` (гейт
-эскалации статусов между релизами: переход вверх требует новой evidence) и
-`ci/claim-lint.yml` — шаблон GitHub Actions для целевого репозитория.
+для прозы, встроенный сканер как fallback; L2 проверяет run-record: хэши лога и
+артефакта, exit code, дату, исполненные ID), `tools/status_diff.py` (гейт
+эскалации статусов между релизами: переход вверх требует новой evidence),
+`tools/unroutable.py` (доля `unroutable` в таксономии) и `ci/claim-lint.yml` —
+шаблон GitHub Actions для целевого репозитория.
 Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/) и
-`evals/iteration-3/RESULTS.md`: 15/15 проходят, включая негативный контроль
-самого runner'а и кейсы для Rust `#[test] fn`.
+`evals/iteration-3/RESULTS.md`: 23/23 проходят, включая негативный контроль
+самого runner'а, кейсы для Rust `#[test] fn` и 8 кейсов run-record (валидный,
+хэш артефакта, хэш лога, неисполненный ID, ненулевой exit, отсутствие записи,
+несовпадение даты, несовпадение счётчиков).
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
 evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон
-`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 26/26,
+`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 30/30,
 тоже с негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
 

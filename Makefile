@@ -42,9 +42,9 @@ CLAIM_LINT_ARGS ?= $(shell command -v vale >/dev/null 2>&1 || echo --no-vale)
 
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
-        status-pilot2 mutations mutations-i18n mutations-all help
+        status-pilot2 unroutable mutations mutations-i18n mutations-all help
 
-verify: verify-repo verify-pilot verify-pilot2
+verify: verify-repo verify-pilot verify-pilot2 unroutable
 
 verify-all: verify mutations-all
 
@@ -130,6 +130,7 @@ claims-pilot2:
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT2_ROOT)" \
 	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
+	  --run-log-root "$(CURDIR)" \
 	  $(CLAIM_LINT_ARGS) \
 	  "$(PILOT2_LEDGER)"
 
@@ -145,6 +146,11 @@ status-pilot2:
 	  printf 'claims: []\n' > "$$tmp"; \
 	  $(PYTHON) tools/status_diff.py --first-release "$$tmp" "$(PILOT2_LEDGER)"; \
 	fi
+
+unroutable:
+	@echo "== U: unroutable share of the pilot taxonomies (V2-25) =="
+	$(PYTHON) tools/unroutable.py --max-share 0 \
+	  "$(PILOT_REGISTRY)" "$(PILOT2_REGISTRY)"
 
 mutations-i18n:
 	@echo "== mutation fixtures: craft-i18n (cargo, no stand) =="
@@ -166,6 +172,7 @@ help:
 	@echo "  claims-pilot2 L1-L5 over the craft-i18n claim ledger"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
+	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"

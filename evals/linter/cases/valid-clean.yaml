@@ -1,30 +1,51 @@
 # Synthetic fixture — not evidence about any real project.
 name: valid-clean
-description: >
-  Control — well-formed ledger, resolvable test ID, existing artifact, fresh
-  date, clean prose. Must produce no findings and exit 0. A wide
-  --max-age-days keeps the fixture evergreen; freshness itself is covered by
-  stale-evidence and future-date.
+description: "Control — well-formed ledger, resolvable test ID, existing\n        artifact, fresh date,\
+  \ clean prose, and a run_record whose log and artifact\n        hashes match. Must produce no findings\
+  \ and exit 0. A wide --max-age-days\n        keeps the fixture evergreen; freshness itself is covered\
+  \ by\n        stale-evidence and future-date."
 files:
-  "setup/test_suite.py": |
-    def test_auth():
-        report("F1 auth gate rejects anonymous")
-  "reports/run.txt": "PASS\n"
-  "docs/README.md": "The module validates every request before dispatch.\n"
+  setup/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n"
+  reports/run.txt: 'running 1 test
+
+    test F1 auth gate rejects anonymous ... ok
+
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+    '
+  docs/README.md: 'The module validates every request before dispatch.
+
+    '
 ledger:
   claims:
-    - id: C-01
-      claim: "Auth gate rejects anonymous requests."
-      mechanism: "Session check before handler dispatch."
-      evidence:
-        - kind: test
-          command: "python3 setup/test_suite.py"
-          artifact: "reports/run.txt"
-          tests: ["F1"]
-          date: "2026-11-01"
-      scope: "Single module, synthetic fixture."
-      status: tested
-args: ["--max-age-days", "3650"]
+  - id: C-01
+    claim: Auth gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 setup/test_suite.py
+      artifact: reports/run.txt
+      tests:
+      - F1
+      date: '2026-11-01'
+      run_record:
+        runner: python3 setup/test_suite.py
+        command: python3 setup/test_suite.py
+        commit: 0123456789abcdef0123456789abcdef01234567
+        exit_code: 0
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:01+03:00'
+        log: reports/run.txt
+        log_sha256: 47757dfdd80fdebbe4dc3f3cc4dd065e929e3b7a6a544f8d62e93392d43d9630
+        artifact_sha256: 47757dfdd80fdebbe4dc3f3cc4dd065e929e3b7a6a544f8d62e93392d43d9630
+        tests_run: 1
+        tests_passed: 1
+    scope: Single module, synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
 expect:
   L1: none
   L2: none
