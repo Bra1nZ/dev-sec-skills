@@ -59,6 +59,8 @@ evals/
     run_evals.py        # invariant_catalog.py: INV1-INV5 fail closed (V2-21)
   sarif/
     run_evals.py        # sarif_evidence.py: mapping, unmapped, provenance (V2-23)
+  bounded-check/
+    run_evals.py        # bounded_check.py: timeout -> unverified, group kill (V2-28)
 ```
 
 ## Prompts
@@ -92,12 +94,15 @@ whether a claim ledger is honest or whether a test can actually fail.
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
 `tools/cell_lint.py`. The live suites have grown beyond those iterations:
-`evals/linter/` runs 35 cases, including 8 `run-record-*` cases (valid record,
+`evals/linter/` runs 40 cases, including 8 `run-record-*` cases (valid record,
 artifact hash, log hash, unexecuted test, non-zero exit, missing record, date
 mismatch, count mismatch), two V2-09 controls — `unrelated-commit` and
-`empty-claims` — three V2-05 tombstone cases, and seven V2-10 `tool-output-*`
+`empty-claims` — three V2-05 tombstone cases, seven V2-10 `tool-output-*`
 cases (valid record, hash mismatch, missing output, non-zero exit, date
-mismatch, no `tool_output` for a model-checked claim, no bound); `evals/cell-lint/`
+mismatch, no `tool_output` for a model-checked claim, no bound), and five
+V2-28 cases (`status: unverified` with exit 0, a wall-clock timeout with a
+truncated log, `timed_out` contradicting `status`, a record with no `status`,
+and an open claim that honestly keeps an `unverified` record); `evals/cell-lint/`
 runs 40 cases, including the `other` + `routing_note` escape hatch, four V2-05
 cases (removal without a tombstone, removal with one, a dropped tombstone, a
 tombstone with no reason) and six V2-15/V2-16 cases (a valid runtime-enforcement
@@ -153,8 +158,16 @@ duplicate fingerprints, unknown engine, unmapped rule, missing location and rule
 ID, a bad SARIF version and invalid JSON, `--require-engines`,
 `--reject-fixtures`, an unknown cell and an `other` class as config errors, a
 `file://` URI rebased to the root, and a digest that is stable when input order
-changes.
-Reproduce all eleven:
+changes. `evals/bounded-check/` runs 10 cases for `tools/bounded_check.py` on
+real child processes: a clean control whose log keeps stdout/stderr arrival
+order and whose SHA-256 is recorded, a timeout recorded as `unverified` with
+`timed_out: true` and a negative exit code, a non-zero exit recorded as
+`failed`, a missing binary recorded as `error` with exit 127, `--timeout 0`
+and an empty command rejected with exit 2 and no record, a record written to
+`--json` with stdout left clean, a grandchild process that must not survive the
+process-group kill, and two integration cases where `claim_lint` accepts a
+`completed` record and rejects an `unverified` one for a `model-checked` claim.
+Reproduce all twelve:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -168,6 +181,7 @@ python3 evals/choke-points/run_evals.py
 python3 evals/mutation-plan/run_evals.py
 python3 evals/invariant-catalog/run_evals.py
 python3 evals/sarif/run_evals.py
+python3 evals/bounded-check/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -196,7 +210,11 @@ repositories; they show that DC1–DC5 fail closed on the named defects, not tha
 a real PR range maps every changed choke point. The choke-point cases exercise
 the extractor and the rule gate on synthetic trees; they show spans and
 classification fail closed on the named forms, not that a real codebase has a
-particular unclassified share.
+particular unclassified share. The bounded-check cases exercise the supervisor
+on `python -c` children; they show that it classifies its own child faithfully
+and that the linter refuses `unverified` for a non-open claim, not that a real
+model checker is bounded correctly or that a child cannot escape the group by
+double-forking.
 
 ## Reproduce
 

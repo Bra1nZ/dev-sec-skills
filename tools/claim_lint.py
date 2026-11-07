@@ -14,7 +14,9 @@ schemas/claim-ledger.schema.json):
                      freshness window, run_record log and artifact hashes
                      match, the run exited 0 for a non-open claim, every cited
                      test appears in the captured log with a status,
-                     tool_output.output matches its hash and finished_at date
+                     tool_output.output matches its hash and finished_at date,
+                     tool_output.status=completed is required for a non-open
+                     claim (V2-28)
   L3  traceability:  every test ID in kind=test evidence exists in the suite
   L4  consistency:   status matches the strongest evidence channel; stronger
                      evidence than the status is a warning; model-checked and
@@ -33,7 +35,9 @@ anchor (C-13) a consistent forgery passes.
 A tool_output (schemas/tool-output.schema.json) is required for a claim whose
 status is model-checked or proven: an artifact says a model exists, the record
 says a tool ran over it and what it answered. L1 checks the shape, L2 hashes
-the captured output and ties finished_at to the evidence date. It does not
+the captured output and ties finished_at to the evidence date. L2 also requires
+`status: completed` for a non-open claim, so a timed-out or failed run stays
+`unverified` instead of passing with a truncated log (V2-28). It does not
 check the tool's semantics or the soundness of the encoding; without an
 external anchor a consistent forgery passes, as with run records.
 
@@ -99,8 +103,9 @@ RUN_RECORD_FIELDS = ("runner", "command", "commit", "exit_code", "started_at",
 # Tool output (V2-10, schemas/tool-output.schema.json): the model checker's or
 # prover's own run. Required fields mirror the schema's `required` list.
 TOOL_OUTPUT_FIELDS = ("tool", "command", "output", "output_sha256",
-                      "exit_code", "finished_at")
+                      "exit_code", "finished_at", "status")
 TOOL_STATUSES = ("model-checked", "proven")
+TOOL_RUN_STATUSES = ("completed", "unverified", "failed", "error")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 URL_RE = re.compile(r"^[a-z]+://")
 # Summary lines the run-record cross-check understands. cargo prints one per
@@ -432,6 +437,33 @@ def check_tool_outputs_schema(claims, findings):
                 if value is not None and (not isinstance(value, str) or not value.strip()):
                     findings.append(Finding("L1", "error",
                                             "tool_output %s must be a non-empty string" % field, cid))
+            # V2-28: a bounded run must say how it ended. Without an explicit
+            # status a killed run and a completed run look the same once the
+            # log is truncated.
+            run_status = to.get("status")
+            if run_status is not None and run_status not in TOOL_RUN_STATUSES:
+                findings.append(Finding("L1", "error",
+                                        "tool_output status=%r is not one of %s (V2-28)"
+                                        % (run_status, ", ".join(TOOL_RUN_STATUSES)), cid))
+            timed_out = to.get("timed_out")
+            if timed_out is not None and not isinstance(timed_out, bool):
+                findings.append(Finding("L1", "error",
+                                        "tool_output timed_out must be a boolean", cid))
+            if timed_out is True and run_status not in (None, "unverified"):
+                findings.append(Finding("L1", "error",
+                                        "tool_output timed_out=true contradicts status=%r (V2-28)"
+                                        % run_status, cid))
+            bound_seconds = to.get("bound_seconds")
+            if bound_seconds is not None and (not isinstance(bound_seconds, int)
+                                             or isinstance(bound_seconds, bool)
+                                             or bound_seconds < 1):
+                findings.append(Finding("L1", "error",
+                                        "tool_output bound_seconds must be an integer >= 1", cid))
+            elapsed = to.get("elapsed_seconds")
+            if elapsed is not None and (not isinstance(elapsed, (int, float))
+                                        or isinstance(elapsed, bool) or elapsed < 0):
+                findings.append(Finding("L1", "error",
+                                        "tool_output elapsed_seconds must be a number >= 0", cid))
             commit, ev_commit = to.get("commit"), ev.get("commit")
             rr = ev.get("run_record") if isinstance(ev.get("run_record"), dict) else {}
             cited = ev_commit or rr.get("commit")
@@ -533,6 +565,20 @@ def _check_tool_output(ev, to, claim, tool_output_root, findings):
         findings.append(Finding("L2", "error",
                                 "tool_output exit_code=%d cannot support status=%s"
                                 % (rc, status), cid))
+
+    # V2-28: only a completed run can support a non-open claim. A timeout, a
+    # failure to start or a tool that gave up is `unverified`, not a pass with
+    # a short log.
+    run_status = to.get("status")
+    if run_status in TOOL_RUN_STATUSES and run_status != "completed" \
+            and status != "open":
+        findings.append(Finding("L2", "error",
+                                "tool_output status=%s cannot support status=%s (V2-28)"
+                                % (run_status, status), cid))
+    if to.get("timed_out") is True and status != "open":
+        findings.append(Finding("L2", "error",
+                                "a timed-out tool_output cannot support status=%s (V2-28)"
+                                % status, cid))
 
     start, end = _parse_iso(to.get("started_at")), _parse_iso(to.get("finished_at"))
     if start and end:

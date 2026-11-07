@@ -46,6 +46,7 @@ ledger:
         output: reports/tlc.log
         output_sha256: af7ab9901b1342e4375c406902abffe5ed6c74d8c9e2b650428aec936dbb67ee
         verdict: Model checking completed. No error has been found.
+        status: completed
       date: '2026-11-01'
     scope:
       platforms:

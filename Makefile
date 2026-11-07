@@ -122,6 +122,7 @@ evals:
 	$(PYTHON) evals/mutation-plan/run_evals.py
 	$(PYTHON) evals/invariant-catalog/run_evals.py
 	$(PYTHON) evals/sarif/run_evals.py
+	$(PYTHON) evals/bounded-check/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="

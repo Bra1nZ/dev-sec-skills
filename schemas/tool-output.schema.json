@@ -2,10 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://dev-sec-skills.invalid/schemas/tool-output.schema.json",
   "title": "Tool output",
-  "description": "A machine-checkable record of one model checker's or prover's own run (V2-10). A status of model-checked or proven needs the tool's output and exit code, not only the existence of an artifact: a model file proves that a model exists, while this record proves that a tool ran over it and what it said. It does not prove the tool's semantics or the soundness of the encoding; a forger can rewrite the record and its output together without an external anchor (C-13).",
+  "description": "A machine-checkable record of one model checker's or prover's own run (V2-10, V2-28). A status of model-checked or proven needs the tool's output and exit code, not only the existence of an artifact: a model file proves that a model exists, while this record proves that a tool ran over it and what it said. `status` is required so a bounded run that hit its wall-clock limit is recorded as `unverified` instead of being read as a completed check with an empty or truncated log. The record does not prove the tool's semantics or the soundness of the encoding; a forger can rewrite the record and its output together without an external anchor (C-13).",
   "type": "object",
   "required": ["tool", "command", "output", "output_sha256", "exit_code",
-               "finished_at"],
+               "finished_at", "status"],
   "additionalProperties": false,
   "properties": {
     "tool": {
@@ -54,6 +54,24 @@
     "verdict": {
       "type": "string",
       "description": "The tool's own result line, quoted: e.g. 'No error has been found', 'no counterexample within bound 8'. L2 does not parse it; it exists so a reviewer can compare the claim with what the tool said."
+    },
+    "status": {
+      "enum": ["completed", "unverified", "failed", "error"],
+      "description": "How the supervised run ended (V2-28). completed — the process exited before the bound; exit_code is the tool's own. unverified — the bound elapsed and the process was killed, or the tool reported that it could not decide; this cannot support any conclusion. failed — the process exited non-zero before the bound. error — the wrapper could not start or supervise the process."
+    },
+    "timed_out": {
+      "type": "boolean",
+      "description": "True when the wall-clock bound elapsed and the process group was killed. `timed_out: true` contradicts any status other than unverified."
+    },
+    "bound_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Wall-clock bound the supervisor enforced. A timeout yields unverified, never a completed check."
+    },
+    "elapsed_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Wall-clock time the process was allowed to run, as measured by the supervisor."
     },
     "bound": {
       "type": "string",

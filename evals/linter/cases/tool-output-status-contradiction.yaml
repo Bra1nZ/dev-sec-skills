@@ -1,0 +1,67 @@
+# Synthetic fixture — not evidence about any real project.
+name: tool-output-status-contradiction
+description: "timed_out=true with status=completed is a contradiction: one of the two fields is false. L1 rejects the record, and L2 independently rejects a timed-out run supporting a model-checked claim, so the finding does not depend on which field a later reader trusts (V2-28)."
+files:
+  spec/AuthGate.tla: '---- MODULE AuthGate ----
+
+    EXTENDS Naturals
+
+    \* A role-less session cannot write tenant data.
+
+    ====
+
+    '
+  reports/tlc.log: 'TLC2 Version 2.19 of 08 August 2024 (rev: 6a1c8)
+
+    Running breadth-first search Model-Checking with fp 109 and seed 1 with 1 worker.
+
+    Starting workers...
+
+    Finished computing initial states: 1 distinct state generated.
+
+    Model checking completed. No error has been found.
+
+    '
+  docs/README.md: 'The auth gate rejects a write with no session.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: A role-less session cannot write tenant data.
+    mechanism: The write action is enabled only with a live session and a tenant role.
+    evidence:
+    - kind: model-check
+      command: java -jar tla2tools.jar -config AuthGate.cfg AuthGate.tla
+      artifact: spec/AuthGate.tla
+      tool_output:
+        tool: TLC
+        version: '2.19'
+        command: java -jar tla2tools.jar -config AuthGate.cfg AuthGate.tla
+        exit_code: 0
+        started_at: '2026-11-01T10:00:00+03:00'
+        finished_at: '2026-11-01T10:00:09+03:00'
+        output: reports/tlc.log
+        output_sha256: af7ab9901b1342e4375c406902abffe5ed6c74d8c9e2b650428aec936dbb67ee
+        verdict: Model checking completed. No error has been found.
+        status: completed
+        timed_out: true
+        bound: all reachable states (no depth bound)
+      date: '2026-11-01'
+    scope:
+      platforms:
+      - TLA+ model, synthetic fixture
+      assumptions:
+      - The .tla model matches the write path it abstracts.
+    status: model-checked
+    limitations: Unbounded TLC run over a hand-written model; the model itself is not proved sound.
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: error
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+exit: 1

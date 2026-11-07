@@ -135,6 +135,7 @@ references/
     SOURCES.md
     downloaded/
 tools/
+  bounded_check.py
   cell_lint.py
   choke_points.py
   claim_lint.py
@@ -193,6 +194,8 @@ evals/
   invariant-catalog/
     run_evals.py
   sarif/
+    run_evals.py
+  bounded-check/
     run_evals.py
 spec/
   README.md
@@ -312,7 +315,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, eight linter suites, and the `spec/` directory with the conveyor concept.
+evals, twelve linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -321,21 +324,39 @@ executable checks for static analysis and trigger evals.
 
 The executable part also includes `tools/claim_lint.py` (L1–L5; L2 verifies
 run-record hashes, exit code, date and executed IDs, compares the artifact with
-its blob at the cited commit, and checks tool-output hashes and bounds for
+its blob at the cited commit, and checks tool-output hashes, mandatory `status` and bounds for
 `model-checked`/`proven`), `tools/cell_lint.py` (CL1–CL6: structure,
 coverage, evidence, traceability, taxonomy, status-escalation gate; a
 `runtime-enforcement` detector needs a negative test, and the cell needs
 `enforced_at`, `oracle` and `violation_response`),
 `tools/unroutable.py` (the `unroutable` share) and the `ci/cell-lint.yml`
-template. The linter cases are in [`evals/linter/`](evals/linter/): 35/35,
+template. The linter cases are in [`evals/linter/`](evals/linter/): 40/40,
 including 8 run-record cases, two V2-09 controls — `unrelated-commit` (the
 commit resolves but the artifact changed after it) and `empty-claims` (an empty
 ledger must fail instead of passing vacuously) — and seven V2-10 `tool-output-*`
 cases (valid, output hash, missing output, non-zero exit, date, a model-checked
-claim with no output, a model-checked claim with no bound). The historical
+claim with no output, a model-checked claim with no bound) and five V2-28 cases (`unverified` at
+exit 0, a timeout with a truncated log, `timed_out` contradicting the
+status, a record without `status`, and an open claim that honestly keeps an
+`unverified` record). The historical
 12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 40/40, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
+
+The bounded run `tools/bounded_check.py` (V2-28) starts an external tool in
+its own process group and kills the group at the wall-clock bound. The
+`tool_output` record gains a mandatory `status`: `completed` (the process
+exited before the bound), `unverified` (the bound elapsed and the group was
+killed), `failed` (non-zero exit) or `error` (the supervisor could not
+start). `timed_out`, `bound_seconds` and `elapsed_seconds` are recorded
+explicitly; L1 rejects `timed_out` contradicting the status, and L2 forbids
+`status != completed` from supporting a non-open claim. An open claim may
+honestly keep an `unverified` attempt. The cases are in
+[`evals/bounded-check/`](evals/bounded-check/): 10/10, including survival of
+a grandchild after `killpg` and two `claim_lint` integration runs. The
+supervisor classifies its own child and does not prove a real checker's
+semantics; a child that leaves the group by double-forking can survive the
+kill.
 
 The fuzz adapter `tools/fuzz_run.py` (V2-17) runs a target over a seed corpus
 and random mutations with a fixed seed, checks every execution against explicit

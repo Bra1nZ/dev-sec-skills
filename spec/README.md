@@ -105,11 +105,26 @@ L2 warnings.
 Tool output (V2-10) closes the model-checked/proven gap: an artifact proves that
 a model exists, not that a checker ran over it. `evidence[].tool_output` names
 the tool and its command, the captured output and its SHA-256, the exit code,
-and the bound; `claim_lint` L1 checks the shape, L2 recomputes the output hash,
-ties `finished_at` to the evidence date and rejects a non-zero exit for a
-non-open claim, and L4 rejects a `model-checked` or `proven` claim without one.
-A `model-checked` claim must also state its bound. The record does not check the
-tool's semantics or the soundness of the encoding.
+the run status and the bound; `claim_lint` L1 checks the shape, L2 recomputes
+the output hash, ties `finished_at` to the evidence date and rejects a non-zero
+exit for a non-open claim, and L4 rejects a `model-checked` or `proven` claim
+without one. A `model-checked` claim must also state its bound. The record does
+not check the tool's semantics or the soundness of the encoding.
+
+Bounded fallback (V2-28) makes that record say how the run ended, because a
+killed checker and a finished checker can leave the same artifact. `status` is
+required and is one of `completed`, `unverified`, `failed` or `error`;
+`tools/bounded_check.py` starts the command in its own process group, kills the
+group at `--timeout`, and writes the combined log with its SHA-256. A timeout
+is `unverified` with `timed_out: true` and a negative exit code; L1 rejects a
+`timed_out` flag that contradicts the status, and L2 rejects any `status` other
+than `completed` for a non-open claim. An open claim may honestly keep an
+`unverified` record. The rules are in `conveyor/guard-grammar.md` §6.6; the
+supervisor has 10 eval cases in `evals/bounded-check/`, including a grandchild
+process that must not survive the group kill and two `claim_lint` integration
+cases. The supervisor classifies its own child; it does not prove a real
+checker's semantics, and a child that double-forks out of the group can still
+escape the kill.
 
 Runtime enforcement (V2-15/V2-16) is a separate evidence kind: a detector with
 `kind: runtime-enforcement` must name the `negative_test` that attempts the

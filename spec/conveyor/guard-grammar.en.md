@@ -1,9 +1,11 @@
 # Guard Grammar for L2
 
-> **Status:** specification `open`. No implementation, no pilot, no guard
-> extracted or checked under this grammar. The document fixes what L2 **can**
-> and, more importantly, **cannot** verify. This is a derivative translation of
-> [`guard-grammar.md`](guard-grammar.md); the Russian text wins on disagreement.
+> **Status:** specification `open`. No extractor implementation, no pilot, no
+> guard extracted or checked under this grammar. The document fixes what L2
+> **can** and, more importantly, **cannot** verify. This is a derivative
+> translation of [`guard-grammar.md`](guard-grammar.md); the Russian text wins
+> on disagreement. The one implemented mechanism is bounded-run supervision
+> (§6.6); it does not make the grammar itself implemented.
 >
 > **Normative words.** `MUST`, `MUST NOT`, `SHOULD` follow RFC 2119/8174.
 > Anything marked `open` is not a mechanism until evidence exists.
@@ -302,6 +304,62 @@ A grammar change is a reviewed change. It requires:
 Extending the grammar without new evidence is forbidden: otherwise the promise
 boundary moves silently.
 
+### 6.6 Bounded fallback: a timeout is `unverified`
+
+Goal-survival checking, and any L2 check that launches an external tool, runs
+under a wall-clock bound. The artifact of a check (a model, a log, a truncated
+tail) does not distinguish a completed run from a killed one; only a record of
+how the run ended does. The `tool_output` record
+(`schemas/tool-output.schema.json`) therefore must carry `status` with one of
+four values:
+
+| `status` | When | What it means |
+| --- | --- | --- |
+| `completed` | the process exited before the bound | the tool said something; what — in the log |
+| `unverified` | the bound elapsed and the process group was killed, or the tool reported that it could not decide | no conclusion; the log is truncated or empty |
+| `failed` | the process exited non-zero before the bound | the run did not happen; the reason is in the log |
+| `error` | the supervisor could not start or watch the process | there was no run |
+
+Normative rules:
+
+1. **The bound is mandatory and recorded.** `bound_seconds` is an integer ≥ 1.
+   A run without a recorded bound is not evidence for `model-checked`: what it
+   explored is unknown.
+2. **A timeout yields only `unverified`.** `timed_out: true` with any other
+   `status` is a contradiction rejected by L1. When the bound elapses the whole
+   process group is killed: a checker's children must not outlive their parent.
+3. **`unverified` does not support a non-open claim.** L2 rejects
+   `status != completed` for any claim above `open`. The same rule fires
+   independently on `timed_out: true`, so the finding does not depend on which
+   field a reader trusts.
+4. **`failed` and `error` are not support either.** A non-zero exit or a
+   supervisor failure does not become "checked" because an artifact exists.
+5. **`completed` is not "proved".** `completed` says only that the process
+   exited on its own. `verdict` stays the tool's own line in the log; the
+   supervisor does not paraphrase it. For `model-checked` the state-space bound
+   remains a separate mandatory field.
+6. **A zero exit is not a verdict.** A tool that printed "could not decide" and
+   exited 0 must be recorded as `unverified`; an adapter that hides this breaks
+   the contract.
+7. **An open claim may honestly keep an `unverified` record.** A failed attempt
+   is evidence about the state of the work; there is no penalty for it. The
+   prohibition covers only passing it off as a closed claim.
+8. **Non-zero as a verdict is the adapter's job.** If a tool's contract says
+   "exit 1 = counterexample", the supervisor still records `failed`; mapping
+   "counterexample" into a verdict is done by an adapter that cites the log.
+   Silently treating non-zero as `completed` is forbidden.
+
+Mechanism: `tools/bounded_check.py` (new process session, `killpg` on timeout,
+combined stdout/stderr with no supervisor inserts), the
+`schemas/tool-output.schema.json` schema, L1/L2 checks in `tools/claim_lint.py`,
+the `evals/bounded-check/` cases (10/10), and
+`evals/linter/cases/tool-output-*.yaml`.
+
+What this section does **not** cover: distributed checkers with their own
+per-node timeouts, checkpoints and resumption after the bound, an adaptive
+budget (raising the bound as the model grows), and the cost of the timeout
+share per PR (V2-30). These are open questions, not corollaries of §6.6.
+
 ## 7. Grammar ↔ cell map
 
 All cells come from [`cells.seed.yaml`](cells.seed.yaml).
@@ -453,8 +511,8 @@ exactly the defect CELL-002 captures as a separate cell.
    `unroutable`.
 6. How an L2 verdict links to the claim registry: which claim a covered cell
    closes.
-7. Goal-survival cost: the timeout share, the `unverified` policy, and the
-   model-sync budget per PR.
+7. Goal-survival cost: the timeout share and the model-sync budget per PR.
+   The `unverified` policy is fixed in 6.6; the numbers are still unmeasured.
 
 ## 12. What would change this document
 

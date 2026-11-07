@@ -8,7 +8,8 @@ evidence-first contract. The ledger turns the prose discipline of
 
 - `claim-ledger.schema.json` — JSON Schema (draft-07) for the ledger.
 - `run-record.schema.json` — JSON Schema (draft-07) for `evidence[].run_record`.
-- `tool-output.schema.json` — JSON Schema (draft-07) for `evidence[].tool_output`.
+- `tool-output.schema.json` — JSON Schema (draft-07) for `evidence[].tool_output`,
+  written by `../tools/bounded_check.py` (V2-28).
 - `fuzz-run.schema.json` — JSON Schema (draft-07) for a fuzz run record (V2-17),
   written by `../tools/fuzz_run.py`.
 - `fuzz-triage.schema.json` — JSON Schema (draft-07) for the triage of one fuzz
@@ -74,23 +75,41 @@ re-dating and unexecuted citations, not determined fraud.
 
 A `model-checked` or `proven` claim needs an `evidence[].tool_output`
 (V2-10): `tool`, `command`, `output`, `output_sha256`, `exit_code`,
-`finished_at` are required, and `version`, `commit`, `started_at`, `verdict`,
-`bound` are optional. An artifact says a model or proof script exists; this
-record says a tool ran over it and what it answered. L1 checks the shape and
-commit/command agreement; L2 verifies:
+`finished_at` and `status` are required, and `version`, `commit`, `started_at`,
+`verdict`, `bound`, `timed_out`, `bound_seconds`, `elapsed_seconds` are
+optional. An artifact says a model or proof script exists; this record says a
+tool ran over it and what it answered. L1 checks the shape and commit/command
+agreement; L2 verifies:
 
 - `output` exists under `--tool-output-root` (default `--root`) and its SHA-256
   matches `output_sha256`;
 - `finished_at`'s local date equals the evidence date, and `started_at` is not
   after it;
 - `exit_code` is 0 for a non-open claim — a failed tool run supports no status
-  above `open`.
+  above `open`;
+- `status` is `completed` for a non-open claim, and `timed_out` is false
+  (V2-28). `unverified`, `failed` and `error` say the run did not decide
+  anything, so they cannot support a status above `open` even when an artifact
+  or a log exists.
+
+`status` has four values: `completed` (the process exited before the bound),
+`unverified` (the wall-clock bound elapsed and the process group was killed, or
+the tool said it could not decide), `failed` (non-zero exit before the bound)
+and `error` (the supervisor could not start or watch the process). L1 rejects
+`timed_out: true` with any status other than `unverified`, because one of the
+two fields would be false. `tools/bounded_check.py` writes this record: it
+starts the command in its own session, kills the whole group at `--timeout`,
+and writes the combined log without adding supervisor lines, so
+`output_sha256` covers the tool's bytes only. Exit codes are 0 completed,
+1 failed, 2 usage or supervision error, 3 unverified.
 
 L4 errors when a `model-checked` or `proven` claim has no `tool_output`, and
 when a `model-checked` claim's record states no `bound`: a bounded run whose
 bound is unrecorded overstates what was explored. The record does not check the
 tool's semantics or the soundness of the encoding, and without an external
-anchor a consistent forgery passes, exactly as with run records.
+anchor a consistent forgery passes, exactly as with run records. A `completed`
+run is not a proof: `verdict` stays the tool's own line in the log, and the
+supervisor does not paraphrase it.
 
 ## Fuzz run record
 
@@ -124,7 +143,7 @@ The gate proves the artifacts exist, not that the routing decision was right.
 | Check | What it enforces |
 | --- | --- |
 | L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` and `tool_output` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
-| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash and exit code, cited tests appeared in the log |
+| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
 | L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning; `model-checked` and `proven` need a `tool_output`, `model-checked` also needs a bound |
 | L5 | prose: unqualified absolutes in docs. Engine order: Vale (`styles/RussianAbsolutes` package) if the `vale` binary is available, fallback to the built-in line scanner |

@@ -144,6 +144,7 @@ schemas/
   tool-output.schema.json
   README.md
 tools/
+  bounded_check.py
   cell_lint.py
   choke_points.py
   claim_lint.py
@@ -210,6 +211,8 @@ evals/
   invariant-catalog/
     run_evals.py
   sarif/
+    run_evals.py
+  bounded-check/
     run_evals.py
 spec/
   README.md
@@ -329,7 +332,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, восемь наборов для линтеров и каталог `spec/` с концептом конвейера.
+скилов, двенадцать наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -339,20 +342,37 @@ evals, а не истинность свойств и не чистоту produc
 для прозы, встроенный сканер как fallback; L2 проверяет run-record — хэши лога и
 артефакта, exit code, дату, исполненные ID — и сверяет артефакт с его блобом на
 процитированном коммите; tool-output для `model-checked`/`proven` — хэш вывода,
-exit code, дату и bound), `tools/status_diff.py` (гейт эскалации статусов между
+exit code, дату, обязательный `status` и bound), `tools/status_diff.py` (гейт эскалации статусов между
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
-Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 35/35
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 40/40
 проходят, включая негативный контроль самого runner'а, кейсы для Rust
 `#[test] fn`, 8 кейсов run-record (валидный, хэш артефакта, хэш лога,
 неисполненный ID, ненулевой exit, отсутствие записи, несовпадение даты,
 несовпадение счётчиков), два кейса V2-09: `unrelated-commit` (коммит
 резолвится, но артефакт с тех пор изменился) и `empty-claims` (пустой леджер
-обязан упасть, а не пройти вакуумно), и семь кейсов V2-10 `tool-output-*`
+обязан упасть, а не пройти вакуумно), семь кейсов V2-10 `tool-output-*`
 (валидная запись, хэш вывода, отсутствующий вывод, ненулевой exit, дата,
-`model-checked` без вывода, `model-checked` без bound). Исторический прогон из
-12 кейсов — `evals/iteration-3/RESULTS.md`.
+`model-checked` без вывода, `model-checked` без bound) и пять кейсов V2-28
+(`unverified` при exit 0, таймаут с обрезанным логом, `timed_out`,
+противоречащий статусу, запись без `status`, open claim с честной
+`unverified`-записью). Исторический прогон из 12 кейсов —
+`evals/iteration-3/RESULTS.md`.
+
+Bounded-прогон `tools/bounded_check.py` (V2-28) запускает внешний инструмент
+в отдельной группе процессов и убивает её по wall-clock bound. Запись
+`tool_output` получает обязательный `status`: `completed` (процесс завершился
+до bound), `unverified` (bound истёк, группа убита), `failed` (non-zero exit)
+или `error` (супервизор не смог стартовать). `timed_out`, `bound_seconds` и
+`elapsed_seconds` записываются явно; L1 отвергает `timed_out`, противоречащий
+статусу, L2 не даёт `status != completed` поддерживать non-open claim.
+Открытый claim может честно хранить `unverified`-попытку. Кейсы —
+[`evals/bounded-check/`](evals/bounded-check/): 10/10, включая выживание
+внучереннего процесса после `killpg` и два интеграционных прогона
+`claim_lint`. Супервизор классифицирует собственный дочерний процесс и не
+доказывает семантику реального checker'а; ребёнок, ушедший из группы через
+double-fork, может пережить kill.
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
 evidence, трассировка, таксономия, гейт эскалации статуса; детектор

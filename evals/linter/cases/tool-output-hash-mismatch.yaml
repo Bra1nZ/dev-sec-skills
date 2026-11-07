@@ -46,6 +46,7 @@ ledger:
         output: reports/tlc.log
         output_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
         verdict: Model checking completed. No error has been found.
+        status: completed
         bound: all reachable states (no depth bound)
       date: '2026-11-01'
     scope:
