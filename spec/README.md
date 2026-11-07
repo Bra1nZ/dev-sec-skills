@@ -80,9 +80,9 @@ spec/
       c02-mutants-2026-11-07.json     # P-02 tool_output record
       c02-mutants-2026-11-07.log      # captured stdout, hash-checked
   red-team/
-    README.md                     # 15 attacks on the real pilot artifacts, 1 recorded gap
+    README.md                     # 16 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
-    2026-11-07-drills.json        # recorded result: 14 blocked, 1 allowed
+    2026-11-07-drills.json        # recorded result: 15 blocked, 1 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
