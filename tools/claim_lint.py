@@ -122,6 +122,11 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
+TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+if TOOLS_DIR not in sys.path:
+    sys.path.insert(0, TOOLS_DIR)
+import anchor_subject  # noqa: E402
+
 STATUSES = {"proven", "model-checked", "tested", "static-refinement", "reviewed", "open"}
 EVIDENCE_KINDS = {"proof", "model-check", "test", "static-analysis", "review", "planned"}
 STATUS_REQUIRES_KIND = {
@@ -176,10 +181,18 @@ SANITIZER_FINDING_RE = re.compile(
 # before it can support a claim.
 STATIC_ANALYSIS_FIELDS = ("tool", "command", "rules", "target_commit", "output",
                           "output_sha256", "report", "report_sha256", "exit_code",
-                          "started_at", "finished_at", "status", "triage")
+                          "started_at", "finished_at", "status", "triage", "anchor")
 STATIC_REPORT_FORMAT = "dev-sec-skills/sarif-evidence/v1"
 TRIAGE_DISPOSITIONS = ("covered", "new", "not-a-bug", "out-of-scope")
 TRIAGE_ROUTED = ("covered", "new")
+# Anchor (C-13, schemas/static-analysis-run.schema.json). An SSH signature over
+# the canonical bytes of tools/anchor_subject.py binds the run identity, both
+# output hashes and the whole triage list. The public key is committed as
+# allowed_signers; the private key is not. L2 recomputes the bytes and verifies
+# the signature, so a record edited after signing no longer verifies.
+ANCHOR_FIELDS = ("type", "signer", "namespace", "subject", "subject_sha256",
+                 "signature", "signature_sha256", "allowed_signers", "date")
+ANCHOR_TYPES = ("ssh-ed25519",)
 FINDING_ID_RE = re.compile(r"^F-[0-9]{3,}$")
 CELL_ID_RE = re.compile(r"^CELL-[0-9]{3,}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -837,6 +850,41 @@ def check_static_analysis_runs_schema(claims, findings):
                     if note is not None and not isinstance(note, str):
                         findings.append(Finding("L1", "error",
                                                 "%s note must be a string" % etag, cid))
+                anchor = run.get("anchor")
+                if not isinstance(anchor, dict):
+                    findings.append(Finding("L1", "error",
+                                            "%s anchor is not an object; every static-analysis "
+                                            "run must carry an anchor (C-13)" % tag, cid))
+                else:
+                    missing_anchor = [f for f in ANCHOR_FIELDS if f not in anchor]
+                    if missing_anchor:
+                        findings.append(Finding("L1", "error",
+                                                "%s anchor missing %s"
+                                                % (tag, ", ".join(missing_anchor)), cid))
+                    if anchor.get("type") not in ANCHOR_TYPES:
+                        findings.append(Finding("L1", "error",
+                                                "%s anchor.type=%r is not one of %s"
+                                                % (tag, anchor.get("type"),
+                                                   ", ".join(ANCHOR_TYPES)), cid))
+                    for field in ("signer", "namespace", "subject", "signature",
+                                  "allowed_signers"):
+                        value = anchor.get(field)
+                        if not isinstance(value, str) or not value.strip():
+                            findings.append(Finding("L1", "error",
+                                                    "%s anchor.%s must be a non-empty string"
+                                                    % (tag, field), cid))
+                    for field in ("subject_sha256", "signature_sha256"):
+                        value = anchor.get(field)
+                        if not isinstance(value, str) or not SHA256_RE.match(value):
+                            findings.append(Finding("L1", "error",
+                                                    "%s anchor.%s is not a sha256 hex digest"
+                                                    % (tag, field), cid))
+                    anchor_date = anchor.get("date")
+                    if not isinstance(anchor_date, str) \
+                            or not DATE_RE.match(anchor_date) \
+                            or _parse_iso(anchor_date) is None:
+                        findings.append(Finding("L1", "error",
+                                                "%s anchor.date is not YYYY-MM-DD" % tag, cid))
                 if needs_registry and not run.get("cells"):
                     findings.append(Finding("L1", "error",
                                             "%s triage routes a finding to a cell but the run "
@@ -1074,6 +1122,75 @@ def _fixture_ids(path):
     return {item.get("id") for item in items if isinstance(item, dict)}
 
 
+def _check_anchor(run, claim, tool_output_root, tag, findings):
+    """L2: the signature covers the record, not some other bytes.
+
+    The signed subject is a canonical function of the run (engine, command,
+    rules, commit, both hashes, exit code, timestamps, status and triage). L2
+    recomputes it and compares, then asks ssh-keygen to verify the signature
+    against the committed allowed_signers. An editor who changes a finding's
+    disposition, a hash or a timestamp without the private key cannot make both
+    checks pass. The key holder, or anyone who can replace allowed_signers and
+    re-sign, still can; that is the C-13 gap the docs state.
+    """
+    cid = claim["id"]
+    status = claim.get("status")
+    anchor = run.get("anchor")
+    if not isinstance(anchor, dict):
+        return  # L1 already reported the missing shape
+
+    def resolve(value):
+        if not isinstance(value, str) or not value.strip():
+            return None
+        return value if os.path.isabs(value) else os.path.join(tool_output_root, value)
+
+    subject_path = resolve(anchor.get("subject"))
+    signature_path = resolve(anchor.get("signature"))
+    allowed_path = resolve(anchor.get("allowed_signers"))
+    for label, value, path in (
+            ("subject", anchor.get("subject"), subject_path),
+            ("signature", anchor.get("signature"), signature_path),
+            ("allowed_signers", anchor.get("allowed_signers"), allowed_path)):
+        if path is None or not os.path.exists(path):
+            findings.append(Finding("L2", "error",
+                                    "%s anchor %s not found: %s" % (tag, label, value), cid))
+            return
+
+    if _sha256_file(subject_path) != anchor.get("subject_sha256"):
+        findings.append(Finding("L2", "error",
+                                "%s anchor subject_sha256 mismatch for %s"
+                                % (tag, anchor.get("subject")), cid))
+    if _sha256_file(signature_path) != anchor.get("signature_sha256"):
+        findings.append(Finding("L2", "error",
+                                "%s anchor signature_sha256 mismatch for %s"
+                                % (tag, anchor.get("signature")), cid))
+
+    expected = anchor_subject.subject_bytes(run)
+    actual = open(subject_path, "rb").read()
+    if actual != expected:
+        findings.append(Finding("L2", "error",
+                                "%s anchor subject does not describe this record; a signed "
+                                "field changed after signing" % tag, cid))
+
+    ssh_keygen = shutil.which("ssh-keygen")
+    if not ssh_keygen:
+        severity = "error" if status != "open" else "info"
+        findings.append(Finding("L2", severity,
+                                "%s anchor cannot be verified: ssh-keygen is not on PATH"
+                                % tag, cid))
+        return
+    proc = subprocess.run(
+        [ssh_keygen, "-Y", "verify", "-f", allowed_path,
+         "-I", str(anchor.get("signer", "")), "-n", str(anchor.get("namespace", "")),
+         "-s", signature_path],
+        input=expected, capture_output=True)
+    if proc.returncode != 0:
+        detail = (proc.stdout + proc.stderr).decode("utf-8", "replace").strip()
+        first = detail.splitlines()[0] if detail else "ssh-keygen returned %d" % proc.returncode
+        findings.append(Finding("L2", "error",
+                                "%s anchor signature does not verify: %s" % (tag, first), cid))
+
+
 def _check_static_analysis_run(ev, run, claim, root, tool_output_root, index, findings):
     """L2: the engine output, the report and the triage support the record.
 
@@ -1140,6 +1257,10 @@ def _check_static_analysis_run(ev, run, claim, root, tool_output_root, index, fi
                 findings.append(Finding("L2", "error",
                                         "%s rules.sha256 mismatch for %s"
                                         % (tag, source), cid))
+
+    # The anchor is checked before the output paths: a URL output can return
+    # early, but the signature still has to describe this record.
+    _check_anchor(run, claim, tool_output_root, tag, findings)
 
     # Raw output: the bytes the engine wrote.
     output = run.get("output")

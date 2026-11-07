@@ -1,0 +1,15 @@
+# Synthetic fixture - not evidence about any real project.
+name: static-analysis-anchor-missing
+extends: static-analysis-valid.yaml
+description: A complete static-analysis run whose anchor block is absent. The
+  signature is mandatory for new records (C-13), so L1 must error even when
+  every hash and the triage are correct.
+no_anchor: true
+expect:
+  L1: error
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

@@ -1,0 +1,16 @@
+# Synthetic fixture - not evidence about any real project.
+name: static-analysis-anchor-tampered
+extends: static-analysis-valid.yaml
+description: A valid anchored record is edited after signing (the engine version
+  changes). The signature still exists and the subject file still hashes to the
+  recorded value, but the canonical bytes no longer describe the run, so L2 must
+  error. This is the re-dating/rewriting case the anchor exists to catch.
+tamper_anchor: subject
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

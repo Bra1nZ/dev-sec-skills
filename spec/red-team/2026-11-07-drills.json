@@ -79,11 +79,16 @@
       "name": "static-findings-hidden",
       "verdict": "blocked",
       "attack": "drop the triage entry for a real static-analysis finding (F-005)"
+    },
+    {
+      "name": "forge-anchored-record",
+      "verdict": "blocked",
+      "attack": "rewrite a finding's disposition after the anchor was signed"
     }
   ],
   "summary": {
-    "drills": 15,
-    "blocked": 14,
+    "drills": 16,
+    "blocked": 15,
     "allowed": 1,
     "failed": 0
   }

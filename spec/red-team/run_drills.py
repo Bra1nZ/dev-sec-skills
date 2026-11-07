@@ -314,6 +314,25 @@ def _hidden_static_finding(td):
              "contains": ["finding(s) F-005 have no triage entry"]}]
 
 
+def _forge_anchored_record(td):
+    """BLOCKED by L2: edit a triaged field without re-signing the anchor.
+
+    The attacker flips one finding from out-of-scope to not-a-bug to make the
+    queue look better. Every hash still matches the committed bytes and the
+    triage is still a bijection, so only the anchor can catch it.
+    """
+    target = load(LEDGER)
+    runs = claim(target, "C-09")["evidence"][0]["static_analysis_runs"]
+    entry = runs[0]["triage"][0]
+    entry["disposition"] = "not-a-bug"
+    entry["reason"] = "The attack rewrote the disposition after signing."
+    entry.pop("note", None)
+    path = os.path.join(td, "ledger.yaml")
+    dump(target, path)
+    return [{"gate": "claim_lint", "argv": lint_args(path), "exit": 1,
+             "contains": ["anchor subject does not describe this record"]}]
+
+
 def _borrowed_evidence_declared(td):
     """BLOCKED by L6 rule 2 even when both claims declare the shared test."""
     base = load(LEDGER)
@@ -387,6 +406,9 @@ DRILLS = [
      "verdict": "blocked"},
     {"name": "static-findings-hidden", "build": _hidden_static_finding,
      "attack": "drop the triage entry for a real static-analysis finding (F-005)",
+     "verdict": "blocked"},
+    {"name": "forge-anchored-record", "build": _forge_anchored_record,
+     "attack": "rewrite a finding's disposition after the anchor was signed",
      "verdict": "blocked"},
 ]
 

@@ -34,6 +34,11 @@ disposition.
   self-pilot run at `d0c25c2`, three findings.
 - `runs/ci-dev-sec-skills-postfix-2026-11-07.{sarif,report.json}` — the
   control run at `67d0aec`, zero findings.
+- `anchor/allowed_signers` — the committed public key that pins the anchor
+  signer. The private key is not in the repository.
+- `anchor/ci-dev-sec-skills-{prefix,postfix}-2026-11-07.json{,.sig}` and
+  `anchor/ci-craft-i18n-2026-11-07.json{,.sig}` — canonical subjects and their
+  detached signatures, one pair per anchored run.
 
 The claim that cites this run is C-09 in
 `spec/pilots/craft-i18n/claims.yaml`. Its triage is embedded in the record, as
@@ -197,8 +202,40 @@ caught) is still synthetic-only.
 It does not prove that a finding is exploitable, that `out-of-scope` is a
 harmless finding, or that the engine would catch a different defect. The rules
 are authored here and are not the `p/ci` benchmark, so a different rule set
-would produce a different review queue. Without an external anchor (C-13) a
-forger can rewrite the record, the rule file and both outputs together.
+would produce a different review queue. The anchor below narrows a consistent
+rewrite, but it does not remove the key-holder and `allowed_signers` gaps.
+
+## Anchor: what it narrows and what it does not
+
+Every static-analysis run carries an `anchor`: an ed25519 SSH signature over
+the canonical bytes of the record. `tools/anchor_subject.py` defines those
+bytes (engine and version, command, rule hashes, target commit, both output
+hashes, exit code, timestamps, status and the whole triage list);
+`tools/anchor_run.py` signs and verifies; L2 recomputes the bytes and calls
+`ssh-keygen -Y verify` against `spec/static-analysis/anchor/allowed_signers`.
+The anchor is checked before the output paths, so a URL output cannot bypass
+it.
+
+The private key lives at `/tmp/opencode/dev-sec-skills-anchor/key`, outside
+the repository, and is never committed. That is what makes an edit after
+signing detectable: changing a disposition, a hash or a timestamp changes the
+canonical bytes, and a forger without the key cannot produce a matching
+signature. The `forge-anchored-record` red-team drill flips one triage
+disposition and is blocked with `anchor subject does not describe this
+record`.
+
+The gap C-13 records is narrower, not closed. The key holder can re-sign any
+edit, and anyone who can replace `allowed_signers` and re-sign can do the
+same. There is no transparency log, timestamping or key revocation. The anchor
+covers hashes, not the `output`/`report` paths or `rules.source`, and it covers
+`static_analysis_runs` only: test run records, sanitizer, proof and review
+records are not anchored.
+
+Verification is offline. `ssh-keygen` must be on `PATH`; when it is missing a
+non-open claim gets an error and an open claim gets info, so the failure is
+visible rather than ignored. Losing the private key makes re-signing old
+records impossible; those records stay valid, and new records would use a new
+signer.
 
 ## Reproduce the checks
 
@@ -215,4 +252,12 @@ python3 evals/linter/run_evals.py
 
 # the adapter cases (aliases and --path-root)
 python3 evals/sarif/run_evals.py
+
+# verify the committed anchors directly (offline; needs ssh-keygen)
+python3 tools/anchor_run.py verify \
+    --ledger spec/pilots/dev-sec-skills/claims.yaml --claim C-01 --run 0
+python3 tools/anchor_run.py verify \
+    --ledger spec/pilots/dev-sec-skills/claims.yaml --claim C-01 --run 1
+python3 tools/anchor_run.py verify \
+    --ledger spec/pilots/craft-i18n/claims.yaml --claim C-09 --run 0
 ```

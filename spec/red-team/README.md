@@ -3,7 +3,7 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Fourteen attacks are blocked by the check named for them; one
+what happened. Fifteen attacks are blocked by the check named for them; one
 passes with every gate green, and that one is the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 15 attacks, one mutation each
-  2026-11-07-drills.json       # recorded result: 14 blocked, 1 allowed
+  run_drills.py                # the 16 attacks, one mutation each
+  2026-11-07-drills.json       # recorded result: 15 blocked, 1 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -45,6 +45,7 @@ spec/red-team/
 | `borrow-and-declare-sharing` | borrow one test, declare it shared, still call C-08 `tested` | blocked by L6 rule 2 (V2-34) |
 | `sanitizer-findings-hidden` | declare a clean ASan run over output with `ERROR: AddressSanitizer:` | blocked by L2 (V2-35) |
 | `static-findings-hidden` | drop the triage entry for a real static-analysis finding (F-005) | blocked by L2 (V2-36) |
+| `forge-anchored-record` | rewrite a finding's disposition after the anchor was signed | blocked by L2 anchor verification (C-41) |
 
 ## The one silent path
 
@@ -59,6 +60,25 @@ later, and a `reviewed` claim becomes `tested`.
 This is the known C-13 gap: without an external anchor, a consistent forgery is
 indistinguishable from a real re-run. The drill makes it concrete on a real
 ledger rather than in a fixture.
+
+The C-41 anchor does not close this drill: it covers `static_analysis_runs`, and
+the re-dating drill edits test evidence (`run_record`), which has no anchor. A
+re-dated static-analysis run would fail the anchor check unless the key holder
+re-signs it, and then it is a new signed record rather than a silent edit.
+
+## Forging an anchored record, now blocked
+
+`static_analysis_runs` carry an SSH-signature anchor (C-41) over the canonical
+bytes of the record, including the whole triage list. `forge-anchored-record`
+flips one finding from `out-of-scope` to `not-a-bug`, leaves every hash intact
+and keeps the triage a bijection, so only the anchor can catch the edit. L2
+recomputes the canonical bytes and reports `anchor subject does not describe
+this record` before the signature check.
+
+The gap is narrower, not gone: the key holder can re-sign any edit, and
+replacing `allowed_signers` plus a new signature defeats verification entirely.
+There is no transparency log or timestamping. Test run records, sanitizer,
+proof and review records are still unanchored.
 
 ## Borrowing, now blocked
 
@@ -82,7 +102,7 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 14 blocked drills show that those specific checks fire on real artifacts,
+- The 15 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
 - The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
   starts blocking it, the drill fails and the gap entry must be updated, so this

@@ -330,6 +330,16 @@ claims:
             started_at: "2026-11-07T22:54:14+03:00"
             finished_at: "2026-11-07T22:54:20+03:00"
             status: completed
+            anchor:
+              type: ssh-ed25519
+              signer: dev-sec-skills-anchor-2026-11-07
+              namespace: dev-sec-skills-static-analysis
+              subject: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json
+              subject_sha256: 12af569c215e9cea0f77ee7d4eaff2e26385eb1c7bf255728ff148c73b4f820f
+              signature: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json.sig
+              signature_sha256: 1fe04c90d20c88f4918b2c68c632ea0f684bb08bae9aeb7699f28fb5141afd91
+              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              date: "2026-11-07"
             triage:
               - finding: F-001
                 disposition: out-of-scope

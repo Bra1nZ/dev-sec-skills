@@ -1,0 +1,15 @@
+# Synthetic fixture - not evidence about any real project.
+name: static-analysis-anchor-bad-signature
+extends: static-analysis-valid.yaml
+description: The signature file is replaced after signing. Both the subject and
+  the record are consistent, so only the signature check can fail; L2 must
+  error rather than accept an unverified anchor.
+tamper_anchor: signature
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

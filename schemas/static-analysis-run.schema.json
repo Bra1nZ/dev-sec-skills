@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["tool", "command", "rules", "target_commit", "output",
                "output_sha256", "report", "report_sha256", "exit_code",
-               "started_at", "finished_at", "status", "triage"],
+               "started_at", "finished_at", "status", "triage", "anchor"],
   "additionalProperties": false,
   "properties": {
     "tool": {
@@ -98,6 +98,56 @@
       "type": "array",
       "description": "Exactly one entry per finding in the normalized report. An empty list is valid only when the report has no findings. `covered` and `new` name artifacts that must resolve; `not-a-bug` states why the finding is not a defect; `out-of-scope` states why a real finding has no owner in the cited taxonomy.",
       "items": { "$ref": "#/definitions/entry" }
+    },
+    "anchor": {
+      "type": "object",
+      "description": "An SSH signature over the canonical bytes of the run (engine, command, rules hash, commit, both output hashes, exit code, timestamps, status and the whole triage list; see tools/anchor_subject.py). The signed subject, its signature and the allowed_signers file are committed and hashed here. L2 recomputes the canonical bytes and verifies the signature, so a record edited after signing stops verifying. The private key is not in the repository. The anchor does not stop the key holder, or anyone who can replace allowed_signers and re-sign: that is the remaining C-13 gap.",
+      "required": ["type", "signer", "namespace", "subject", "subject_sha256",
+                   "signature", "signature_sha256", "allowed_signers", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["ssh-ed25519"],
+          "description": "Signature scheme. Only ssh-ed25519 is implemented."
+        },
+        "signer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identity passed to `ssh-keygen -Y verify -I`; must appear in allowed_signers."
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Signature namespace (`ssh-keygen -Y sign -n`)."
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the signed canonical subject, relative to --tool-output-root."
+        },
+        "subject_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the detached signature (`<subject>.sig`)."
+        },
+        "signature_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "allowed_signers": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the committed allowed_signers file that pins the public key."
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
     }
   },
   "definitions": {

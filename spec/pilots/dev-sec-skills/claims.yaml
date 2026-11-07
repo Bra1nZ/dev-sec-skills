@@ -46,6 +46,16 @@ claims:
             started_at: "2026-11-07T23:37:01+03:00"
             finished_at: "2026-11-07T23:37:07+03:00"
             status: completed
+            anchor:
+              type: ssh-ed25519
+              signer: dev-sec-skills-anchor-2026-11-07
+              namespace: dev-sec-skills-static-analysis
+              subject: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json
+              subject_sha256: a4dd8a531c36f9ff8aa8f43d27fe8d664f9f0bc3debe8e9d9c21e5d3c85a1a75
+              signature: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json.sig
+              signature_sha256: 6e0072d445f8f118f2e72994379cf34a7f6c88177a6cf1e6cb9d3a154ac958cf
+              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              date: "2026-11-07"
             cells: "spec/pilots/dev-sec-skills/cells.yaml"
             triage:
               - finding: F-001
@@ -90,6 +100,16 @@ claims:
             started_at: "2026-11-07T23:39:20+03:00"
             finished_at: "2026-11-07T23:39:26+03:00"
             status: completed
+            anchor:
+              type: ssh-ed25519
+              signer: dev-sec-skills-anchor-2026-11-07
+              namespace: dev-sec-skills-static-analysis
+              subject: spec/static-analysis/anchor/ci-dev-sec-skills-postfix-2026-11-07.json
+              subject_sha256: 9df2eb2953f0d04b48a83bcdb0908bc8016e42af6d1d8b1719ba31600df1d4b3
+              signature: spec/static-analysis/anchor/ci-dev-sec-skills-postfix-2026-11-07.json.sig
+              signature_sha256: 328679f627d038d0d938d9a51160d031a4c52fcd2abdf71c5c37bc4dc5381270
+              allowed_signers: spec/static-analysis/anchor/allowed_signers
+              date: "2026-11-07"
             triage: []
       - kind: test
         tests: [test_workflow_actions_are_pinned]

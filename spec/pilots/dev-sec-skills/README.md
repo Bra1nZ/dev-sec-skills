@@ -40,6 +40,19 @@ The raw evidence is in `spec/static-analysis/runs/`:
 `ci-dev-sec-skills-prefix-2026-11-07.*` and
 `ci-dev-sec-skills-postfix-2026-11-07.*`.
 
+## Anchors
+
+Both self-pilot runs carry an SSH-signature anchor (C-41): the canonical
+subject of each run is in `spec/static-analysis/anchor/`, signed with the
+ed25519 key whose public half is committed as
+`spec/static-analysis/anchor/allowed_signers`. The private key is at
+`/tmp/opencode/dev-sec-skills-anchor/key`, outside the repository, and is not
+committed. L2 recomputes the canonical bytes and verifies the signature, so an
+edit to the triage, a hash or a timestamp after signing stops verifying. The
+`forge-anchored-record` red-team drill proves that it does; see
+`spec/static-analysis/README.md` for the remaining C-13 gaps (key holder,
+`allowed_signers` replacement).
+
 ## What the detector does and does not cover
 
 It scans every non-local `uses:` reference in `.github/workflows` and requires
