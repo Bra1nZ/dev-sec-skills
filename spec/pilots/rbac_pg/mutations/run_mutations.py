@@ -29,6 +29,7 @@ writable sharedir and restore the previous bytes in a finally block.
 import argparse
 import glob
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -269,6 +270,11 @@ def main():
         os.path.dirname(os.path.abspath(__file__)), "mutations.yaml"))
     ap.add_argument("--only", action="append", default=None,
                     help="fixture id (repeatable)")
+    ap.add_argument("--only-cell", action="append", default=None,
+                    help="cell id (repeatable); selects every fixture for the cell")
+    ap.add_argument("--plan", default=None,
+                    help="JSON plan from tools/mutation_plan.py; an empty plan "
+                         "runs nothing and exits 0 (V2-11)")
     ap.add_argument("--ensure-roles", action="store_true",
                     help="create the extension's global roles if absent")
     ap.add_argument("--skip-baseline", action="store_true",
@@ -284,11 +290,27 @@ def main():
 
     doc = yaml.safe_load(open(args.fixtures, encoding="utf-8"))
     fixtures = doc.get("fixtures") or []
+    if args.plan:
+        try:
+            with open(args.plan, encoding="utf-8") as f:
+                plan = json.load(f)
+        except (OSError, ValueError) as exc:
+            ap.error("cannot read plan %s: %s" % (args.plan, exc))
+        planned = {item.get("fixture") for item in plan.get("selected") or []}
+        fixtures = [f for f in fixtures if f["id"] in planned]
+        if not fixtures:
+            print("plan selected no fixtures; nothing to run")
+            return 0
     if args.only:
         wanted = set(args.only)
         fixtures = [f for f in fixtures if f["id"] in wanted]
         if not fixtures:
             ap.error("no fixture matched --only")
+    if args.only_cell:
+        wanted_cells = set(args.only_cell)
+        fixtures = [f for f in fixtures if f.get("cell") in wanted_cells]
+        if not fixtures:
+            ap.error("no fixture matched --only-cell")
 
     if any(fx.get("mode") != "command" for fx in fixtures) and not args.dsn:
         ap.error("--dsn or ADMIN_DATABASE_URL is required")

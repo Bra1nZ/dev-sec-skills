@@ -26,6 +26,7 @@ The target repository is never modified: only a copy under --workdir is.
 
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -115,6 +116,11 @@ def main():
                     help="shared CARGO_TARGET_DIR; the mutated crate is rebuilt by content")
     ap.add_argument("--only", action="append", default=None,
                     help="fixture id (repeatable)")
+    ap.add_argument("--only-cell", action="append", default=None,
+                    help="cell id (repeatable); selects every fixture for the cell")
+    ap.add_argument("--plan", default=None,
+                    help="JSON plan from tools/mutation_plan.py; an empty plan "
+                         "runs nothing and exits 0 (V2-11)")
     ap.add_argument("--skip-baseline", action="store_true",
                     help="do not run the unmutated control first")
     ap.add_argument("--timeout", type=int, default=900)
@@ -127,11 +133,27 @@ def main():
     fixtures = doc.get("fixtures") or []
     command = doc.get("command") or ["cargo", "test", "--offline",
                                      "-p", "craft-i18n-tests"]
+    if args.plan:
+        try:
+            with open(args.plan, encoding="utf-8") as f:
+                plan = json.load(f)
+        except (OSError, ValueError) as exc:
+            ap.error("cannot read plan %s: %s" % (args.plan, exc))
+        planned = {item.get("fixture") for item in plan.get("selected") or []}
+        fixtures = [f for f in fixtures if f["id"] in planned]
+        if not fixtures:
+            print("plan selected no fixtures; nothing to run")
+            return 0
     if args.only:
         wanted = set(args.only)
         fixtures = [f for f in fixtures if f["id"] in wanted]
         if not fixtures:
             ap.error("no fixture matched --only")
+    if args.only_cell:
+        wanted_cells = set(args.only_cell)
+        fixtures = [f for f in fixtures if f.get("cell") in wanted_cells]
+        if not fixtures:
+            ap.error("no fixture matched --only-cell")
 
     os.makedirs(args.workdir, exist_ok=True)
     results_dir = os.path.join(args.workdir, "results")

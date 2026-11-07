@@ -55,6 +55,16 @@ spec/
     2026-11-07-craft-i18n.json    # recorded choke-point scan snapshot
 ```
 
+Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
+`spec/`: it reads a registry, a mutations file and a target diff, prints the
+selected fixtures and writes a JSON plan. Both pilots' runners accept
+`--plan`; an empty plan runs nothing and exits 0. `make mutation-plan` writes
+`/tmp/opencode/mutation-plan-{rbac,i18n}.json`. The template
+`ci/mutation-changed.yml` resolves the PR merge base, fails a changed cell with
+no fixture and no exemption (`--require-fixtures`), and skips the expensive
+stand when the plan is empty. The template has not been exercised on a real
+runner; the selector has 13 synthetic eval cases in `evals/mutation-plan/`.
+
 ## Status
 
 Phase 0: documents, schemas, seed registry, `cell_lint` (CL1–CL6, 40

@@ -123,3 +123,8 @@ python3 spec/pilots/craft-i18n/mutations/run_mutations.py \
 
 Logs are written to `/tmp/opencode/craft-i18n-mutations/results/`; the target
 repository is only read.
+
+`--only MUT-003`, `--only-cell CELL-004` and `--plan plan.json` select a
+subset. `--plan` consumes the JSON written by `tools/mutation_plan.py`; an
+empty plan runs nothing and exits 0, so CI can skip the build when a diff
+touches no fixture, cell, choke point or detector artifact.

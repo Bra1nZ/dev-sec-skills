@@ -37,6 +37,11 @@ PILOT_LEDGER_BASE_REF ?= v1.3.1
 MUTATION_DSN ?= postgresql://postgres@127.0.0.1:55434/postgres
 MUTATION_SHAREDIR ?= /tmp/opencode/pgmut/usr/share/postgresql/15/extension
 
+# Changed-cell selection (V2-11). This is a planner, not a runner: it prints
+# the fixtures a diff selects and writes the JSON that `--plan` consumes.
+MUTATION_PLAN_RBAC ?= /tmp/opencode/mutation-plan-rbac.json
+MUTATION_PLAN_I18N ?= /tmp/opencode/mutation-plan-i18n.json
+
 # Use Vale when it is installed, otherwise the built-in L5 scanner.
 CLAIM_LINT_ARGS ?= $(shell command -v vale >/dev/null 2>&1 || echo --no-vale)
 
@@ -75,7 +80,7 @@ CHOKE_RECORD_I18N ?= spec/choke-points/2026-11-07-craft-i18n.json
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record \
-        mutations mutations-i18n mutations-all check-fuzz-triage \
+        mutation-plan mutations mutations-i18n mutations-all check-fuzz-triage \
         fuzz-claim-lint help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage
@@ -98,6 +103,7 @@ evals:
 	$(PYTHON) evals/coverage/run_evals.py
 	$(PYTHON) evals/diff-coverage/run_evals.py
 	$(PYTHON) evals/choke-points/run_evals.py
+	$(PYTHON) evals/mutation-plan/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -139,6 +145,22 @@ status-pilot:
 	  echo "note: first-release exemption: $(PILOT_LEDGER) is newer than $(PILOT_LEDGER_BASE_REF)"; \
 	fi; \
 	$(PYTHON) tools/status_diff.py $$args
+
+mutation-plan:
+	@echo "== changed-cell selection for the two pilots (V2-11) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/mutation_plan.py \
+	  --repo "$(PILOT_ROOT)" --base "$(DIFF_BASE_RBAC)" --head HEAD \
+	  --fixtures spec/pilots/rbac_pg/mutations/mutations.yaml \
+	  --cells "$(PILOT_REGISTRY)" \
+	  --require-fixtures --json "$(MUTATION_PLAN_RBAC)"
+	$(PYTHON) tools/mutation_plan.py \
+	  --repo "$(PILOT2_ROOT)" \
+	  --base "$(DIFF_BASE_I18N)" --head "$(DIFF_HEAD_I18N)" \
+	  --fixtures spec/pilots/craft-i18n/mutations/mutations.yaml \
+	  --cells "$(PILOT2_REGISTRY)" \
+	  --require-fixtures --json "$(MUTATION_PLAN_I18N)"
 
 mutations:
 	@echo "== mutation suites: $(MUTATION_DSN) =="
@@ -328,5 +350,6 @@ help:
 	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
+	@echo "  mutation-plan select fixtures for the cells the pilot diffs touched (V2-11)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"

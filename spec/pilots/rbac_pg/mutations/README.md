@@ -220,9 +220,11 @@ unexpected failures and writes the full suite output to
 `<workdir>/results/<fixture>.log`. Exit code 2 means a tool or preflight
 error.
 
-Useful flags: `--only MUT-003` (repeatable), `--skip-baseline` (faster when
-the unmutated suites are already known green), `--workdir PATH`, `--sharedir
-PATH`.
+Useful flags: `--only MUT-003` (repeatable), `--only-cell CELL-015`
+(repeatable), `--plan plan.json` (run the fixtures selected by
+`tools/mutation_plan.py`; an empty plan runs nothing and exits 0),
+`--skip-baseline` (faster when the unmutated suites are already known green),
+`--workdir PATH`, `--sharedir PATH`.
 
 ## Adding a fixture
 

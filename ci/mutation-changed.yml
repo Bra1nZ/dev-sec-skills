@@ -1,0 +1,161 @@
+# Template: run only the mutation fixtures whose cells a PR touched (V2-11).
+# Copy into the target repo as .github/workflows/mutation-changed.yml and vendor
+# from dev-sec-skills:
+#   tools/mutation_plan.py
+#   tools/run_mutations.py        (the pilot runner: rbac_pg or craft-i18n variant)
+#   spec/cells.yaml               (the registry; `enforced_at` and detector artifacts)
+#   spec/mutations/mutations.yaml (fixtures pinned by source_sha256)
+#
+# The workflow resolves the PR merge base, asks mutation_plan.py which fixtures
+# the diff selects, and runs only those. A changed cell with no fixture and no
+# documented mutation_exemption fails the plan (--require-fixtures). A plan with
+# zero fixtures skips the expensive stand instead of running everything.
+#
+# The two jobs below are deliberately separate: the PostgreSQL pilot needs a
+# live stand and the Rust pilot needs cargo. Delete the job that does not apply.
+# The "prepare target" steps are project-specific placeholders: this template
+# has NOT been exercised on a real runner.
+name: mutation-changed
+
+on:
+  pull_request:
+
+env:
+  CELLS: spec/cells.yaml
+  FIXTURES: spec/mutations/mutations.yaml
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      selected: ${{ steps.plan.outputs.selected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the base commit is a diff source
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Resolve the PR merge base
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          BASE_SHA=$(git merge-base FETCH_HEAD "$HEAD_SHA")
+          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          echo "base: $BASE_SHA -> head: $HEAD_SHA"
+
+      - name: Write the base registry for the cell-changed rule
+        run: |
+          if git cat-file -e "$BASE_SHA:$CELLS" 2>/dev/null; then
+            git show "$BASE_SHA:$CELLS" > base-cells.yaml
+            echo "BASE_CELLS=base-cells.yaml" >> "$GITHUB_ENV"
+          else
+            echo "note: $CELLS is new in this PR; no cell-changed rule"
+          fi
+
+      - name: Plan changed mutation fixtures
+        id: plan
+        run: |
+          args=(--repo . --base "$BASE_SHA" --head "$HEAD_SHA"
+                --cells "$CELLS" --fixtures "$FIXTURES"
+                --require-fixtures --json mutation-plan.json)
+          if [ -n "${BASE_CELLS:-}" ]; then args+=(--cells-base "$BASE_CELLS"); fi
+          python3 tools/mutation_plan.py "${args[@]}"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          plan = json.load(open("mutation-plan.json"))
+          print("selected=%d" % len(plan["selected"]))
+          PY
+          # `selected` is the count, not a list: the runner takes the JSON file.
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-plan
+          path: mutation-plan.json
+
+  mutations-database:
+    needs: plan
+    if: needs.plan.outputs.selected != '0'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install PyYAML and psql client
+        run: |
+          pip install pyyaml
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Restore the plan
+        uses: actions/download-artifact@v4
+        with:
+          name: mutation-plan
+
+      - name: Build and install the extension
+        run: |
+          # Project-specific: build the extension and make its sharedir
+          # writable for fixtures with `deploy: sharedir`.
+          make
+          make install
+          echo "RBAC_SHAREDIR=$(pg_config --sharedir)" >> "$GITHUB_ENV"
+
+      - name: Run the selected fixtures
+        env:
+          ADMIN_DATABASE_URL: postgresql://postgres@127.0.0.1:5432/postgres
+        run: |
+          python3 tools/run_mutations.py \
+            --target . \
+            --dsn "$ADMIN_DATABASE_URL" \
+            --ensure-roles \
+            --sharedir "$RBAC_SHAREDIR" \
+            --plan mutation-plan.json
+
+  mutations-cargo:
+    needs: plan
+    if: needs.plan.outputs.selected != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Restore the plan
+        uses: actions/download-artifact@v4
+        with:
+          name: mutation-plan
+
+      - name: Run the selected fixtures
+        run: |
+          python3 tools/run_mutations.py \
+            --target . \
+            --target-dir "$RUNNER_TEMP/cargo-target" \
+            --plan mutation-plan.json
