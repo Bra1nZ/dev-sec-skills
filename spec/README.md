@@ -40,6 +40,10 @@ spec/
     corpus/claim-lint/            # five seed ledgers
     runs/claim-lint-2026-11-07.json  # recorded run: 155 executions, clean
     triage/claim-lint-2026-11-07.yaml  # V2-18 triage: no findings, no entries
+  coverage/
+    README.md                     # CV1-CV4: method, measured numbers, limits
+    2026-11-07-rbac-pg.json       # recorded coverage snapshot
+    2026-11-07-craft-i18n.json    # recorded coverage snapshot
 ```
 
 ## Status
@@ -109,6 +113,18 @@ findings. The committed triage is empty because the run is clean; that is the
 only case an empty triage is accepted, and a finding injected into a copy of the
 record makes the gate exit 1. The gate proves the artifacts exist, not that the
 routing call was right.
+
+Coverage is measured, not assumed (V2-20): `tools/coverage_report.py` reports
+cited symbols that resolve nowhere (CV1, always an error), suite symbols that
+no artifact, claim or negative test maps (CV2), non-open claims older than the
+freshness window (CV3), and non-open test detectors without a mutation fixture
+or exemption (CV4). Thresholds for CV2-CV4 are optional, so `make verify` fails
+only on a dangling citation. The recorded 2026-11-07 measurement: `rbac_pg`
+80 symbols, 67 mapped, 13 unmapped in two uncited files, 0 stale, 0 without a
+fixture; `craft-i18n` 26 of 26 mapped, 0 stale, 0 without a fixture. Mapping is
+file-level and symbol extraction is a narrow scanner, not an AST; the report
+says which files nobody mapped, not whether a detector executes every test in a
+mapped file.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

@@ -165,6 +165,15 @@ evals/
   cell-lint/
     run_evals.py
     cases/
+  fuzz/
+    run_evals.py
+    cases/
+  fuzz-triage/
+    run_evals.py
+    cases/
+  coverage/
+    run_evals.py
+    cases/
   iteration-3/
     RESULTS.md
   iteration-4/
@@ -180,6 +189,15 @@ spec/
     guard-grammar.en.md
     product-trials.md
     product-trials.en.md
+  fuzz/
+    README.md
+    corpus/claim-lint/
+    runs/claim-lint-2026-11-07.json
+    triage/claim-lint-2026-11-07.yaml
+  coverage/
+    README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
   pilots/
     rbac_pg/
       cells.yaml
@@ -227,10 +245,11 @@ make verify
 ```
 
 Она прогоняет адверсариальные наборы (`evals/`), CL1–CL6 по сид-реестру и по
-двум пилотным реестрам вместе с их claim-леджерами, L1–L5 по леджерам и гейт
-эскалации статусов. Пилоты ищутся по `PILOT_ROOT` (по умолчанию `../rbac_pg`)
-и `PILOT2_ROOT` (`../astraoffice/craft-i18n`); если цели нет, команда падает,
-а не пропускает гейт.
+двум пилотным реестрам вместе с их claim-леджерами, L1–L5 по леджерам, гейт
+эскалации статусов и отчёт покрытия по двум пилотам. Пилоты ищутся по
+`PILOT_ROOT` (по умолчанию `../rbac_pg`) и `PILOT2_ROOT`
+(`../astraoffice/craft-i18n`); если цели нет, команда падает, а не пропускает
+гейт.
 
 Mutation-прогоны вынесены: `make mutations` — `rbac_pg` на живом PostgreSQL;
 `make mutations-i18n` — фикстуры `craft-i18n`, нужен только cargo;
@@ -251,7 +270,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, пять наборов для линтеров и каталог `spec/` с концептом конвейера.
+скилов, шесть наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -296,6 +315,19 @@ coverage guidance: `clean` означает «этот oracle ничего не 
 fixture — или была отклонена с записанной причиной; stale-запись, неразрешённая
 ячейка и fixture, а также verdict, расходящийся с `findings`, — ошибки. Его
 кейсы — [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
+
+Отчёт покрытия `tools/coverage_report.py` (V2-20) проверяет, что процитированный
+символ существует (CV1, всегда ошибка), и измеряет символы suite'а, не
+отображённые ни на артефакт, ни на claim, ни на негативный тест (CV2), stale
+claims (CV3) и non-open детекторы без mutation fixture или exemption (CV4).
+Пороги для CV2–CV4 опциональны: `make verify` падает только на висячей ссылке.
+Записанное измерение 2026-11-07: `rbac_pg` — 80 символов, 67 mapped, 13
+unmapped в двух файлах, которые никто не цитирует, 0 stale, 0 без fixture; `craft-i18n` — 26
+из 26 mapped, 0 stale, 0 без fixture. Маппинг файловый, извлечение символов —
+узкий сканер, а не AST: отчёт показывает, какие файлы никто не отобразил, но не
+доказывает, что детектор исполняет каждый тест в отображённом файле. Кейсы —
+[`evals/coverage/`](evals/coverage/): 14/14; снимки измерения — в
+[`spec/coverage/`](spec/coverage/README.md).
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.

@@ -1,0 +1,48 @@
+# Synthetic fixture — not evidence about any real project.
+description: A root that does not exist is a usage error (exit 2), not a clean report.
+cells:
+  project: synthetic/coverage
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The checker rejects an empty source string.
+    taxonomy_class: correctness
+    failure_class: empty-value
+    entry_points:
+    - cli
+    failure_mode: detect
+    coverage_status: tested
+    detectors:
+    - id: D-EMPTY
+      kind: test
+      status: tested
+      last_verified: '2026-11-07'
+      artifact: tests/suite.py
+      command: python3 -m pytest -q
+      negative_test: F1
+      mutation_fixture: mutations.yaml#MUT-001
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+files:
+  tests/suite.py: "def report(name, ok):\n    pass\n\n\ndef test_empty():\n    report(\"\
+    F1 empty input is rejected\", True)\n\n\ndef test_extra():\n    report(\"V2 extra\
+    \ guard holds\", True)\n"
+  mutations.yaml:
+    mutations:
+    - id: MUT-001
+      cell: CELL-001
+      description: Remove the empty-value check.
+      anchor: 'if not value:'
+      replace: 'if False:'
+suite_glob: tests/*.py
+args:
+- --root
+- does-not-exist
+expect: {}
+exit: 2
+name: missing-root

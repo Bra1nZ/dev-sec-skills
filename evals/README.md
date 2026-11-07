@@ -44,6 +44,9 @@ evals/
   fuzz-triage/
     run_evals.py        # fuzz_triage.py: completeness, routing, agreement
     cases/
+  coverage/
+    run_evals.py        # coverage_report.py: CV1-CV4 fail closed
+    cases/
 ```
 
 ## Prompts
@@ -100,7 +103,14 @@ exiting 2 with no record. `evals/fuzz-triage/` runs 13 cases for
 dismissal without a reason, a duplicate entry, a stale entry, a cell outside the
 registry, a detector outside its cell, a fixture ID absent from the mutations
 file, a `new` entry without a fixture, a named cell with no registry, and a
-record whose verdict contradicts its findings. Reproduce all five:
+record whose verdict contradicts its findings. `evals/coverage/` runs 14 cases
+for `tools/coverage_report.py`: a clean control that passes every threshold at
+zero, unmapped symbols at info and above a threshold, a dangling claim test, a
+dangling negative test, a stale claim at info, above a threshold, and with no
+usable date, a missing fixture above a threshold, an exempted detector, a
+non-test detector that owes no fixture, open work excluded from both checks, a
+run without `--suite-glob`, and a missing root returning a usage error.
+Reproduce all six:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -108,6 +118,7 @@ python3 evals/cell-lint/run_evals.py
 python3 evals/status-diff/run_evals.py
 python3 evals/fuzz/run_evals.py
 python3 evals/fuzz-triage/run_evals.py
+python3 evals/coverage/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -128,7 +139,10 @@ The fuzz cases exercise the adapter, not a real target: a passing run says the
 oracle, budget and determinism rules hold, not that any program is bug-free.
 The triage cases exercise the gate on synthetic records, because the committed
 run has no findings; they show it fails closed, not that a real finding was
-routed correctly.
+routed correctly. The coverage cases exercise the report on synthetic suites;
+the clean control passes every threshold at zero, so an always-red report
+cannot pass the suite, but a green case says nothing about a real target's
+coverage.
 
 ## Reproduce
 

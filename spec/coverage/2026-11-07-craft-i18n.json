@@ -1,0 +1,32 @@
+{
+  "cells": "spec/pilots/craft-i18n/cells.yaml",
+  "root": "../astraoffice/craft-i18n",
+  "suite_glob": "crates/craft-i18n-tests/**/*.rs",
+  "measured": "2026-11-07",
+  "max_age_days": 90,
+  "summary": {
+    "cells": {
+      "total": 14,
+      "non_open": 13,
+      "open": 1
+    },
+    "cited_symbols": 21,
+    "symbols": {
+      "total": 26,
+      "mapped": 26,
+      "unmapped": 0,
+      "files": {}
+    },
+    "stale": {
+      "considered": 7,
+      "stale": 0,
+      "stale_claims": []
+    },
+    "fixtures": {
+      "without_fixture": 0,
+      "exemptions": 1,
+      "detectors": []
+    }
+  },
+  "findings": []
+}

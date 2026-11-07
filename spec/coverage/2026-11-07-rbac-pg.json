@@ -1,0 +1,56 @@
+{
+  "cells": "spec/pilots/rbac_pg/cells.yaml",
+  "root": "../rbac_pg",
+  "suite_glob": "setup/*.py",
+  "measured": "2026-11-07",
+  "max_age_days": 90,
+  "summary": {
+    "cells": {
+      "total": 29,
+      "non_open": 26,
+      "open": 3
+    },
+    "cited_symbols": 22,
+    "symbols": {
+      "total": 80,
+      "mapped": 67,
+      "unmapped": 13,
+      "files": {
+        "setup/test_4_lvl.py": [
+          "test_1_load_performance",
+          "test_2_temporal_expiration",
+          "test_3_deep_hierarchy",
+          "test_4_cross_tenant_update",
+          "test_5_audit_tampering"
+        ],
+        "setup/test_negative.py": [
+          "test_1_guc_tampering",
+          "test_2_token_forgery",
+          "test_3_transaction_rollback_leak",
+          "test_4_mls_delete_strict_equality",
+          "test_5_tranquility_enforcement",
+          "test_6_append_only_audit",
+          "test_7_role_hierarchy_cycles",
+          "test_8_biba_no_read_down"
+        ]
+      }
+    },
+    "stale": {
+      "considered": 6,
+      "stale": 0,
+      "stale_claims": []
+    },
+    "fixtures": {
+      "without_fixture": 0,
+      "exemptions": 3,
+      "detectors": []
+    }
+  },
+  "findings": [
+    {
+      "check": "CV2",
+      "severity": "info",
+      "message": "13 of 80 symbols are unmapped (setup/test_4_lvl.py: test_1_load_performance, test_2_temporal_expiration, test_3_deep_hierarchy; setup/test_negative.py: test_1_guc_tampering, test_2_token_forgery, test_3_transaction_rollback_leak)"
+    }
+  ]
+}

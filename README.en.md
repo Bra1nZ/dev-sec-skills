@@ -154,6 +154,15 @@ evals/
   cell-lint/
     run_evals.py
     cases/
+  fuzz/
+    run_evals.py
+    cases/
+  fuzz-triage/
+    run_evals.py
+    cases/
+  coverage/
+    run_evals.py
+    cases/
   iteration-3/
     RESULTS.md
   iteration-4/
@@ -169,6 +178,15 @@ spec/
     guard-grammar.en.md
     product-trials.md
     product-trials.en.md
+  fuzz/
+    README.md
+    corpus/claim-lint/
+    runs/claim-lint-2026-11-07.json
+    triage/claim-lint-2026-11-07.yaml
+  coverage/
+    README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
   pilots/
     rbac_pg/
       cells.yaml
@@ -216,10 +234,10 @@ make verify
 
 It runs the adversarial suites (`evals/`), CL1–CL6 over the seed registry and
 over both pilot registries together with their claim ledgers, L1–L5 over the
-ledgers, and the status-escalation gates. The pilots are located by
-`PILOT_ROOT` (defaults to `../rbac_pg`) and `PILOT2_ROOT`
-(`../astraoffice/craft-i18n`); if one is missing, the command fails instead of
-skipping the gate.
+ledgers, the status-escalation gates, and the coverage report for both pilots.
+The pilots are located by `PILOT_ROOT` (defaults to `../rbac_pg`) and
+`PILOT2_ROOT` (`../astraoffice/craft-i18n`); if one is missing, the command
+fails instead of skipping the gate.
 
 Mutation runs are separate: `make mutations` for `rbac_pg` on a live
 PostgreSQL, `make mutations-i18n` for the `craft-i18n` fixtures (cargo only),
@@ -240,7 +258,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, five linter suites, and the `spec/` directory with the conveyor concept.
+evals, six linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -279,6 +297,19 @@ requires every finding to become a cell, a detector and a mutation fixture — o
 to be dismissed with a recorded reason; a stale entry, an unresolved cell or
 fixture, and a verdict that contradicts the findings are errors. Its cases are
 in [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
+
+The coverage report `tools/coverage_report.py` (V2-20) proves that a cited
+symbol exists (CV1, always an error) and measures suite symbols that no
+artifact, claim or negative test maps (CV2), stale claims (CV3), and non-open
+detectors without a mutation fixture or exemption (CV4). CV2–CV4 thresholds are
+optional: `make verify` fails only on a dangling citation. The recorded
+2026-11-07 measurement: `rbac_pg` has 80 symbols, 67 mapped, 13 unmapped in two
+uncited files, 0 stale, 0 without a fixture; `craft-i18n` has 26 of 26 mapped,
+0 stale, 0 without a fixture. Mapping is file-level and symbol extraction is a
+narrow scanner, not an AST: the report shows which files nobody mapped, not
+that a detector executes every test in a mapped file. Its cases are in
+[`evals/coverage/`](evals/coverage/): 14/14; the measurement snapshots are in
+[`spec/coverage/`](spec/coverage/README.md).
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,

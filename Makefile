@@ -49,12 +49,18 @@ FUZZ_CORPUS ?= spec/fuzz/corpus/claim-lint
 FUZZ_SEED ?= 20261107
 FUZZ_RUNS ?= 150
 
+# Coverage measurement (V2-20). The record target writes the two JSON
+# snapshots that back the evidence; plain `coverage` only prints, so a merge
+# gate never rewrites a tracked artifact.
+COVERAGE_RECORD_RBAC ?= spec/coverage/2026-11-07-rbac-pg.json
+COVERAGE_RECORD_I18N ?= spec/coverage/2026-11-07-craft-i18n.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
-        status-pilot2 unroutable mutations mutations-i18n mutations-all \
-        check-fuzz-triage fuzz-claim-lint help
+        status-pilot2 unroutable coverage coverage-record mutations \
+        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint help
 
-verify: verify-repo verify-pilot verify-pilot2 unroutable
+verify: verify-repo verify-pilot verify-pilot2 unroutable coverage
 
 verify-all: verify mutations-all
 
@@ -71,6 +77,7 @@ evals:
 	$(PYTHON) evals/status-diff/run_evals.py
 	$(PYTHON) evals/fuzz/run_evals.py
 	$(PYTHON) evals/fuzz-triage/run_evals.py
+	$(PYTHON) evals/coverage/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -166,6 +173,36 @@ unroutable:
 	$(PYTHON) tools/unroutable.py --max-share 0 \
 	  "$(PILOT_REGISTRY)" "$(PILOT2_REGISTRY)"
 
+coverage:
+	@echo "== CV1-CV4: coverage report (V2-20) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/coverage_report.py \
+	  --cells "$(PILOT_REGISTRY)" \
+	  --root "$(PILOT_ROOT)" \
+	  --suite-glob "$(PILOT_SUITE_GLOB)" \
+	  --ledger "$(PILOT_ROOT)/$(PILOT_LEDGER)"
+	$(PYTHON) tools/coverage_report.py \
+	  --cells "$(PILOT2_REGISTRY)" \
+	  --root "$(PILOT2_ROOT)" \
+	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
+	  --ledger "$(PILOT2_LEDGER)"
+
+coverage-record:
+	@echo "== CV1-CV4: record the coverage measurement (V2-20) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/coverage_report.py \
+	  --cells "$(PILOT_REGISTRY)" --root "$(PILOT_ROOT)" \
+	  --suite-glob "$(PILOT_SUITE_GLOB)" \
+	  --ledger "$(PILOT_ROOT)/$(PILOT_LEDGER)" \
+	  --json "$(COVERAGE_RECORD_RBAC)"
+	$(PYTHON) tools/coverage_report.py \
+	  --cells "$(PILOT2_REGISTRY)" --root "$(PILOT2_ROOT)" \
+	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
+	  --ledger "$(PILOT2_LEDGER)" \
+	  --json "$(COVERAGE_RECORD_I18N)"
+
 check-fuzz-triage:
 	@echo "== T1-T4: fuzz finding triage (V2-18) =="
 	$(PYTHON) tools/fuzz_triage.py \
@@ -208,6 +245,8 @@ help:
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
 	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"
+	@echo "  coverage      CV1-CV4 over both pilots: cited symbols, unmapped symbols, stale claims, fixtures"
+	@echo "  coverage-record  write the two JSON coverage snapshots into spec/coverage/"
 	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
