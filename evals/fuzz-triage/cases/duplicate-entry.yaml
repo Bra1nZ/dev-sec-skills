@@ -1,0 +1,84 @@
+# Synthetic fixture — not evidence about any real project.
+name: duplicate-entry
+description: "The same input is triaged twice. Two entries for one finding mean two\n      incompatible\
+  \ dispositions can coexist, so T2 must error and report the\n      hash once instead of silently taking\
+  \ the last entry.\n"
+files:
+  cells.yaml:
+    project: synthetic/cells
+    generated: '2026-11-07'
+    taxonomy:
+      name: invariant-first-code
+      version: '1'
+      classes:
+      - security
+      - correctness
+    cells:
+    - id: CELL-001
+      title: The checker rejects an empty source string.
+      taxonomy_class: correctness
+      failure_class: empty-value
+      entry_points:
+      - cli
+      failure_mode: detect
+      coverage_status: tested
+      detectors:
+      - id: D-EMPTY
+        kind: test
+        artifact: tests/test_suite.py
+        command: python3 -m pytest -q
+        status: tested
+        last_verified: '2026-11-07'
+        mutation_fixture: mutations.yaml#MUT-001
+      owner: synthetic maintainer
+      last_seen: '2026-11-07'
+record:
+  tool: fuzz_run.py
+  version: '1'
+  target: python3 checker.py @INPUT@
+  seed: 1
+  oracle:
+  - exit-not-in:0,1
+  corpus:
+    path: corpus
+    manifest:
+    - path: seed.txt
+      sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      size: 4
+  budget:
+    runs: 1
+    executions: 2
+    timeout_seconds: 10
+    max_findings: 10
+    stopped_early: false
+  started_at: '2026-11-07T10:00:00+03:00'
+  finished_at: '2026-11-07T10:00:01+03:00'
+  executions_digest: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+  findings:
+  - input: findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.input
+    input_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    input_size: 8
+    log: findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.log
+    log_sha256: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    oracle:
+    - exit-not-in:0,1
+    exit_code: 2
+    timed_out: false
+    seed_input: null
+  verdict: findings
+triage:
+  record: record.json
+  entries:
+  - input_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    disposition: not-a-bug
+    date: '2026-11-07'
+    reason: The input is not a ledger; exit 2 is the documented refusal.
+  - input_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    disposition: not-a-bug
+    date: '2026-11-07'
+    reason: The input is not a ledger; exit 2 is the documented refusal.
+  cells: cells.yaml
+args: []
+expect:
+  T2: error
+exit: 1

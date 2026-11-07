@@ -1,0 +1,11 @@
+# Triage of the recorded fuzz run (V2-18).
+#
+# The run found nothing: 155 executions, verdict clean. An empty entries list
+# is therefore the complete triage, not a skipped one.
+#
+# The gate fails closed as soon as the record gains a finding: every finding
+# needs one entry, and a covered/new entry must name a cell, a detector and a
+# fixture that the gate resolves on disk. Add `cells:` here (and the fixture to
+# the mutations file) when the first finding appears.
+record: spec/fuzz/runs/claim-lint-2026-11-07.json
+entries: []

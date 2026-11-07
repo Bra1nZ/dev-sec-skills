@@ -39,6 +39,7 @@ spec/
     README.md                     # what a fuzz record proves, oracle rules
     corpus/claim-lint/            # five seed ledgers
     runs/claim-lint-2026-11-07.json  # recorded run: 155 executions, clean
+    triage/claim-lint-2026-11-07.yaml  # V2-18 triage: no findings, no entries
 ```
 
 ## Status
@@ -99,6 +100,15 @@ execution against explicit oracle rules, and writes
 `make fuzz-claim-lint` replays the run and compares it. The adapter is not
 coverage-guided, and a clean verdict is scoped to that oracle and budget, not a
 statement that the target is free of bugs.
+
+Every finding must become a cell, a detector and a fixture (V2-18):
+`tools/fuzz_triage.py` checks one entry per finding, resolves the cell and
+detector in the registry the triage names, checks the fixture ID in the
+mutations file, and rejects a stale entry or a verdict that disagrees with the
+findings. The committed triage is empty because the run is clean; that is the
+only case an empty triage is accepted, and a finding injected into a copy of the
+record makes the gate exit 1. The gate proves the artifacts exist, not that the
+routing call was right.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

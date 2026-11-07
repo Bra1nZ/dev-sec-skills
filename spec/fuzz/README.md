@@ -17,11 +17,15 @@ reconstruct.
 spec/fuzz/
   corpus/claim-lint/                    # five seed ledgers for the real run
   runs/claim-lint-2026-11-07.json       # the recorded run (verdict: clean)
+  triage/claim-lint-2026-11-07.yaml     # triage of that run (no findings)
 ```
 
 - `schemas/fuzz-run.schema.json` — the record's shape.
+- `schemas/fuzz-triage.schema.json` — the triage's shape.
 - `evals/fuzz/` — 5 adversarial cases for the adapter.
+- `evals/fuzz-triage/` — 13 adversarial cases for the triage gate.
 - `make fuzz-claim-lint` — replay the record and compare `executions_digest`.
+- `make check-fuzz-triage` — T1–T4 over the record and its triage file.
 
 ## Oracle rules
 
@@ -63,8 +67,9 @@ Both oracle rules are deliberate:
   anything else is unhandled.
 
 The committed record validates against `schemas/fuzz-run.schema.json` (draft-07,
-checked with `jsonschema`; 0 errors). The corpus is five ledger shapes: a valid ledger, an `open` claim, an empty
-`claims` array, a scalar instead of a document, and a ledger with a tombstone.
+checked with `jsonschema`; 0 errors). The corpus is five ledger shapes: a valid
+ledger, an `open` claim, an empty `claims` array, a scalar instead of a
+document, and a ledger with a tombstone.
 The run's clean verdict means the adapter saw no unhandled exit code and no
 traceback across those shapes and 150 mutations. It does not mean `claim_lint`
 is free of bugs: a random mutator explores a tiny fraction of the input space,
@@ -83,6 +88,36 @@ Measured negative control: replaying with a changed budget (`--runs 0`) or a
 changed corpus produces a different digest, the digest check exits 1 and make
 reports failure, so the comparison is not vacuous.
 
+## Triage
+
+A finding that stays in a JSON artifact disappears after the run. V2-18 makes
+each one an entry in a triage file next to the record, and `tools/fuzz_triage.py`
+fails the repository when an entry is missing or points at nothing:
+
+| Disposition | Meaning | Required |
+| --- | --- | --- |
+| `covered` | an existing cell, detector and fixture already catch this failure class | `cell`, `detector`, `fixture` |
+| `new` | nothing caught it; the cell, detector and fixture now exist | `cell`, `detector`, `fixture` |
+| `not-a-bug` | the input violates a documented contract, so the finding is the contract working | `reason` |
+
+The gate checks T1 shape, T2 one entry per finding (an untriaged finding, a
+duplicate entry and a stale entry are errors), T3 that the cell and detector
+resolve in the registry named by the triage file and the fixture ID exists in
+the mutations file, and T4 that the record's verdict agrees with its findings.
+
+The committed run has no findings, so its triage file has no entries. That is
+the complete triage of a clean run, not a skipped one, and it is the only case
+where an empty file is accepted: the moment the record gains a finding, the
+same command fails until the entry and the three artifacts exist. A negative
+control was measured by injecting a finding into a copy of the record in `/tmp`
+(the repository artifact was not touched): the gate exited 1 with
+`finding has no triage entry`.
+
+Limits: the gate proves the named artifacts exist, not that `covered` was the
+right call over `new` — that is a review judgment. It has not yet run on a real
+finding, because the recorded run is clean; the 13 eval cases are synthetic and
+say so.
+
 ## What a clean record does not prove
 
 - It does not prove the target is correct, or that a wrong verdict was not
@@ -94,4 +129,5 @@ reports failure, so the comparison is not vacuous.
   target did on them.
 - The replay is not part of `make verify`: it executes the target 155 times
   (about a minute), which is too slow for a merge gate. `make verify` runs the
-  5 adapter evals in `evals/fuzz/`.
+  adapter and triage evals (`evals/fuzz/`, `evals/fuzz-triage/`) and the triage
+  gate over the committed record.

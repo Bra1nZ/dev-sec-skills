@@ -11,6 +11,8 @@ evidence-first contract. The ledger turns the prose discipline of
 - `tool-output.schema.json` — JSON Schema (draft-07) for `evidence[].tool_output`.
 - `fuzz-run.schema.json` — JSON Schema (draft-07) for a fuzz run record (V2-17),
   written by `../tools/fuzz_run.py`.
+- `fuzz-triage.schema.json` — JSON Schema (draft-07) for the triage of one fuzz
+  run record (V2-18), checked by `../tools/fuzz_triage.py`.
 - `../tools/claim_lint.py` — the linter (Python 3 stdlib; PyYAML for `.yaml` ledgers).
 
 ## Ledger format
@@ -96,6 +98,22 @@ the same corpus and seed must reproduce it; a different corpus, budget or seed
 is a different run. A `clean` verdict is scoped to that oracle and budget: the
 adapter records a run it can replay, not the absence of bugs. See
 `../spec/fuzz/README.md`.
+
+## Fuzz triage
+
+`fuzz-triage.schema.json` says what happens to each finding (V2-18). Every
+finding in the record needs exactly one entry: `covered` (an existing cell,
+detector and fixture already catch the failure class), `new` (no detector
+caught it and those three artifacts now exist), or `not-a-bug` (the input
+violates a documented contract, with the reason stated). A non-dismissal entry
+names `cell`, `detector` and `fixture`, and the optional top-level `cells`
+points at the registry they resolve against.
+
+`tools/fuzz_triage.py` checks the shape (T1), one entry per finding with no
+stale entries (T2), the cell and detector in that registry and the fixture ID
+in the mutations file (T3), and that the record's verdict agrees with its
+findings (T4). An empty triage is accepted only for a record with no findings.
+The gate proves the artifacts exist, not that the routing decision was right.
 
 ## Checks
 

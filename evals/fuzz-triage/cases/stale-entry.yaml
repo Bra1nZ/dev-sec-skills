@@ -1,0 +1,70 @@
+# Synthetic fixture — not evidence about any real project.
+name: stale-entry
+description: "The record is clean but the triage holds an entry for an input the run\n      never produced.\
+  \ A stale entry claims triage work that no longer matches\n      the artifact, so T2 must error instead\
+  \ of counting it as progress.\n"
+files:
+  cells.yaml:
+    project: synthetic/cells
+    generated: '2026-11-07'
+    taxonomy:
+      name: invariant-first-code
+      version: '1'
+      classes:
+      - security
+      - correctness
+    cells:
+    - id: CELL-001
+      title: The checker rejects an empty source string.
+      taxonomy_class: correctness
+      failure_class: empty-value
+      entry_points:
+      - cli
+      failure_mode: detect
+      coverage_status: tested
+      detectors:
+      - id: D-EMPTY
+        kind: test
+        artifact: tests/test_suite.py
+        command: python3 -m pytest -q
+        status: tested
+        last_verified: '2026-11-07'
+        mutation_fixture: mutations.yaml#MUT-001
+      owner: synthetic maintainer
+      last_seen: '2026-11-07'
+record:
+  tool: fuzz_run.py
+  version: '1'
+  target: python3 checker.py @INPUT@
+  seed: 1
+  oracle:
+  - exit-not-in:0,1
+  corpus:
+    path: corpus
+    manifest:
+    - path: seed.txt
+      sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      size: 4
+  budget:
+    runs: 1
+    executions: 2
+    timeout_seconds: 10
+    max_findings: 10
+    stopped_early: false
+  started_at: '2026-11-07T10:00:00+03:00'
+  finished_at: '2026-11-07T10:00:01+03:00'
+  executions_digest: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+  findings: []
+  verdict: clean
+triage:
+  record: record.json
+  entries:
+  - input_sha256: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    disposition: not-a-bug
+    date: '2026-11-07'
+    reason: The input is not a ledger; exit 2 is the documented refusal.
+args: []
+expect:
+  T2: error
+  T4: none
+exit: 1

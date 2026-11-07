@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/fuzz-triage.schema.json",
+  "title": "Fuzz finding triage",
+  "description": "Triage of the findings in one fuzz run record (V2-18). Every finding has exactly one entry: either the failure is already caught by an existing cell, detector and fixture, or it is new and those three artifacts now exist, or it is not a bug with a stated reason. The record is checked by tools/fuzz_triage.py against the fuzz run itself; it is not proof that the routing decision was right, only that the named artifacts exist.",
+  "type": "object",
+  "required": ["record", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "record": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path of the fuzz run record these entries triage."
+    },
+    "cells": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path of the cell registry the cell and detector fields resolve against, relative to --root. Required by tools/fuzz_triage.py when any entry names a cell; an empty triage file for a clean record does not need it."
+    },
+    "entries": {
+      "type": "array",
+      "description": "One entry per finding in the record. An empty list is valid only for a record with no findings.",
+      "items": { "$ref": "#/definitions/entry" }
+    }
+  },
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "required": ["input_sha256", "disposition", "date"],
+      "properties": {
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the failing input, as recorded in findings[].input_sha256."
+        },
+        "disposition": {
+          "enum": ["covered", "new", "not-a-bug"],
+          "description": "covered: an existing cell, detector and fixture already catch this failure class. new: no detector caught it, and the cell, detector and fixture now exist. not-a-bug: the input violates a documented contract, so the finding is the contract working."
+        },
+        "cell": {
+          "type": "string",
+          "pattern": "^CELL-[0-9]{3,}$",
+          "description": "Cell that owns the failure class. Required unless disposition is not-a-bug."
+        },
+        "detector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Detector that catches the failure. It must belong to `cell` in the registry passed with --cells. Required unless disposition is not-a-bug."
+        },
+        "fixture": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mutation fixture that demonstrates the failure, in the `path#MUT-ID` form used by the cell registry. Required unless disposition is not-a-bug."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why the input is not a bug. Required for disposition not-a-bug; the reason is the whole point of the entry."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the finding was triaged."
+        },
+        "note": {
+          "type": "string",
+          "description": "Free-form context: the observed output, the fix, or the follow-up."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "disposition": { "const": "not-a-bug" } }, "required": ["disposition"] },
+          "then": { "required": ["reason"] },
+          "else": { "required": ["cell", "detector", "fixture"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

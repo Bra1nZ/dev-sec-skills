@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-25; английская версия —
+  утверждений C-01…C-26; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -251,7 +251,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, четыре набора для линтеров и каталог `spec/` с концептом конвейера.
+скилов, пять наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -291,7 +291,11 @@ oracle-правилам и пишет запись по `schemas/fuzz-run.schema
 `make fuzz-claim-lint` повторяет прогон и сверяет `executions_digest`.
 Кейсы адаптера — [`evals/fuzz/`](evals/fuzz/): 5/5. Мутатор случайный, без
 coverage guidance: `clean` означает «этот oracle ничего не увидел в этом
-бюджете», а не отсутствие багов в цели.
+бюджете», а не отсутствие багов в цели. Гейт триажа `tools/fuzz_triage.py`
+(V2-18) требует, чтобы каждая находка стала ячейкой, детектором и mutation
+fixture — или была отклонена с записанной причиной; stale-запись, неразрешённая
+ячейка и fixture, а также verdict, расходящийся с `findings`, — ошибки. Его
+кейсы — [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.

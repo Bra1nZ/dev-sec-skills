@@ -44,6 +44,7 @@ CLAIM_LINT_ARGS ?= $(shell command -v vale >/dev/null 2>&1 || echo --no-vale)
 # executes the target ~155 times (about a minute) to prove the digest
 # reproduces, which is a manual, on-demand check rather than a merge gate.
 FUZZ_RECORD ?= spec/fuzz/runs/claim-lint-2026-11-07.json
+FUZZ_TRIAGE ?= spec/fuzz/triage/claim-lint-2026-11-07.yaml
 FUZZ_CORPUS ?= spec/fuzz/corpus/claim-lint
 FUZZ_SEED ?= 20261107
 FUZZ_RUNS ?= 150
@@ -51,13 +52,13 @@ FUZZ_RUNS ?= 150
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable mutations mutations-i18n mutations-all \
-        fuzz-claim-lint help
+        check-fuzz-triage fuzz-claim-lint help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable
 
 verify-all: verify mutations-all
 
-verify-repo: evals lint-seed
+verify-repo: evals lint-seed check-fuzz-triage
 
 verify-pilot: lint-pilot claims-pilot status-pilot
 
@@ -69,6 +70,7 @@ evals:
 	$(PYTHON) evals/linter/run_evals.py
 	$(PYTHON) evals/status-diff/run_evals.py
 	$(PYTHON) evals/fuzz/run_evals.py
+	$(PYTHON) evals/fuzz-triage/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -164,6 +166,13 @@ unroutable:
 	$(PYTHON) tools/unroutable.py --max-share 0 \
 	  "$(PILOT_REGISTRY)" "$(PILOT2_REGISTRY)"
 
+check-fuzz-triage:
+	@echo "== T1-T4: fuzz finding triage (V2-18) =="
+	$(PYTHON) tools/fuzz_triage.py \
+	  --record "$(FUZZ_RECORD)" \
+	  --triage "$(FUZZ_TRIAGE)" \
+	  --root .
+
 fuzz-claim-lint:
 	@echo "== fuzz: replay $(FUZZ_RECORD) (seed $(FUZZ_SEED), $(FUZZ_RUNS) runs) =="
 	@tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
@@ -190,7 +199,7 @@ help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
 	@echo "  verify-all    verify plus both mutation batches (needs PostgreSQL and cargo)"
-	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run"
+	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
@@ -199,6 +208,7 @@ help:
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
 	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"
+	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"

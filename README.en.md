@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-25 (Russian source of truth); English derivative:
+  claims C-01…C-26 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -240,7 +240,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, four linter suites, and the `spec/` directory with the conveyor concept.
+evals, five linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -274,7 +274,11 @@ committed run is
 `make fuzz-claim-lint` replays it and compares `executions_digest`. The adapter
 cases are in [`evals/fuzz/`](evals/fuzz/): 5/5. The mutator is random, without
 coverage guidance: `clean` means this oracle saw nothing in this budget, not
-that the target is free of bugs.
+that the target is free of bugs. The triage gate `tools/fuzz_triage.py` (V2-18)
+requires every finding to become a cell, a detector and a mutation fixture — or
+to be dismissed with a recorded reason; a stale entry, an unresolved cell or
+fixture, and a verdict that contradicts the findings are errors. Its cases are
+in [`evals/fuzz-triage/`](evals/fuzz-triage/): 13/13.
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,

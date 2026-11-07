@@ -41,6 +41,9 @@ evals/
   fuzz/
     run_evals.py        # fuzz_run.py: oracle, budget, determinism
     cases/
+  fuzz-triage/
+    run_evals.py        # fuzz_triage.py: completeness, routing, agreement
+    cases/
 ```
 
 ## Prompts
@@ -91,13 +94,20 @@ for `tools/fuzz_run.py`: a failing seed (one finding, source named), a clean
 target whose two identical runs must produce the same `executions_digest`, a
 traceback oracle that fires on exit 1 (the oracle is not hard-wired to exit
 codes), `max_findings` stopping the run and saying so, and a missing corpus
-exiting 2 with no record. Reproduce all four:
+exiting 2 with no record. `evals/fuzz-triage/` runs 13 cases for
+`tools/fuzz_triage.py`: a clean record with an empty triage (control), a valid
+`covered` entry, an untriaged finding, a triage naming the wrong record, a
+dismissal without a reason, a duplicate entry, a stale entry, a cell outside the
+registry, a detector outside its cell, a fixture ID absent from the mutations
+file, a `new` entry without a fixture, a named cell with no registry, and a
+record whose verdict contradicts its findings. Reproduce all five:
 
 ```bash
 python3 evals/linter/run_evals.py
 python3 evals/cell-lint/run_evals.py
 python3 evals/status-diff/run_evals.py
 python3 evals/fuzz/run_evals.py
+python3 evals/fuzz-triage/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -116,6 +126,9 @@ and the log still passes.
 
 The fuzz cases exercise the adapter, not a real target: a passing run says the
 oracle, budget and determinism rules hold, not that any program is bug-free.
+The triage cases exercise the gate on synthetic records, because the committed
+run has no findings; they show it fails closed, not that a real finding was
+routed correctly.
 
 ## Reproduce
 

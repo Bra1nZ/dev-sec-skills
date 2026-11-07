@@ -41,6 +41,7 @@
 | C-23 | A `model-checked` or `proven` status requires the tool's output, not the existence of an artifact | `evidence.tool_output` (`schemas/tool-output.schema.json`): `tool`, `command`, `output` + `output_sha256`, `exit_code`, `finished_at`; L1 checks the shape and commit/command agreement, L2 the output hash, the `finished_at` date and `exit_code=0` for a non-open claim, L4 the absence of `tool_output` for `model-checked`/`proven` and the absence of `bound` for `model-checked` | `evals/linter/cases/tool-output-*.yaml`, `model-checked-without-tool-output.yaml`, `model-checked-without-bound.yaml`; `schemas/tool-output.schema.json`; `tools/claim_lint.py` | Synthetic ledgers with TLC-like output | tested | The tool's semantics and the soundness of the model encoding are not checked; without an external anchor (C-13) a consistent forgery passes; the record is required only for `model-checked`/`proven`, other statuses may still carry it |
 | C-24 | A `runtime-enforcement` detector is not accepted without a negative test and a declared enforcement point | `kind: runtime-enforcement` requires `negative_test` (an ID resolved through `--suite-glob`), and the cell requires `enforced_at`, `oracle` and `violation_response`; CL1 checks the shape, CL3 resolves the ID, CL2 forbids a status above `tested` | `spec/conveyor/cell-registry.schema.json`; `tools/cell_lint.py`; `evals/cell-lint/cases/runtime-enforcement-*.yaml`, `negative-test-*.yaml`; `spec/pilots/rbac_pg/cells.yaml` CELL-001; `spec/pilots/craft-i18n/cells.yaml` CELL-003 | Synthetic registries and two real cells with recorded runs | tested | The ID is resolved only when `--suite-glob` is given (otherwise info); the meaning of `violation_response` is not checked automatically; the mutation fixture remains a separate CL2 requirement |
 | C-25 | A fuzz run is reproducible and bounded by an explicit oracle and budget | `tools/fuzz_run.py`: the corpus is read in sorted order, the mutator is `random.Random(seed)`, `executions_digest` is the SHA-256 of the ordered input hashes; oracle rules `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout` are OR-ed; the record shaped by `schemas/fuzz-run.schema.json` carries the corpus manifest, budget, seed and every finding with its log | `spec/fuzz/runs/claim-lint-2026-11-07.json`; `evals/fuzz/`; `make fuzz-claim-lint` | `claim_lint` as the target, 5 seed ledgers, 150 mutations, seed 20261107 | tested | The mutator is random, without coverage guidance; `clean` means the oracle saw nothing in this budget, not that the target is bug-free; the digest binds the inputs, not the target's behaviour; the replay is not part of `make verify` (about a minute) and runs on demand |
+| C-26 | A fuzz finding does not disappear: it becomes a cell, a detector and a fixture, or is dismissed with a reason, and a gate checks it | `tools/fuzz_triage.py`: T1 the triage shape, T2 exactly one entry per finding (untriaged, duplicate and stale are errors), T3 the cell and detector resolve in the registry the triage names and the fixture ID in the mutations file, T4 the record's verdict agrees with `findings`; an empty triage is accepted only for a clean run | `schemas/fuzz-triage.schema.json`; `spec/fuzz/triage/claim-lint-2026-11-07.yaml`; `evals/fuzz-triage/`; `make check-fuzz-triage` | Synthetic records; the recorded `claim_lint` run has no findings | tested | The gate has not yet run on a real finding; choosing `covered` over `new` is a review judgment, the gate only proves the artifacts exist; injecting a finding into a copy of the record in `/tmp` makes it exit 1, the repository artifact is untouched |
 
 Registry rules:
 
@@ -406,6 +407,11 @@ sweep is needed, not this paragraph.
   `schemas/fuzz-run.schema.json`; the recorded `claim_lint` run (155 executions,
   seed 20261107) is `clean`, and `make fuzz-claim-lint` reproduces the digest. 5 eval
   cases.
+- Finding triage (V2-18): `tools/fuzz_triage.py` requires exactly one entry per finding —
+  `covered` / `new` with a cell, a detector and a fixture, or `not-a-bug` with a reason;
+  the cell and detector resolve in the registry and the fixture in the mutations file.
+  13 eval cases; the recorded run has no findings, so its triage is empty and that is the
+  only accepted empty case.
 - Escape hatch `other` + `routing_note` and the U measurement (V2-25):
   0/43 = 0.0 %, gated at `--max-share 0` in `make verify`. N = 87.5 % and
   U = 0.0 % are fixed with artifacts dated 2026-11-07 (V2-32).
@@ -455,7 +461,7 @@ Not commitments and not status: a task closes only with evidence.
 **P2 — continuous loop**
 
 - [x] V2-17. Fuzzing adapter: oracle, seed corpus, budget, fixed seed, run artifact: `tools/fuzz_run.py`, `schemas/fuzz-run.schema.json`, rules `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout`; `executions_digest` reproduces for the same corpus and seed. The recorded `claim_lint` run — 5 seed ledgers, 150 mutations, 155 executions, seed 20261107, `clean`; 5 eval cases; `make fuzz-claim-lint` compares the digest.
-- [ ] V2-18. Triage fuzzer findings → cell + detector + fixture.
+- [x] V2-18. Triage fuzzer findings → cell + detector + fixture: `tools/fuzz_triage.py` (T1–T4), `schemas/fuzz-triage.schema.json`, 13 eval cases; `make check-fuzz-triage` runs in `make verify`. The recorded run is clean, so the triage is empty; injecting a finding into a copy of the record makes the gate exit 1.
 - [ ] V2-19. Scheduled fuzzing that does not block merges.
 - [ ] V2-20. Coverage report: unmapped symbols, stale claims, cells without a fixture.
 

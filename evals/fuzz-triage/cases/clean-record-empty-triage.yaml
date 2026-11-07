@@ -1,0 +1,68 @@
+# Synthetic fixture — not evidence about any real project.
+name: clean-record-empty-triage
+description: "Control — a recorded run with no findings and an empty triage. Nothing is\n      untriaged,\
+  \ so all four checks stay silent. This is the state of the\n      committed claim_lint run, and the\
+  \ case proves the gate accepts it without\n      inventing work.\n"
+files:
+  cells.yaml:
+    project: synthetic/cells
+    generated: '2026-11-07'
+    taxonomy:
+      name: invariant-first-code
+      version: '1'
+      classes:
+      - security
+      - correctness
+    cells:
+    - id: CELL-001
+      title: The checker rejects an empty source string.
+      taxonomy_class: correctness
+      failure_class: empty-value
+      entry_points:
+      - cli
+      failure_mode: detect
+      coverage_status: tested
+      detectors:
+      - id: D-EMPTY
+        kind: test
+        artifact: tests/test_suite.py
+        command: python3 -m pytest -q
+        status: tested
+        last_verified: '2026-11-07'
+        mutation_fixture: mutations.yaml#MUT-001
+      owner: synthetic maintainer
+      last_seen: '2026-11-07'
+record:
+  tool: fuzz_run.py
+  version: '1'
+  target: python3 checker.py @INPUT@
+  seed: 1
+  oracle:
+  - exit-not-in:0,1
+  corpus:
+    path: corpus
+    manifest:
+    - path: seed.txt
+      sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      size: 4
+  budget:
+    runs: 1
+    executions: 2
+    timeout_seconds: 10
+    max_findings: 10
+    stopped_early: false
+  started_at: '2026-11-07T10:00:00+03:00'
+  finished_at: '2026-11-07T10:00:01+03:00'
+  executions_digest: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+  findings: []
+  verdict: clean
+triage:
+  record: record.json
+  entries: []
+args: []
+expect:
+  T1: none
+  T2: none
+  T3: none
+  T4: none
+exit: 0

@@ -1,0 +1,96 @@
+# Synthetic fixture — not evidence about any real project.
+name: cell-not-in-registry
+description: "The entry names CELL-999, which the registry does not declare. The gate\n      must not\
+  \ accept a triage whose cell exists only in the triage file: T3\n      errors and the route stays unproven.\n"
+files:
+  cells.yaml:
+    project: synthetic/cells
+    generated: '2026-11-07'
+    taxonomy:
+      name: invariant-first-code
+      version: '1'
+      classes:
+      - security
+      - correctness
+    cells:
+    - id: CELL-001
+      title: The checker rejects an empty source string.
+      taxonomy_class: correctness
+      failure_class: empty-value
+      entry_points:
+      - cli
+      failure_mode: detect
+      coverage_status: tested
+      detectors:
+      - id: D-EMPTY
+        kind: test
+        artifact: tests/test_suite.py
+        command: python3 -m pytest -q
+        status: tested
+        last_verified: '2026-11-07'
+        mutation_fixture: mutations.yaml#MUT-001
+      owner: synthetic maintainer
+      last_seen: '2026-11-07'
+  mutations.yaml:
+    mutations:
+    - id: MUT-001
+      cell: CELL-001
+      description: Remove the empty-value check.
+      anchor: 'if not value:'
+      replace: 'if False:'
+  tests/test_suite.py: "def test_empty():\n    assert empty() == 1\n"
+  findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.input: 'broken
+
+    '
+  findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.log: 'traceback
+
+    '
+record:
+  tool: fuzz_run.py
+  version: '1'
+  target: python3 checker.py @INPUT@
+  seed: 1
+  oracle:
+  - exit-not-in:0,1
+  corpus:
+    path: corpus
+    manifest:
+    - path: seed.txt
+      sha256: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      size: 4
+  budget:
+    runs: 1
+    executions: 2
+    timeout_seconds: 10
+    max_findings: 10
+    stopped_early: false
+  started_at: '2026-11-07T10:00:00+03:00'
+  finished_at: '2026-11-07T10:00:01+03:00'
+  executions_digest: dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+  findings:
+  - input: findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.input
+    input_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    input_size: 8
+    log: findings/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.log
+    log_sha256: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    oracle:
+    - exit-not-in:0,1
+    exit_code: 2
+    timed_out: false
+    seed_input: null
+  verdict: findings
+triage:
+  record: record.json
+  entries:
+  - input_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    disposition: covered
+    date: '2026-11-07'
+    cell: CELL-999
+    detector: D-EMPTY
+    fixture: mutations.yaml#MUT-001
+  cells: cells.yaml
+args: []
+expect:
+  T1: none
+  T3: error
+exit: 1

@@ -40,6 +40,7 @@
 | C-23 | Статус `model-checked` или `proven` требует вывода инструмента, а не существования артефакта | `evidence.tool_output` (`schemas/tool-output.schema.json`): `tool`, `command`, `output` + `output_sha256`, `exit_code`, `finished_at`; L1 проверяет форму и согласованность commit/command, L2 — хэш вывода, дату `finished_at` и `exit_code=0` для не-open, L4 — отсутствие `tool_output` для `model-checked`/`proven` и отсутствие `bound` для `model-checked` | `evals/linter/cases/tool-output-*.yaml`, `model-checked-without-tool-output.yaml`, `model-checked-without-bound.yaml`; `schemas/tool-output.schema.json`; `tools/claim_lint.py` | Синтетические леджеры с TLC-подобным выводом | tested | Семантика инструмента и корректность кодировки модели не проверяются; без внешнего anchor (C-13) согласованная подделка проходит; запись обязательна только для `model-checked`/`proven`, для остальных статусов поле не запрещено |
 | C-24 | Детектор `runtime-enforcement` не принимается без негативного теста и объявленной точки принуждения | `kind: runtime-enforcement` требует `negative_test` (ID, резолвится через `--suite-glob`), а ячейка — `enforced_at`, `oracle`, `violation_response`; CL1 проверяет форму, CL3 резолвит ID, CL2 не даёт заявить статус выше `tested` | `spec/conveyor/cell-registry.schema.json`; `tools/cell_lint.py`; `evals/cell-lint/cases/runtime-enforcement-*.yaml`, `negative-test-*.yaml`; `spec/pilots/rbac_pg/cells.yaml` CELL-001; `spec/pilots/craft-i18n/cells.yaml` CELL-003 | Синтетические реестры и две реальные ячейки с записанными прогонами | tested | Разрешение ID проверяется только при переданном `--suite-glob` (иначе info); смысл `violation_response` автоматически не верифицируется; mutation fixture остаётся отдельным требованием CL2 |
 | C-25 | Фаззинг-прогон воспроизводим и ограничен явным oracle и бюджетом | `tools/fuzz_run.py`: seed-корпус читается в отсортированном порядке, мутатор `random.Random(seed)`, `executions_digest` = SHA-256 от упорядоченных хэшей входов; oracle-правила `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout` объединяются по ИЛИ; запись по `schemas/fuzz-run.schema.json` хранит манифест корпуса, бюджет, seed и каждую находку с логом | `spec/fuzz/runs/claim-lint-2026-11-07.json`; `evals/fuzz/`; `make fuzz-claim-lint` | `claim_lint` как цель, 5 seed-леджеров, 150 мутаций, seed 20261107 | tested | Мутатор случайный, без coverage guidance; `clean` означает «oracle не сработал в этом бюджете», а не отсутствие багов; digest связывает входы, не поведение цели; replay не входит в `make verify` (≈1 минута) и запускается вручную |
+| C-26 | Находка фаззера не исчезает: она становится cell + detector + fixture или отклоняется с причиной, и это проверяется гейтом | `tools/fuzz_triage.py`: T1 — форма записи триажа, T2 — ровно одна запись на находку (untriaged, duplicate и stale — ошибки), T3 — cell и detector резолвятся в реестре, названном в triage-файле, fixture ID — в mutations-файле, T4 — verdict записи согласован с `findings`; пустой триаж допустим только для чистого прогона | `schemas/fuzz-triage.schema.json`; `spec/fuzz/triage/claim-lint-2026-11-07.yaml`; `evals/fuzz-triage/`; `make check-fuzz-triage` | Синтетические записи; записанный прогон `claim_lint` без находок | tested | На реальной находке гейт ещё не прогонялся; выбор `covered` против `new` — суждение ревью, гейт проверяет только существование артефактов; инъекция находки в копию записи в `/tmp` даёт exit 1, сам артефакт репозитория не менялся |
 
 Правила реестра:
 
@@ -397,6 +398,10 @@ prior-art sweep, а не этот абзац.
   seed, oracle-правила по ИЛИ, бюджет и запись по `schemas/fuzz-run.schema.json`;
   записанный прогон `claim_lint` (155 исполнений, seed 20261107) — `clean`, digest
   воспроизводится через `make fuzz-claim-lint`. 5 eval-кейсов.
+- Триаж находок (V2-18): `tools/fuzz_triage.py` требует ровно одну запись на находку —
+  `covered` / `new` с cell, detector и fixture или `not-a-bug` с причиной; cell и detector
+  резолвятся в реестре, fixture — в mutations-файле. 13 eval-кейсов; записанный прогон
+  без находок, поэтому триаж пуст и это единственный допустимый пустой случай.
 - Escape hatch `other` + `routing_note` и измерение U (V2-25): 0/43 = 0,0 %;
   гейт `--max-share 0` в `make verify`. Пороги N = 87,5 % и U = 0,0 %
   зафиксированы артефактами 2026-11-07 (V2-32).
@@ -445,7 +450,7 @@ prior-art sweep, а не этот абзац.
 **P2 — непрерывный контур**
 
 - [x] V2-17. Фаззинг-адаптер: oracle, seed-корпус, бюджет, фиксированный seed, артефакт прогона: `tools/fuzz_run.py`, схема `schemas/fuzz-run.schema.json`, правила `exit:N`, `exit-not-in:`, `stdout-contains:`, `stderr-contains:`, `timeout`; `executions_digest` воспроизводится при том же корпусе и seed. Записанный прогон `claim_lint` — 5 seed-леджеров, 150 мутаций, 155 исполнений, seed 20261107, `clean`; 5 eval-кейсов, `make fuzz-claim-lint` сверяет digest.
-- [ ] V2-18. Триаж находок фаззера → cell + detector + fixture.
+- [x] V2-18. Триаж находок фаззера → cell + detector + fixture: `tools/fuzz_triage.py` (T1–T4), схема `schemas/fuzz-triage.schema.json`, 13 eval-кейсов; `make check-fuzz-triage` в `make verify`. Записанный прогон чист, поэтому триаж пуст; инъекция находки в копию записи даёт exit 1.
 - [ ] V2-19. Scheduled-запуск фаззера, не блокирующий merge.
 - [ ] V2-20. Отчёт покрытия: unmapped symbols, stale claims, cells без fixture.
 
