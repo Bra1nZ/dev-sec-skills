@@ -134,6 +134,15 @@ references/
   standards/
     SOURCES.md
     downloaded/
+crosscheck/
+  c02-row-model/
+    Cargo.toml
+    Cargo.lock
+    TARGET
+    README.md
+    src/
+      model.rs
+      main.rs
 tools/
   bounded_check.py
   cell_lint.py
@@ -245,6 +254,12 @@ spec/
   proofs/
     README.md
     manifest.yaml
+    c02-bound-2026-11-07.md
+    runs/
+      c02-crosscheck-2026-11-07.json
+      c02-crosscheck-2026-11-07.log
+      c02-mutants-2026-11-07.json
+      c02-mutants-2026-11-07.log
   red-team/
     README.md
     run_drills.py
@@ -408,16 +423,23 @@ new-bug discovery; the nightly schedule itself has not fired yet.
 Event-driven `proven` (V2-29) is `tools/proof_plan.py` plus
 [`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): each proof declares
 the code, model, encoding and tooling it depends on, and a diff decides which
-proofs must be re-run. The manifest is empty because no claim here is `proven`;
-an empty manifest declares absence, and the planner says so instead of letting a
-green gate look like coverage. `make proof-plan` resolves the merge base of
-`origin/main..HEAD`. Its cases are in
-[`evals/proof-plan/`](evals/proof-plan/): 36/36, and
+proofs must be re-run. The manifest declares two bounded checks, P-01
+(agreement) and P-02 (mutation control), for the `tested` claims C-38/C-39:
+agreement inside a declared vocabulary does not prove the universal statement,
+so the status does not move.
+[`crosscheck/c02-row-model/`](crosscheck/c02-row-model/) is an independent model
+of the craft-i18n row grammar: 69,430 inputs, 0 divergences, 22/22 mutants
+caught; the target is pinned by `TARGET` and never modified. `make proof-plan`
+resolves the merge base of `origin/main..HEAD`; on `a3293ec..4f3e25c` it reports
+2 fresh / 0 rerun, and on the docs-only `02be7ab~1..02be7ab`, 0 rerun. Its
+cases are in [`evals/proof-plan/`](evals/proof-plan/): 36/36, and
 `make proof-plan-selftest` (outside `verify`, ~80 s) mutates the planner eight
 ways and requires a named case to fail each time. The planner does not verify
 the record hash (`claim_lint` does) and does not prove that the model matches the
 code; freshness is a timestamp comparison, so a record taken from a stale
-checkout still looks fresh.
+checkout still looks fresh. A change to the target after the pin is invisible to
+the planner; `claim_lint` L2 compares the cited artifact with its blob at the
+cited commit.
 
 Gate strength was measured on the real artifacts (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) takes the craft-i18n

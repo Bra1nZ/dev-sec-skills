@@ -1,0 +1,15 @@
+{
+  "tool": "c02-row-model-mutants",
+  "command": "env CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target cargo run --offline --release --quiet --manifest-path crosscheck/c02-row-model/Cargo.toml -- --mutants",
+  "output": "spec/proofs/runs/c02-mutants-2026-11-07.log",
+  "output_sha256": "d5f359ce8fd956969213719dc7bb6e2410fdf7afc7ff490b0e528655103a6930",
+  "exit_code": 0,
+  "started_at": "2026-11-07T22:18:08+03:00",
+  "finished_at": "2026-11-07T22:18:15+03:00",
+  "status": "completed",
+  "timed_out": false,
+  "bound_seconds": 600,
+  "elapsed_seconds": 7.412,
+  "version": "0.1.0",
+  "bound": "22 named single-rule edits; each must produce at least one divergence over 69430 inputs"
+}

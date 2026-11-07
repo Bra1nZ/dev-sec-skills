@@ -1,14 +1,95 @@
-# Proof manifest (V2-29). Schemas: schemas/proof-manifest.schema.json.
+# Proof manifest (V2-29). Schema: schemas/proof-manifest.schema.json.
 #
-# Empty on purpose: no claim in this repository is `proven` or
-# `model-checked`, so there is no proof whose dependencies could go stale. An
-# empty manifest declares the absence of proofs; it is not coverage. With
-# `--require-fresh` the planner prints that the gate is vacuous rather than
-# letting a green run look like proof coverage.
+# Two entries, both about the same bounded cross-check: P-01 is the agreement
+# between the independent model and read_catalog, P-02 is the mutation control
+# that says the comparison can fail. Both support `tested` claims, not
+# `model-checked`: the space is an enumerated vocabulary, not the whole input
+# language, so agreement inside it does not prove the universal claim.
 #
-# The first real proof adds one entry with its artifact, tool_output record,
-# depended-on code, and the assumptions the model makes. The planner's
-# behaviour, including every trigger and both gates, is already covered by
-# evals/proof-plan/ (see spec/proofs/README.md).
+# The target's own sources are not in this repository (the crosscheck crate has
+# a path dependency on the craft-i18n checkout), so they cannot be a
+# `depends_on` pattern here. The target is pinned by
+# crosscheck/c02-row-model/TARGET; a change to the target after the pinned
+# commit is caught by `claim_lint` L2 comparing the cited artifact with its blob
+# at the cited commit, not by this planner. Changing the pin is a declared
+# dependency and triggers a re-run.
 version: 1
-proofs: []
+proofs:
+  - id: P-01
+    claim: C-38
+    artifact: crosscheck/c02-row-model/src/model.rs
+    tool_output: spec/proofs/runs/c02-crosscheck-2026-11-07.json
+    depends_on:
+      - crosscheck/c02-row-model/src/**
+      - crosscheck/c02-row-model/Cargo.toml
+      - crosscheck/c02-row-model/Cargo.lock
+      - crosscheck/c02-row-model/TARGET
+    model:
+      - crosscheck/c02-row-model/src/main.rs
+    encoding:
+      - spec/proofs/c02-bound-2026-11-07.md
+    tooling:
+      - tools/bounded_check.py
+    assumptions:
+      - >-
+        The implementation under test is the craft-i18n checkout pinned in
+        crosscheck/c02-row-model/TARGET at commit
+        5c5c55400e8f7f4ee4f64a64dc196335a6a1f256. Its sources are not in this
+        repository, so a later change to the target is not a diff here and
+        triggers no re-run; only the pin and the cited artifact blob are
+        checked.
+      - >-
+        Agreement is bounded by the vocabulary declared in
+        spec/proofs/c02-bound-2026-11-07.md: at most 100,000 unique inputs of at
+        most 256 bytes, plural forms in {1, 2, 3}, catalogs of at most three
+        rows, and five BOM/line-ending wrappers. Text outside that vocabulary is
+        not compared.
+      - >-
+        The compared observable is the set of accepted rows (line, context,
+        source, translation after unescaping) and the set of rejected line
+        numbers. The implementation's problem text is not compared.
+      - >-
+        The model and the implementation were written by the same author; a
+        shared misreading of docs/catalog-format.md is invisible to a
+        differential check.
+    proven_commit: 4f3e25ce8f50fc97d2f95e8adfc940da6ff31997
+    proven_at: "2026-11-07"
+    note: >-
+      Agreement over the bounded space; recorded after the model commit so the
+      freshness comparison can succeed. Feeds the `kind: model-check` evidence
+      on pilot claim C-02.
+
+  - id: P-02
+    claim: C-39
+    artifact: crosscheck/c02-row-model/src/main.rs
+    tool_output: spec/proofs/runs/c02-mutants-2026-11-07.json
+    depends_on:
+      - crosscheck/c02-row-model/src/**
+      - crosscheck/c02-row-model/Cargo.toml
+      - crosscheck/c02-row-model/Cargo.lock
+      - crosscheck/c02-row-model/TARGET
+    model:
+      - crosscheck/c02-row-model/src/model.rs
+    encoding:
+      - spec/proofs/c02-bound-2026-11-07.md
+    tooling:
+      - tools/bounded_check.py
+    assumptions:
+      - >-
+        A surviving mutant means the declared space is blind to that named
+        edit. A caught mutant means the space distinguishes the edited model
+        from the implementation somewhere; it does not mean the space covers
+        that rule for all inputs.
+      - >-
+        The 22 edits are known, hand-written single-rule mutations of the
+        model. They are not sampled from the space of possible bugs, so a high
+        score is sensitivity to these edits, not a completeness measure.
+      - >-
+        The same bound and target pin as P-01 apply: the target checkout at
+        commit 5c5c55400e8f7f4ee4f64a64dc196335a6a1f256, an enumerated
+        vocabulary, and no comparison of the implementation's problem text.
+    proven_commit: 4f3e25ce8f50fc97d2f95e8adfc940da6ff31997
+    proven_at: "2026-11-07"
+    note: >-
+      Negative control for P-01: the comparison must be able to fail before a
+      green agreement run counts as evidence. Recorded after the model commit.

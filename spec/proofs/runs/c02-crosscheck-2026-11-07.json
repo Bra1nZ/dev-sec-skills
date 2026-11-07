@@ -1,0 +1,15 @@
+{
+  "tool": "c02-row-model",
+  "command": "env CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target cargo run --offline --release --quiet --manifest-path crosscheck/c02-row-model/Cargo.toml",
+  "output": "spec/proofs/runs/c02-crosscheck-2026-11-07.log",
+  "output_sha256": "3925f8f4af5dfa283987552a524924bcfe519f2e2263a6549e8594c37c79e444",
+  "exit_code": 0,
+  "started_at": "2026-11-07T22:18:02+03:00",
+  "finished_at": "2026-11-07T22:18:03+03:00",
+  "status": "completed",
+  "timed_out": false,
+  "bound_seconds": 600,
+  "elapsed_seconds": 0.953,
+  "version": "0.1.0",
+  "bound": "<=100000 inputs, <=256 bytes each, forms {1,2,3}, 5 BOM/line-ending wrappers, 22 named mutants"
+}

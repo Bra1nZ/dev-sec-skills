@@ -63,8 +63,14 @@ spec/
     fixtures/                     # authored SARIF: semgrep, codeql, bandit
     2026-11-07-report.json        # recorded normalized report
   proofs/
-    README.md                     # what a re-run trigger is, how freshness is decided, limits
-    manifest.yaml                 # empty: no claim is `proven` or `model-checked`
+    README.md                     # re-run triggers, freshness, P-01/P-02, limits
+    manifest.yaml                 # P-01/P-02: the bounded C-02 cross-check
+    c02-bound-2026-11-07.md       # declared bound, space and decision rule
+    runs/
+      c02-crosscheck-2026-11-07.json  # P-01 tool_output record
+      c02-crosscheck-2026-11-07.log   # captured stdout, hash-checked
+      c02-mutants-2026-11-07.json     # P-02 tool_output record
+      c02-mutants-2026-11-07.log      # captured stdout, hash-checked
   red-team/
     README.md                     # 14 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
@@ -170,14 +176,19 @@ fired at the time of writing.
 Event-driven `proven` (V2-29) is `tools/proof_plan.py` plus
 `spec/proofs/manifest.yaml`: each proof declares the code, model, encoding and
 tooling it depends on, and a diff decides which proofs must be re-run. The
-manifest is empty because no claim here is `proven`; an empty manifest declares
-absence, and the planner says so instead of letting a green gate look like
-evidence. `make proof-plan` resolves the merge base of `origin/main..HEAD` and
-prints the plan. The planner is covered by 36 synthetic git cases in
-`evals/proof-plan/` and by eight mutants of itself (`make proof-plan-selftest`,
-not in `verify`). It does not verify the record hash (`claim_lint` does), does
-not check that the model matches the code, and decides freshness from
-timestamps, so a record produced from a stale checkout still looks fresh.
+manifest declares two bounded checks, P-01 (agreement) and P-02 (mutation
+control), for the `tested` claims C-38/C-39; they are not `proven` claims,
+because agreement inside a declared vocabulary is not a proof of the universal
+statement. `make proof-plan` resolves the merge base of `origin/main..HEAD` and
+prints the plan; on `a3293ec..4f3e25c` it reports 2 fresh / 0 rerun, and the
+docs-only `02be7ab~1..02be7ab` also reports 0 rerun. The planner is covered by
+36 synthetic git cases in `evals/proof-plan/` and by eight mutants of itself
+(`make proof-plan-selftest`, not in `verify`). It does not verify the record
+hash (`claim_lint` does), does not check that the model matches the code, and
+decides freshness from timestamps, so a record produced from a stale checkout
+still looks fresh. The target checkout is outside this repository, so a change
+to it after the pinned commit is not a diff here; the pin is declared and
+`claim_lint` L2 compares the cited artifact with its blob at the cited commit.
 
 Gate strength is measured against the real artifacts, not only fixtures (C-35):
 `spec/red-team/run_drills.py` takes the committed craft-i18n ledger, its cargo

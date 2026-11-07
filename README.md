@@ -134,6 +134,15 @@ references/
   standards/
     SOURCES.md
     downloaded/
+crosscheck/
+  c02-row-model/
+    Cargo.toml
+    Cargo.lock
+    TARGET
+    README.md
+    src/
+      model.rs
+      main.rs
 schemas/
   claim-ledger.schema.json
   fuzz-run.schema.json
@@ -263,6 +272,12 @@ spec/
   proofs/
     README.md
     manifest.yaml
+    c02-bound-2026-11-07.md
+    runs/
+      c02-crosscheck-2026-11-07.json
+      c02-crosscheck-2026-11-07.log
+      c02-mutants-2026-11-07.json
+      c02-mutants-2026-11-07.log
   red-team/
     README.md
     run_drills.py
@@ -430,15 +445,22 @@ success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
 Event-driven `proven` (V2-29) — `tools/proof_plan.py` и
 [`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): каждая доказанная
 claim объявляет код, модель, encoding и tooling, от которых зависит, а diff
-решает, какие доказательства обязаны перепрогнаться. Манифест пуст, потому что
-ни одна claim здесь не `proven`; пустой манифест объявляет отсутствие, и
-планировщик говорит об этом прямо, а не выдаёт зелёный гейт за покрытие.
-`make proof-plan` берёт merge base `origin/main..HEAD`. Кейсы —
+решает, какие доказательства обязаны перепрогнаться. Манифест объявляет два
+bounded-проверки, P-01 (согласие) и P-02 (mutation control), для `tested`
+claim'ов C-38/C-39: согласие внутри объявленного словаря не доказывает
+универсальное утверждение, поэтому статус не поднимается.
+[`crosscheck/c02-row-model/`](crosscheck/c02-row-model/) — независимая модель
+row-грамматики craft-i18n: 69 430 входов, 0 расхождений, 22/22 мутанта пойманы;
+target пиннится `TARGET` и не модифицируется. `make proof-plan` берёт merge
+base `origin/main..HEAD`; на `a3293ec..4f3e25c` — 2 fresh / 0 rerun, на
+docs-only `02be7ab~1..02be7ab` — 0 rerun. Кейсы —
 [`evals/proof-plan/`](evals/proof-plan/): 36/36; восемь мутаций самого
 планировщика проверяет `make proof-plan-selftest` (вне `verify`, ~80 с).
 Планировщик не проверяет хэш записи (это делает `claim_lint`) и не доказывает,
 что модель соответствует коду; свежесть — сравнение времени, поэтому запись,
-снятая со stale checkout, выглядит свежей.
+снятая со stale checkout, выглядит свежей. Изменение target после пина не
+видно планировщику: `claim_lint` L2 сверяет процитированный артефакт с блобом
+на коммите.
 
 Силу гейтов измерили на реальных артефактах (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) берёт леджер

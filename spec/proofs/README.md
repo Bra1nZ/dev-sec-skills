@@ -12,23 +12,34 @@ every pull request makes proofs expensive enough to be dropped; running none
 lets a proof quietly describe dead code. A diff decides, and the decision is a
 record with reasons, not a convenient silence.
 
-This repository currently has **no `proven` claim**, so
-[`spec/proofs/manifest.yaml`](manifest.yaml) is empty. An empty manifest is a
-declaration of absence, not coverage: with `--require-fresh` the planner prints
-that the gate is vacuous instead of returning a green run that looks like proof
-coverage.
+This repository has no `proven` claim, but its
+[`spec/proofs/manifest.yaml`](manifest.yaml) is no longer empty: it declares two
+bounded checks for `tested` claims. P-01 is the agreement between an independent
+model of the craft-i18n row grammar and `read_catalog`; P-02 is the mutation
+control that shows the comparison can fail. A bounded check over a declared
+vocabulary supports `tested`, not `model-checked`: agreement inside the
+vocabulary is not a proof of the universal claim. The planner reads the
+manifest, not the claim status, so a record that drifts is reported either way.
 
 ## Files
 
 ```text
 spec/proofs/
-  manifest.yaml                        # empty: no claim is `proven` yet
+  manifest.yaml                        # P-01/P-02: the C-02 bounded cross-check
+  c02-bound-2026-11-07.md              # declared bound, space, decision rule, limits
+  runs/
+    c02-crosscheck-2026-11-07.json     # P-01 tool_output record
+    c02-crosscheck-2026-11-07.log      # captured stdout, hash-checked
+    c02-mutants-2026-11-07.json        # P-02 tool_output record
+    c02-mutants-2026-11-07.log         # captured stdout, hash-checked
   README.md                            # this file
 ```
 
 - `schemas/proof-manifest.schema.json` — the manifest's shape; every entry is
   rejected unless it names an artifact, a `tool_output` record, at least one
   `depends_on` path and at least one assumption.
+- `crosscheck/c02-row-model/` — the independent model, the space generator and
+  the mutation harness; see its `README.md` for the run commands.
 - `tools/proof_plan.py` — the planner, read-only on the target repository.
 - `evals/proof-plan/run_evals.py` — 36 synthetic git scenarios.
 - `evals/proof-plan/mutation_selftest.py` — eight mutants of the planner, each
@@ -56,6 +67,36 @@ out of a declared path is still a change. A deleted dependency is a change.
 A changed file that maps to no entry *and* looks like proof material
 (`.tla`, `.smt2`, `.als`, `.lean`, `.dfy`, …, see `MATERIAL_EXTENSIONS`) is
 reported as `unmapped`, which is a gap in the manifest, not a pass.
+
+## The first declared proofs
+
+Both entries use the same crate and the same recorded run discipline.
+
+| ID | Claim | Artifact | `tool_output` | Declared dependencies |
+| --- | --- | --- | --- | --- |
+| P-01 | C-38 | `crosscheck/c02-row-model/src/model.rs` | `spec/proofs/runs/c02-crosscheck-2026-11-07.json` | `crosscheck/c02-row-model/**`, the bound document, `tools/bounded_check.py` |
+| P-02 | C-39 | `crosscheck/c02-row-model/src/main.rs` | `spec/proofs/runs/c02-mutants-2026-11-07.json` | the same set |
+
+P-01 compares accepted rows and rejected line numbers with
+`craft_i18n_tests::catalog::read_catalog` over 69,430 enumerated inputs. P-02
+runs the same space once per one of 22 named model edits and requires each edit
+to produce a divergence. The bound, the vocabulary and the decision rule are in
+[`c02-bound-2026-11-07.md`](c02-bound-2026-11-07.md), written before the
+recorded run.
+
+The target's sources are not in this repository: the crate has a path
+dependency on the craft-i18n checkout, and the checkout is pinned by
+`crosscheck/c02-row-model/TARGET`. That produces a limit the manifest cannot
+close by itself:
+
+- A change to the target after the pinned commit is not a diff here, so it
+  triggers no re-run. `claim_lint` L2 still compares the cited artifact
+  (`crates/craft-i18n-tests/src/catalog.rs`) with its blob at the cited commit,
+  which catches an artifact that moved but not a change to an uncited file.
+- Changing `TARGET` is a declared `depends_on` change, so it does trigger a
+  re-run; the re-run then fails or succeeds against the new checkout.
+- `Cargo.lock` is declared because a dependency upgrade can change the target
+  crate's behaviour without changing the target commit.
 
 ## How freshness is decided
 
@@ -110,6 +151,12 @@ runner prints every case name, so the list is the file, not this paragraph.
 
 Measured 2026-11-07 on this repository:
 
+- `python3 tools/proof_plan.py --repo . --base a3293ec --head 4f3e25c
+  --manifest spec/proofs/manifest.yaml` → `FRESH P-01`, `FRESH P-02`; summary
+  `2 proof(s): 0 rerun, 2 fresh; 0 removed; 0 unmapped material; 9 changed
+  file(s)`. Both records carry `record-covers-change`: their `finished_at` is
+  later than the committer time of the model commit. `--require-fresh` exits 0
+  on that range.
 - `python3 evals/proof-plan/run_evals.py` → 36/36 cases pass.
 - `python3 evals/proof-plan/mutation_selftest.py` → 8/8 mutants caught, each by
   a case named for the mutated behaviour: strict freshness, ignoring the old
@@ -123,7 +170,9 @@ Measured 2026-11-07 on this repository:
   `--require-fresh` exited 1, and the docs-only commit `02be7ab~1..02be7ab`
   exited 0.
 
-The limits above are the honest scope of that evidence: the scenario suite is
-synthetic, the mutation harness only proves the suite is sensitive to those
-seven edits, and no real proof has ever been planned in this repository
-because no claim is `proven`.
+The limits above are the honest scope of that evidence: the eval suite is
+synthetic; the mutation harness only proves the suite is sensitive to those
+seven edits; P-01/P-02 are bounded checks over a declared vocabulary, not
+proofs; a change to the target after the pin is invisible to the planner; and no
+real re-run has yet been forced by a later change, so `record-covers-change` on
+the first range is a timestamp outcome, not a demonstrated re-run.

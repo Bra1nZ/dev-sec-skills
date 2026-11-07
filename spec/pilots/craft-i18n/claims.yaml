@@ -103,6 +103,26 @@ claims:
           log_sha256: "e90240b269aad9d6b1ba87ef92e2f2ee24700ab03d3f508683d408ff8a17fe7e"
           tests_run: 26
           tests_passed: 26
+      - kind: model-check
+        command: "env CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target cargo run --offline --release --quiet --manifest-path crosscheck/c02-row-model/Cargo.toml"
+        artifact: "crates/craft-i18n-tests/src/catalog.rs"
+        commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+        date: "2026-11-07"
+        tool_output:
+          tool: "c02-row-model"
+          version: "0.1.0"
+          command: "env CARGO_TARGET_DIR=/tmp/opencode/c02-crosscheck-target cargo run --offline --release --quiet --manifest-path crosscheck/c02-row-model/Cargo.toml"
+          output: "spec/proofs/runs/c02-crosscheck-2026-11-07.log"
+          output_sha256: "3925f8f4af5dfa283987552a524924bcfe519f2e2263a6549e8594c37c79e444"
+          exit_code: 0
+          started_at: "2026-11-07T22:18:02+03:00"
+          finished_at: "2026-11-07T22:18:03+03:00"
+          status: completed
+          timed_out: false
+          bound_seconds: 600
+          elapsed_seconds: 0.953
+          bound: "<=100000 inputs, <=256 bytes each, forms {1,2,3}, 5 BOM/line-ending wrappers, 22 named mutants"
+        note: "An independent model of docs/catalog-format.md, not a translation of read_catalog, agrees with it on 69,430 enumerated inputs (0 divergences). The space is a declared vocabulary, not the whole input language, so this strengthens the test evidence without proving the universal claim: C-02 stays tested. The model, its bound and its dependency manifest are P-01 in spec/proofs/manifest.yaml."
     limitations: "One test bundles twenty malformed rows; a regression in any one rule fails it, and the test does not say which rule without reading the panic message."
     last_verified: "2026-11-07"
 

@@ -1,0 +1,11 @@
+c02-row-model 0.1.0 — independent model of the craft-i18n catalog row grammar
+target:
+  target: craft-i18n
+  commit: 5c5c55400e8f7f4ee4f64a64dc196335a6a1f256
+  crate: crates/craft-i18n-tests
+  model-of: crates/craft-i18n-tests/src/catalog.rs
+declared bound: <= 100000 inputs, <= 256 bytes each, forms in {1,2,3}, 5 BOM/line-ending wrappers, 22 named mutants
+space: generated=70115, unique=69430, families=[columns=23325, pair=1758, plural=555, single-row=37500, triple=6292]
+coverage: inputs=69430, forms=1:245 2:68940 3:245, accepted-rows=11142, inputs-with-a-rejected-line=63364, rejection-after-line-1=6273, bom=30358, cr=28653, control=35987, multi-line=44878
+divergences: 0
+RESULT: OK — the model and read_catalog agree on every generated input

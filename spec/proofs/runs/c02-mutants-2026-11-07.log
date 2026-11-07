@@ -1,0 +1,43 @@
+c02-row-model 0.1.0 — independent model of the craft-i18n catalog row grammar
+target:
+  target: craft-i18n
+  commit: 5c5c55400e8f7f4ee4f64a64dc196335a6a1f256
+  crate: crates/craft-i18n-tests
+  model-of: crates/craft-i18n-tests/src/catalog.rs
+declared bound: <= 100000 inputs, <= 256 bytes each, forms in {1,2,3}, 5 BOM/line-ending wrappers, 22 named mutants
+space: generated=70115, unique=69430, families=[columns=23325, pair=1758, plural=555, single-row=37500, triple=6292]
+mutation control: every named edit to the model must produce a divergence
+mutant no-column-check: CAUGHT by 4580 input(s)
+mutant no-empty-source: CAUGHT by 2140 input(s)
+mutant no-empty-translation: CAUGHT by 2205 input(s)
+mutant no-duplicate-key: CAUGHT by 770 input(s)
+mutant no-unknown-escape: CAUGHT by 2750 input(s)
+mutant no-trailing-backslash: CAUGHT by 655 input(s)
+mutant no-unknown-context: CAUGHT by 4295 input(s)
+mutant no-placeholder-check: CAUGHT by 5660 input(s)
+mutant no-ellipsis-check: CAUGHT by 740 input(s)
+mutant no-template-adjacent: CAUGHT by 187 input(s)
+mutant no-template-literal: CAUGHT by 10 input(s)
+mutant no-template-open: CAUGHT by 45 input(s)
+mutant no-plural-source: CAUGHT by 80 input(s)
+mutant no-plural-forms: CAUGHT by 160 input(s)
+mutant no-plural-placeholders: CAUGHT by 55 input(s)
+mutant no-control-chars: CAUGHT by 2193 input(s)
+mutant no-mid-bom: CAUGHT by 655 input(s)
+mutant no-file-bom-strip: CAUGHT by 3823 input(s)
+mutant id-not-exempt: CAUGHT by 2013 input(s)
+mutant off-by-one-line: CAUGHT by 69353 input(s)
+mutant no-comment-skip: CAUGHT by 1775 input(s)
+mutant no-cr-strip: CAUGHT by 4610 input(s)
+first counterexample (from the first caught mutant):
+DIVERGENCE 1
+  family: columns
+  forms: 2
+  input: "\tSave\tSave\t"
+  model rows: [(1, "", "Save", "Save")]
+  model rejected: []
+  actual rows: []
+  actual rejected: [1]
+  actual problems: ["line 1: 4 columns; expected 3"]
+mutants: 22/22 caught
+RESULT: OK — the bounded space detects every named model edit
