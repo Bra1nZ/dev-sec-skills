@@ -135,6 +135,10 @@ def _inject_anchors(root, ledger, case):
             # compares, so the failure is the anchor, not a side effect.
             field = tamper_field[channel]
             record[field] = str(record.get(field, "")) + "-tampered"
+        elif tamper == "signer":
+            # The signature stays valid for the bytes; only the identity the
+            # verifier is asked to trust is no longer in allowed_signers.
+            record["anchor"]["signer"] = "unknown-signer"
 
     for claim in ledger.get("claims") or []:
         if not isinstance(claim, dict):

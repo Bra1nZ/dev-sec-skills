@@ -1,0 +1,16 @@
+# Synthetic fixture — not evidence about any real project.
+name: static-analysis-anchor-unknown-signer
+extends: static-analysis-valid.yaml
+description: The signature is genuine and the subject matches the record, but
+  the signer identity named in the anchor is not in allowed_signers. ssh-keygen
+  refuses to verify an identity it was not asked to trust, so L2 must error
+  rather than accept a valid signature from an unexpected key.
+tamper_anchor: signer
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+  L6: none
+exit: 1

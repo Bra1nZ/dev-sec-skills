@@ -237,7 +237,10 @@ The anchor is checked before the output or log paths, so a URL output cannot
 bypass it. The anchor directory is shared: `spec/anchor/` holds the committed
 `allowed_signers` and 13 subject/signature pairs (3 static-analysis, 9
 run_record, 1 sanitizer). The subject carries no path, so moving the directory
-did not invalidate any signature.
+did not invalidate any signature. Adding, retiring, rotating and losing a key
+are covered in [`spec/anchor/README.md`](../anchor/README.md); a signature from
+an identity that is not in `allowed_signers` fails L2 even when the bytes are
+genuine (the `static-analysis-anchor-unknown-signer` eval case).
 
 The private key lives at `/tmp/opencode/dev-sec-skills-anchor/key`, outside
 the repository, and is never committed. That is what makes an edit after
