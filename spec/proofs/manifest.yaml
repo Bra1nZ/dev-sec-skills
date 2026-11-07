@@ -6,6 +6,11 @@
 # `model-checked`: the space is an enumerated vocabulary, not the whole input
 # language, so agreement inside it does not prove the universal claim.
 #
+# C-38/C-39 are CONCEPT registry claims (spec/conveyor/CONCEPT.md); the pilot
+# ledger's matching evidence item is C-02 in
+# spec/pilots/craft-i18n/claims.yaml. The two registries use the same ID shape
+# but are separate namespaces.
+#
 # The target's own sources are not in this repository (the crosscheck crate has
 # a path dependency on the craft-i18n checkout), so they cannot be a
 # `depends_on` pattern here. The target is pinned by

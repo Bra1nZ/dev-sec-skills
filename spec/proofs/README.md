@@ -84,6 +84,14 @@ to produce a divergence. The bound, the vocabulary and the decision rule are in
 [`c02-bound-2026-11-07.md`](c02-bound-2026-11-07.md), written before the
 recorded run.
 
+C-38 and C-39 are claims in the CONCEPT registry
+([`../conveyor/CONCEPT.md`](../conveyor/CONCEPT.md)); the pilot ledger has one
+`kind: model-check` evidence item, on C-02 in
+[`../pilots/craft-i18n/claims.yaml`](../pilots/craft-i18n/claims.yaml). The two
+registries use the same ID shape but are separate namespaces: the pilot claim is
+the row grammar of one crate, the CONCEPT claims are the cross-check and its
+negative control.
+
 The target's sources are not in this repository: the crate has a path
 dependency on the craft-i18n checkout, and the checkout is pinned by
 `crosscheck/c02-row-model/TARGET`. That produces a limit the manifest cannot
