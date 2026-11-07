@@ -1,0 +1,79 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "properties": {
+    "dev-sec-skills/fixture": true,
+    "dev-sec-skills/provenance": "authored SARIF document, not a captured engine run"
+  },
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Semgrep",
+          "version": "0.0.0-fixture",
+          "informationUri": "https://semgrep.dev",
+          "rules": [
+            {
+              "id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+              "shortDescription": {"text": "subprocess with shell=True"},
+              "defaultConfiguration": {"level": "error"}
+            },
+            {
+              "id": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+              "shortDescription": {"text": "SQL built by formatting"},
+              "defaultConfiguration": {"level": "warning"}
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {"text": "Detected subprocess call with shell=True."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "tools/run.py", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 41, "endLine": 41}
+              }
+            }
+          ],
+          "partialFingerprints": {"matchBasedId/v1": "semgrep-fixture-001"}
+        },
+        {
+          "ruleId": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {"text": "SQL query is built with string formatting."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "app/db.py", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 88, "endLine": 90}
+              }
+            }
+          ],
+          "partialFingerprints": {"matchBasedId/v1": "semgrep-fixture-002"}
+        },
+        {
+          "ruleId": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {"text": "Detected subprocess call with shell=True."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "tools/run.py", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 41, "endLine": 41}
+              }
+            }
+          ],
+          "partialFingerprints": {"matchBasedId/v1": "semgrep-fixture-001"}
+        }
+      ],
+      "properties": {"dev-sec-skills/fixture": true}
+    }
+  ]
+}

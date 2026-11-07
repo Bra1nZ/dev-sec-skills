@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:dev-sec-skills:spec:sarif:evidence:v0",
+  "title": "Normalized SARIF evidence report",
+  "description": "Output of tools/sarif_evidence.py (V2-23). One finding per unique SARIF result, with engine, rule, location, class mapping and explicit unmapped findings. The report is a review queue and an evidence input; it is not a verdict that a finding is real or that a site is unprotected.",
+  "type": "object",
+  "required": ["format", "generated", "inputs", "engines", "findings",
+               "unmapped", "summary", "errors"],
+  "properties": {
+    "format": { "const": "dev-sec-skills/sarif-evidence/v1" },
+    "generated": { "type": "string", "format": "date" },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "engines", "runs", "results", "fixture"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "engines": { "type": "array", "items": { "type": "string" } },
+          "runs": { "type": "integer", "minimum": 1 },
+          "results": { "type": "integer", "minimum": 0 },
+          "fixture": {
+            "type": "boolean",
+            "description": "True when the SARIF document declares authored-fixture provenance. A production job can refuse these with --reject-fixtures."
+          }
+        }
+      }
+    },
+    "engines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "runs", "findings", "unmapped", "cell_mapped"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "runs": { "type": "integer", "minimum": 0 },
+          "findings": { "type": "integer", "minimum": 0 },
+          "unmapped": { "type": "integer", "minimum": 0 },
+          "cell_mapped": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "present_engines": { "type": "array", "items": { "type": "string" } },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "engine", "engine_name", "rule_id", "level", "message",
+          "path", "start_line", "end_line", "fingerprint", "taxonomy_class",
+          "failure_class", "failure_mode", "cell", "mapped"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^F-[0-9]{3,}$" },
+          "engine": { "type": "string" },
+          "engine_name": { "type": "string" },
+          "rule_id": { "type": "string", "minLength": 1 },
+          "level": { "enum": ["none", "note", "warning", "error"] },
+          "message": { "type": "string" },
+          "path": { "type": "string", "minLength": 1 },
+          "start_line": { "type": ["integer", "null"], "minimum": 1 },
+          "end_line": { "type": ["integer", "null"], "minimum": 1 },
+          "fingerprint": { "type": ["string", "null"] },
+          "taxonomy_class": { "type": "string" },
+          "failure_class": { "type": "string" },
+          "failure_mode": { "type": "string" },
+          "cell": {
+            "type": ["string", "null"],
+            "description": "<registry>/<CELL-ID>, or null when the rule maps to a class but no exact cell."
+          },
+          "mapped": { "const": true }
+        }
+      }
+    },
+    "unmapped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["engine", "rule_id", "path", "start_line", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "engine": { "type": "string" },
+          "rule_id": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "start_line": { "type": ["integer", "null"], "minimum": 1 },
+          "reason": {
+            "enum": ["unknown-engine", "unmapped-rule", "missing-rule-id",
+                     "missing-location"]
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["inputs", "fixture_inputs", "findings", "mapped",
+                   "unmapped", "duplicates", "cell_mapped", "engines_present",
+                   "digest"],
+      "additionalProperties": false,
+      "properties": {
+        "inputs": { "type": "integer", "minimum": 0 },
+        "fixture_inputs": { "type": "integer", "minimum": 0 },
+        "findings": { "type": "integer", "minimum": 0 },
+        "mapped": { "type": "integer", "minimum": 0 },
+        "unmapped": { "type": "integer", "minimum": 0 },
+        "duplicates": { "type": "integer", "minimum": 0 },
+        "cell_mapped": { "type": "integer", "minimum": 0 },
+        "engines_present": { "type": "integer", "minimum": 0 },
+        "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "errors": { "type": "array", "items": { "type": "string" } }
+  }
+}

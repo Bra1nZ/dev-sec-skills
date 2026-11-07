@@ -135,24 +135,42 @@ references/
     SOURCES.md
     downloaded/
 tools/
-  claim_lint.py
   cell_lint.py
+  choke_points.py
+  claim_lint.py
+  coverage_report.py
+  diff_coverage.py
+  fuzz_run.py
+  fuzz_triage.py
+  invariant_catalog.py
+  mutation_plan.py
+  sarif_evidence.py
   status_diff.py
+  unroutable.py
 ci/
-  claim-lint.yml
   cell-lint.yml
+  claim-lint.yml
   diff-coverage.yml
+  mutation-changed.yml
 evals/
   evals.json
+  README.md
   iteration-1/
     RESULTS.md
   iteration-2/
     evals.json
     RESULTS.md
+  iteration-3/
+    RESULTS.md
+  iteration-4/
+    RESULTS.md
   linter/
     run_evals.py
     cases/
   cell-lint/
+    run_evals.py
+    cases/
+  status-diff/
     run_evals.py
     cases/
   fuzz/
@@ -170,10 +188,12 @@ evals/
   choke-points/
     run_evals.py
     cases/
-  iteration-3/
-    RESULTS.md
-  iteration-4/
-    RESULTS.md
+  mutation-plan/
+    run_evals.py
+  invariant-catalog/
+    run_evals.py
+  sarif/
+    run_evals.py
 spec/
   README.md
   conveyor/
@@ -203,6 +223,15 @@ spec/
     rules.yaml
     2026-11-07-rbac-pg.json
     2026-11-07-craft-i18n.json
+  invariants/
+    README.md
+    catalog.yaml
+    2026-11-07-coverage.json
+  sarif/
+    README.md
+    adapters.yaml
+    fixtures/
+    2026-11-07-report.json
   pilots/
     rbac_pg/
       cells.yaml

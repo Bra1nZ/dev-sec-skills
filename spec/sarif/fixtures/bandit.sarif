@@ -1,0 +1,69 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "properties": {
+    "dev-sec-skills/fixture": true,
+    "dev-sec-skills/provenance": "authored SARIF document, not a captured engine run"
+  },
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Bandit",
+          "version": "0.0.0-fixture",
+          "informationUri": "https://bandit.readthedocs.io",
+          "rules": [
+            {"id": "B608", "defaultConfiguration": {"level": "warning"}},
+            {"id": "B105", "defaultConfiguration": {"level": "warning"}},
+            {"id": "B602", "defaultConfiguration": {"level": "warning"}}
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "B608",
+          "level": "warning",
+          "message": {"text": "Possible SQL injection vector through string-based query construction."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "./app/repository.py"},
+                "region": {"startLine": 73}
+              }
+            }
+          ],
+          "partialFingerprints": {"primaryLocationLineHash": "bandit-fixture-001"}
+        },
+        {
+          "ruleId": "B105",
+          "level": "warning",
+          "message": {"text": "Possible hardcoded password: 'fixture'."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "app/settings.py"},
+                "region": {"startLine": 12, "endLine": 12}
+              }
+            }
+          ],
+          "partialFingerprints": {"primaryLocationLineHash": "bandit-fixture-002"}
+        },
+        {
+          "ruleId": "B602",
+          "level": "warning",
+          "message": {"text": "subprocess call with shell=True identified."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "app/tools.py"},
+                "region": {"startLine": 5, "endLine": 5}
+              }
+            }
+          ],
+          "partialFingerprints": {"primaryLocationLineHash": "bandit-fixture-003"}
+        }
+      ],
+      "properties": {"dev-sec-skills/fixture": true}
+    }
+  ]
+}

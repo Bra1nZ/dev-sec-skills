@@ -1,0 +1,89 @@
+# SARIF adapters: engine + rule -> taxonomy finding (V2-23).
+#
+# An adapter does not run an engine. It normalizes a SARIF 2.1.0 file, resolves
+# the engine by `tool.driver.name`, and maps each result by its rule ID. Rules
+# are ordered: the first match wins. A finding whose engine or rule is not in
+# this file is `unmapped`, not silently classified.
+#
+# `cell` is optional. A rule can map to a class without naming a cell; the
+# report then says `cell: null`, which is honest, while a rule that names a
+# cell must resolve through `registries`. `cell` syntax: <registry>/<CELL-ID>.
+#
+# The fixtures under fixtures/ are AUTHORED SARIF documents that follow the
+# engines' documented shape. They are not captured engine runs; the report
+# carries `fixture: true` and `--reject-fixtures` refuses them.
+version: 1
+
+registries:
+  rbac_pg: spec/pilots/rbac_pg/cells.yaml
+  craft-i18n: spec/pilots/craft-i18n/cells.yaml
+
+engines:
+  - id: semgrep
+    name: Semgrep
+    rules:
+      - id: semgrep-subprocess-shell
+        match: '^python\.lang\.security\.audit\.subprocess-shell-true'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-008
+      - id: semgrep-formatted-sql
+        match: '^python\.lang\.security\.audit\.formatted-sql-query'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-010
+      - id: semgrep-dangerous-subprocess
+        match: '^python\.lang\.security\.audit\.dangerous-subprocess-use'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-008
+      - id: semgrep-hardcoded-secret
+        match: '^python\.lang\.security\.secrets\.hardcoded'
+        taxonomy_class: security
+        failure_class: exposed-secret-or-weak-crypto
+        failure_mode: abort
+
+  - id: codeql
+    name: CodeQL
+    rules:
+      - id: codeql-sql-injection
+        match: '^py/sql-injection$'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-010
+      - id: codeql-command-injection
+        match: '^py/command-line-injection$'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-008
+      - id: codeql-cleartext-logging
+        match: '^py/clear-text-logging-sensitive-data$'
+        taxonomy_class: security
+        failure_class: exposed-secret-or-weak-crypto
+        failure_mode: safe-degrade
+
+  - id: bandit
+    name: Bandit
+    rules:
+      - id: bandit-sql-string
+        match: '^B608$'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-010
+      - id: bandit-hardcoded-password
+        match: '^B105$'
+        taxonomy_class: security
+        failure_class: exposed-secret-or-weak-crypto
+        failure_mode: abort
+      - id: bandit-subprocess-shell
+        match: '^B602$'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-008

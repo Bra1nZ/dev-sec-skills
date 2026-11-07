@@ -1,0 +1,201 @@
+{
+  "format": "dev-sec-skills/sarif-evidence/v1",
+  "generated": "2026-11-07",
+  "inputs": [
+    {
+      "path": "spec/sarif/fixtures/bandit.sarif",
+      "sha256": "e08e8f482b5335b663a7eae4a8588b7ce106847fc071e2924f729e95f3780b5f",
+      "engines": [
+        "Bandit"
+      ],
+      "runs": 1,
+      "results": 3,
+      "fixture": true
+    },
+    {
+      "path": "spec/sarif/fixtures/codeql.sarif",
+      "sha256": "f387dde53b2f03a42b41324cc1bede2430873d3e20d47dc79480718b26ec7204",
+      "engines": [
+        "CodeQL"
+      ],
+      "runs": 1,
+      "results": 2,
+      "fixture": true
+    },
+    {
+      "path": "spec/sarif/fixtures/semgrep.sarif",
+      "sha256": "c7329a8a571b52361c6a384ffe8a2258c1c69b0b44267f7429dcda45045a305b",
+      "engines": [
+        "Semgrep"
+      ],
+      "runs": 1,
+      "results": 3,
+      "fixture": true
+    }
+  ],
+  "engines": [
+    {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "runs": 1,
+      "findings": 2,
+      "unmapped": 0,
+      "cell_mapped": 2
+    },
+    {
+      "id": "codeql",
+      "name": "CodeQL",
+      "runs": 1,
+      "findings": 2,
+      "unmapped": 0,
+      "cell_mapped": 1
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "runs": 1,
+      "findings": 3,
+      "unmapped": 0,
+      "cell_mapped": 2
+    }
+  ],
+  "present_engines": [
+    "bandit",
+    "codeql",
+    "semgrep"
+  ],
+  "findings": [
+    {
+      "engine": "bandit",
+      "engine_name": "Bandit",
+      "rule_id": "B608",
+      "level": "warning",
+      "message": "Possible SQL injection vector through string-based query construction.",
+      "path": "app/repository.py",
+      "start_line": 73,
+      "end_line": 73,
+      "fingerprint": "{\"primaryLocationLineHash\": \"bandit-fixture-001\"}",
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "cell": "rbac_pg/CELL-010",
+      "mapped": true,
+      "id": "F-001"
+    },
+    {
+      "engine": "bandit",
+      "engine_name": "Bandit",
+      "rule_id": "B105",
+      "level": "warning",
+      "message": "Possible hardcoded password: 'fixture'.",
+      "path": "app/settings.py",
+      "start_line": 12,
+      "end_line": 12,
+      "fingerprint": "{\"primaryLocationLineHash\": \"bandit-fixture-002\"}",
+      "taxonomy_class": "security",
+      "failure_class": "exposed-secret-or-weak-crypto",
+      "failure_mode": "abort",
+      "cell": null,
+      "mapped": true,
+      "id": "F-002"
+    },
+    {
+      "engine": "bandit",
+      "engine_name": "Bandit",
+      "rule_id": "B602",
+      "level": "warning",
+      "message": "subprocess call with shell=True identified.",
+      "path": "app/tools.py",
+      "start_line": 5,
+      "end_line": 5,
+      "fingerprint": "{\"primaryLocationLineHash\": \"bandit-fixture-003\"}",
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "cell": "rbac_pg/CELL-008",
+      "mapped": true,
+      "id": "F-003"
+    },
+    {
+      "engine": "codeql",
+      "engine_name": "CodeQL",
+      "rule_id": "py/clear-text-logging-sensitive-data",
+      "level": "warning",
+      "message": "This logs a value that may contain a secret.",
+      "path": "src/api/errors.py",
+      "start_line": 52,
+      "end_line": 54,
+      "fingerprint": "{\"primaryLocationLineHash\": \"codeql-fixture-002\"}",
+      "taxonomy_class": "security",
+      "failure_class": "exposed-secret-or-weak-crypto",
+      "failure_mode": "safe-degrade",
+      "cell": null,
+      "mapped": true,
+      "id": "F-004"
+    },
+    {
+      "engine": "codeql",
+      "engine_name": "CodeQL",
+      "rule_id": "py/sql-injection",
+      "level": "error",
+      "message": "This SQL query depends on a user-provided value.",
+      "path": "src/api/query.py",
+      "start_line": 17,
+      "end_line": 17,
+      "fingerprint": "{\"primaryLocationLineHash\": \"codeql-fixture-001\"}",
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "cell": "rbac_pg/CELL-010",
+      "mapped": true,
+      "id": "F-005"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep",
+      "rule_id": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+      "level": "warning",
+      "message": "SQL query is built with string formatting.",
+      "path": "app/db.py",
+      "start_line": 88,
+      "end_line": 90,
+      "fingerprint": "{\"matchBasedId/v1\": \"semgrep-fixture-002\"}",
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "cell": "rbac_pg/CELL-010",
+      "mapped": true,
+      "id": "F-006"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep",
+      "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "level": "error",
+      "message": "Detected subprocess call with shell=True.",
+      "path": "tools/run.py",
+      "start_line": 41,
+      "end_line": 41,
+      "fingerprint": "{\"matchBasedId/v1\": \"semgrep-fixture-001\"}",
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "cell": "rbac_pg/CELL-008",
+      "mapped": true,
+      "id": "F-007"
+    }
+  ],
+  "unmapped": [],
+  "summary": {
+    "inputs": 3,
+    "fixture_inputs": 3,
+    "findings": 7,
+    "mapped": 7,
+    "unmapped": 0,
+    "duplicates": 1,
+    "cell_mapped": 5,
+    "engines_present": 3,
+    "digest": "a46e207e87225a46493ef6f4773db7714ee6246989b5097e6439c48d995e1254"
+  },
+  "errors": []
+}

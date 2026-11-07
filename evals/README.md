@@ -53,6 +53,12 @@ evals/
   choke-points/
     run_evals.py        # choke_points.py: CP1-CP2, spans and classification
     cases/
+  mutation-plan/
+    run_evals.py        # mutation_plan.py: diff -> cells -> fixtures (V2-11)
+  invariant-catalog/
+    run_evals.py        # invariant_catalog.py: INV1-INV5 fail closed (V2-21)
+  sarif/
+    run_evals.py        # sarif_evidence.py: mapping, unmapped, provenance (V2-23)
 ```
 
 ## Prompts
@@ -132,8 +138,23 @@ dollar-quoted bodies with internal semicolons, SQL definitions inside comments,
 rule precedence, unclassified reported with CP1 red at zero, the same candidate
 green at a threshold of one, `taxonomy_class: other` rejected, unknown taxonomy
 and failure-mode enums rejected, unknown extensions skipped, and a missing root
-or rules file returning 2.
-Reproduce all eight:
+or rules file returning 2. `evals/mutation-plan/` runs 13 cases for
+`tools/mutation_plan.py` on synthetic git repositories: no selection on an
+unrelated diff, selection by fixture artifact, `enforced_at` path, detector
+artifact and changed registry, a changed non-open cell without a fixture failing
+`--require-fixtures`, an exemption and an open cell not failing, `--all`,
+deleted artifacts, an unknown base and a missing fixtures file. `evals/invariant-catalog/`
+runs 15 cases for `tools/invariant_catalog.py`: the five categories and their
+minimum size, ID prefixes, unknown cells and rules, `other` classes, one-bypass
+entries, referenced/out-of-scope overlap, an unmapped seed cell, a non-open
+entry without an evidence path, and a missing catalogue returning 2.
+`evals/sarif/` runs 15 cases for `tools/sarif_evidence.py`: three engines mapped,
+duplicate fingerprints, unknown engine, unmapped rule, missing location and rule
+ID, a bad SARIF version and invalid JSON, `--require-engines`,
+`--reject-fixtures`, an unknown cell and an `other` class as config errors, a
+`file://` URI rebased to the root, and a digest that is stable when input order
+changes.
+Reproduce all eleven:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -144,6 +165,9 @@ python3 evals/fuzz-triage/run_evals.py
 python3 evals/coverage/run_evals.py
 python3 evals/diff-coverage/run_evals.py
 python3 evals/choke-points/run_evals.py
+python3 evals/mutation-plan/run_evals.py
+python3 evals/invariant-catalog/run_evals.py
+python3 evals/sarif/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and

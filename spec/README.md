@@ -57,6 +57,11 @@ spec/
     README.md                     # INV1-INV5: method, categories, measured coverage, limits
     catalog.yaml                  # 5 general-code categories, 15 invariants, out_of_scope cells
     2026-11-07-coverage.json      # recorded catalogue coverage snapshot
+  sarif/
+    README.md                     # engine/rule -> taxonomy mapping, fixture provenance, limits
+    adapters.yaml                 # 3 engines, ordered rules, registry aliases
+    fixtures/                     # authored SARIF: semgrep, codeql, bandit
+    2026-11-07-report.json        # recorded normalized report
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -182,6 +187,25 @@ definitions, 64 candidates, 47 classified and 17 unclassified (26.6 %); both
 signal/rule file, not a taxonomy class, and no CP1 threshold is gated until the
 noise is reduced. A class match is a hypothesis, not evidence that the site
 enforces an invariant.
+
+SARIF output becomes evidence through an adapter, not through trust (V2-23):
+`tools/sarif_evidence.py` resolves the engine by `tool.driver.name`, maps each
+result by rule ID through `spec/sarif/adapters.yaml`, and emits one finding per
+unique result with its class, failure mode and optional cell. An unknown
+engine, an unmapped rule, a missing rule ID or a missing location is reported
+as `unmapped` with a reason; nothing falls into `other`. `--max-unmapped 0` and
+`--require-engines 3` turn those counts into gates. The three inputs under
+`spec/sarif/fixtures/` are **authored** documents, not captured engine runs:
+each is marked `properties.dev-sec-skills/fixture = true`, the report records
+`fixture_inputs: 3`, and `--reject-fixtures` refuses them in a production job.
+Measured 2026-11-07 on the fixtures: 3 engines, 7 findings, 0 unmapped, 1
+duplicate, 5 findings mapped to a cell and 2 to a class only. `make sarif`
+exercises the fixtures and `make sarif-record` writes
+`spec/sarif/2026-11-07-report.json`; neither is in `make verify`, because a
+green fixture run is not evidence about a repository. The adapter proves
+that the mapping and its failure paths work; it does not prove that a real
+engine produces these findings, that a finding is a true positive, or that a
+flagged site is unprotected.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

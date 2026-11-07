@@ -84,12 +84,20 @@ INVARIANT_RULES ?= spec/choke-points/rules.yaml
 INVARIANT_SCHEMA ?= schemas/invariant-catalog.schema.json
 INVARIANT_RECORD ?= spec/invariants/2026-11-07-coverage.json
 
+# SARIF adapters (V2-23). The default target exercises the three AUTHORED
+# fixtures; a real job points SARIF_INPUTS at engine output and adds
+# SARIF_STRICT=--reject-fixtures.
+SARIF_CONFIG ?= spec/sarif/adapters.yaml
+SARIF_INPUTS ?= spec/sarif/fixtures
+SARIF_STRICT ?=
+SARIF_RECORD ?= spec/sarif/2026-11-07-report.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record invariants \
-        invariants-record mutation-plan mutations mutations-i18n mutations-all \
-        check-fuzz-triage fuzz-claim-lint help
+        invariants-record sarif sarif-record mutation-plan mutations \
+        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
 
@@ -113,6 +121,7 @@ evals:
 	$(PYTHON) evals/choke-points/run_evals.py
 	$(PYTHON) evals/mutation-plan/run_evals.py
 	$(PYTHON) evals/invariant-catalog/run_evals.py
+	$(PYTHON) evals/sarif/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -171,6 +180,24 @@ invariants-record:
 	  --rules "$(INVARIANT_RULES)" \
 	  --schema "$(INVARIANT_SCHEMA)" \
 	  --json "$(INVARIANT_RECORD)"
+
+sarif:
+	@echo "== SARIF adapters: engine + rule -> taxonomy finding (V2-23) =="
+	$(PYTHON) tools/sarif_evidence.py \
+	  --config "$(SARIF_CONFIG)" \
+	  --root . \
+	  --max-unmapped 0 --require-engines 3 $(SARIF_STRICT) \
+	  --list \
+	  $(SARIF_INPUTS)
+
+sarif-record:
+	@echo "== SARIF adapters: record the fixture report (V2-23) =="
+	$(PYTHON) tools/sarif_evidence.py \
+	  --config "$(SARIF_CONFIG)" \
+	  --root . \
+	  --max-unmapped 0 --require-engines 3 \
+	  --json "$(SARIF_RECORD)" \
+	  $(SARIF_INPUTS)
 
 mutation-plan:
 	@echo "== changed-cell selection for the two pilots (V2-11) =="
@@ -378,6 +405,8 @@ help:
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"
 	@echo "  invariants    INV1-INV5 over the general-code invariant catalogue (V2-21)"
 	@echo "  invariants-record  write the coverage snapshot into spec/invariants/"
+	@echo "  sarif         SARIF adapters over SARIF_INPUTS (default: authored fixtures); SARIF_STRICT=--reject-fixtures"
+	@echo "  sarif-record  write the normalized report into spec/sarif/"
 	@echo "  mutation-plan select fixtures for the cells the pilot diffs touched (V2-11)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"

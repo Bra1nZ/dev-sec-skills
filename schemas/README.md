@@ -15,6 +15,8 @@ evidence-first contract. The ledger turns the prose discipline of
   run record (V2-18), checked by `../tools/fuzz_triage.py`.
 - `invariant-catalog.schema.json` — JSON Schema (draft-07) for the general-code
   invariant catalogue (V2-21), checked by `../tools/invariant_catalog.py`.
+- `sarif-evidence.schema.json` — JSON Schema (draft-07) for the normalized SARIF
+  evidence report (V2-23), written by `../tools/sarif_evidence.py`.
 - `../tools/claim_lint.py` — the linter (Python 3 stdlib; PyYAML for `.yaml` ledgers).
 
 ## Ledger format

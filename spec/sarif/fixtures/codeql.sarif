@@ -1,0 +1,54 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "properties": {
+    "dev-sec-skills/fixture": true,
+    "dev-sec-skills/provenance": "authored SARIF document, not a captured engine run"
+  },
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodeQL",
+          "version": "0.0.0-fixture",
+          "informationUri": "https://codeql.github.com",
+          "rules": [
+            {"id": "py/sql-injection", "defaultConfiguration": {"level": "error"}},
+            {"id": "py/clear-text-logging-sensitive-data", "defaultConfiguration": {"level": "warning"}}
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "py/sql-injection",
+          "level": "error",
+          "message": {"text": "This SQL query depends on a user-provided value."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "src/api/query.py", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 17, "endLine": 17}
+              }
+            }
+          ],
+          "partialFingerprints": {"primaryLocationLineHash": "codeql-fixture-001"}
+        },
+        {
+          "ruleId": "py/clear-text-logging-sensitive-data",
+          "level": "warning",
+          "message": {"text": "This logs a value that may contain a secret."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "src/api/errors.py", "uriBaseId": "%SRCROOT%"},
+                "region": {"startLine": 52, "endLine": 54}
+              }
+            }
+          ],
+          "partialFingerprints": {"primaryLocationLineHash": "codeql-fixture-002"}
+        }
+      ],
+      "properties": {"dev-sec-skills/fixture": true}
+    }
+  ]
+}
