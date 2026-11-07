@@ -1,0 +1,44 @@
+# Cell registry for the self-pilot — this repository's own CI configuration.
+#
+# The first two pilots (rbac_pg, craft-i18n) are read-only targets. This pilot
+# points the same taxonomy at dev-sec-skills itself, so a `new` triage has a
+# writable target: the finding is recorded, the detector and fixture are
+# added, and the fix lands as a separate commit. The registry is separate from
+# spec/conveyor/cells.seed.yaml on purpose: the seed describes the taxonomy,
+# this registry describes what this repository currently enforces.
+#
+#   python3 tools/cell_lint.py \
+#     --root . \
+#     --ledger spec/pilots/dev-sec-skills/claims.yaml \
+#     --suite-glob "spec/pilots/dev-sec-skills/detectors/*.py" \
+#     spec/pilots/dev-sec-skills/cells.yaml
+project: dev-sec-skills
+generated: "2026-11-07"
+taxonomy:
+  name: invariant-first-code
+  version: "1"
+  classes:
+    - security
+cells:
+  - id: CELL-001
+    title: Every action a workflow runs is pinned to an immutable commit SHA.
+    taxonomy_class: security
+    failure_class: mutable-ci-action-ref
+    entry_points: [ci, release, dependency-update]
+    failure_mode: detect
+    coverage_status: tested
+    claim_ids: [C-01]
+    detectors:
+      - id: D-PINNED-ACTIONS
+        kind: test
+        artifact: spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py"
+        status: tested
+        last_verified: "2026-11-07"
+        mutation_fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
+        negative_test: test_workflow_actions_are_pinned
+        note: "Scans every `uses:` reference in .github/workflows; a local action or a docker:// reference is out of scope. MUT-001 turns one pinned action back into @v7 and the test fails."
+    residual_risk: "A pinned SHA can still point at malicious code that was reviewed once; pinning fixes the bytes, not their intent. The upstream tag the comment names can move while the SHA does not."
+    limitations: "Text scan of workflow YAML, not an evaluation of what the pinned action does. A composite action inside this repository is local and is not checked against a SHA; docker:// image digests are a separate failure class. A new workflow file is covered only if the detector runs on it; the gate (make verify) runs the detector, the GitHub-side runner is not observed."
+    owner: dev-sec-skills maintainer
+    last_seen: "2026-11-07"

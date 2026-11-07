@@ -1,0 +1,4 @@
+test_workflow_actions_are_pinned ... ok
+test_workflow_files_exist ... ok
+test_workflows_use_at_least_one_action ... ok
+========== 3 passed in 0.01s ==========

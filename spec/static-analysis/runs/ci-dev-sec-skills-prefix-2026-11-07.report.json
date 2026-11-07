@@ -1,0 +1,111 @@
+{
+  "format": "dev-sec-skills/sarif-evidence/v1",
+  "generated": "2026-11-07",
+  "inputs": [
+    {
+      "path": "spec/static-analysis/runs/ci-dev-sec-skills-prefix-2026-11-07.sarif",
+      "sha256": "2b09702b4e51961991eef37a8860b1563e64d4897baba1c1cf50dfc17245486f",
+      "engines": [
+        "Semgrep OSS"
+      ],
+      "runs": 1,
+      "results": 3,
+      "fixture": false
+    }
+  ],
+  "engines": [
+    {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "runs": 1,
+      "findings": 3,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "codeql",
+      "name": "CodeQL",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    }
+  ],
+  "present_engines": [
+    "semgrep"
+  ],
+  "findings": [
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.mutable-action-ref",
+      "level": "error",
+      "message": "A GitHub Actions `uses:` reference points at a mutable tag or branch (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be retagged, so the code the workflow runs is not the code that was reviewed.",
+      "path": ".github/workflows/fuzz-nightly.yml",
+      "start_line": 27,
+      "end_line": 27,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-001"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.mutable-action-ref",
+      "level": "error",
+      "message": "A GitHub Actions `uses:` reference points at a mutable tag or branch (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be retagged, so the code the workflow runs is not the code that was reviewed.",
+      "path": ".github/workflows/fuzz-nightly.yml",
+      "start_line": 29,
+      "end_line": 29,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-002"
+    },
+    {
+      "engine": "semgrep",
+      "engine_name": "Semgrep OSS",
+      "rule_id": "dev-sec-skills.ci.mutable-action-ref",
+      "level": "error",
+      "message": "A GitHub Actions `uses:` reference points at a mutable tag or branch (`@vN`, `@main`, `@master`) instead of a commit SHA. The reference can be retagged, so the code the workflow runs is not the code that was reviewed.",
+      "path": ".github/workflows/fuzz-nightly.yml",
+      "start_line": 70,
+      "end_line": 70,
+      "fingerprint": null,
+      "taxonomy_class": "security",
+      "failure_class": "supply-chain-integrity",
+      "failure_mode": "detect",
+      "cell": null,
+      "mapped": true,
+      "id": "F-003"
+    }
+  ],
+  "unmapped": [],
+  "summary": {
+    "inputs": 1,
+    "fixture_inputs": 0,
+    "findings": 3,
+    "mapped": 3,
+    "unmapped": 0,
+    "duplicates": 0,
+    "cell_mapped": 0,
+    "engines_present": 1,
+    "digest": "97547070b07a66d30ddc33679aeb92ba79ec539cdebe35ee00d47c70efb18420"
+  },
+  "errors": []
+}

@@ -1,0 +1,113 @@
+# Claim ledger for the self-pilot — dev-sec-skills analyzing its own CI.
+#
+# The first real `covered`/`new` triage lives here. The target is writable, so
+# the failure class the pre-fix Semgrep run found (mutable action refs) now has
+# a cell, a detector and a mutation fixture, and the refs are pinned in a
+# separate commit. The post-fix run is the control: same rules, same target
+# tree, zero findings.
+#
+#   python3 tools/claim_lint.py \
+#     --root . \
+#     --suite-glob "spec/pilots/dev-sec-skills/detectors/*.py" \
+#     --run-log-root . --tool-output-root . \
+#     spec/pilots/dev-sec-skills/claims.yaml
+project: dev-sec-skills
+generated: "2026-11-07"
+claims:
+  - id: C-01
+    claim: "Every action this repository's workflows run is pinned to an immutable commit SHA, and a mutable ref is caught before it lands"
+    mechanism: "semgrep 1.184.0 with spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml over .github/ found three mutable refs at d0c25c2 and all three were triaged `new`; D-PINNED-ACTIONS (spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py) now scans every non-local `uses:` reference, MUT-001 proves the detector fails when a pinned ref becomes @v7, and the refs were pinned in 67d0aec"
+    status: tested
+    scope:
+      platforms: "semgrep 1.184.0 and the rule set ci-supply-chain-2026-11-07; GitHub Actions workflows under .github/workflows at d0c25c2 (pre-fix) and 67d0aec (post-fix); Python 3 the detector runs on"
+      actors_excluded:
+        - "The GitHub-side runner, branch protection and the tag registry: pinning fixes the bytes the runner fetches, not the runner's integrity."
+        - "What the pinned actions themselves do; a reviewed SHA can still be malicious."
+        - "Docker image references (`docker://`), local composite actions under this repository, and Dependabot cooldown: separate failure classes the detector does not scan."
+    evidence:
+      - kind: static-analysis
+        command: "cd spec/static-analysis/rules && PATH=/tmp/opencode/semgrep-site/bin:$PATH PYTHONPATH=/tmp/opencode/semgrep-site SEMGREP_SEND_METRICS=off timeout 300 semgrep scan --config ci-supply-chain-2026-11-07.yml --sarif --output ../../static-analysis/runs/ci-dev-sec-skills-prefix-2026-11-07.sarif --quiet --disable-version-check --metrics off /home/admini/projects/dev-sec-skills"
+        commit: "d0c25c239522371a96dce47caa9bf056d068eb75"
+        date: "2026-11-07"
+        static_analysis_runs:
+          - tool: semgrep
+            version: "1.184.0"
+            command: "cd spec/static-analysis/rules && PATH=/tmp/opencode/semgrep-site/bin:$PATH PYTHONPATH=/tmp/opencode/semgrep-site SEMGREP_SEND_METRICS=off timeout 300 semgrep scan --config ci-supply-chain-2026-11-07.yml --sarif --output ../../static-analysis/runs/ci-dev-sec-skills-prefix-2026-11-07.sarif --quiet --disable-version-check --metrics off /home/admini/projects/dev-sec-skills"
+            rules:
+              name: "dev-sec-skills-ci-supply-chain"
+              source: "spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml"
+              sha256: "d05187dbf00f477bbaccf6e83c82f2ae5995e31936b44e5f462220ce9d54663d"
+            target_commit: "d0c25c239522371a96dce47caa9bf056d068eb75"
+            output: "spec/static-analysis/runs/ci-dev-sec-skills-prefix-2026-11-07.sarif"
+            output_sha256: "2b09702b4e51961991eef37a8860b1563e64d4897baba1c1cf50dfc17245486f"
+            report: "spec/static-analysis/runs/ci-dev-sec-skills-prefix-2026-11-07.report.json"
+            report_sha256: "f631739fe1a35ac4772a5aa5beb457e3f4d9ee9c2318797fe87434bae284cdbe"
+            exit_code: 0
+            started_at: "2026-11-07T23:37:01+03:00"
+            finished_at: "2026-11-07T23:37:07+03:00"
+            status: completed
+            cells: "spec/pilots/dev-sec-skills/cells.yaml"
+            triage:
+              - finding: F-001
+                disposition: new
+                cell: CELL-001
+                detector: D-PINNED-ACTIONS
+                fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
+                date: "2026-11-07"
+                note: "Observed at .github/workflows/fuzz-nightly.yml:27; actions/checkout@v7. No detector existed at d0c25c2, so the finding opened CELL-001 and D-PINNED-ACTIONS, and 67d0aec pins the ref."
+              - finding: F-002
+                disposition: new
+                cell: CELL-001
+                detector: D-PINNED-ACTIONS
+                fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
+                date: "2026-11-07"
+                note: "Observed at .github/workflows/fuzz-nightly.yml:29; actions/setup-python@v7. Same failure class as F-001; pinned in 67d0aec."
+              - finding: F-003
+                disposition: new
+                cell: CELL-001
+                detector: D-PINNED-ACTIONS
+                fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
+                date: "2026-11-07"
+                note: "Observed at .github/workflows/fuzz-nightly.yml:70; actions/upload-artifact@v7. Same failure class as F-001; pinned in 67d0aec."
+      - kind: static-analysis
+        command: "cd spec/static-analysis/rules && PATH=/tmp/opencode/semgrep-site/bin:$PATH PYTHONPATH=/tmp/opencode/semgrep-site SEMGREP_SEND_METRICS=off timeout 300 semgrep scan --config ci-supply-chain-2026-11-07.yml --sarif --output ../../static-analysis/runs/ci-dev-sec-skills-postfix-2026-11-07.sarif --quiet --disable-version-check --metrics off /home/admini/projects/dev-sec-skills"
+        commit: "67d0aecb3c3ee929f5cf2debfed00f14772b0b3e"
+        date: "2026-11-07"
+        static_analysis_runs:
+          - tool: semgrep
+            version: "1.184.0"
+            command: "cd spec/static-analysis/rules && PATH=/tmp/opencode/semgrep-site/bin:$PATH PYTHONPATH=/tmp/opencode/semgrep-site SEMGREP_SEND_METRICS=off timeout 300 semgrep scan --config ci-supply-chain-2026-11-07.yml --sarif --output ../../static-analysis/runs/ci-dev-sec-skills-postfix-2026-11-07.sarif --quiet --disable-version-check --metrics off /home/admini/projects/dev-sec-skills"
+            rules:
+              name: "dev-sec-skills-ci-supply-chain"
+              source: "spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml"
+              sha256: "d05187dbf00f477bbaccf6e83c82f2ae5995e31936b44e5f462220ce9d54663d"
+            target_commit: "67d0aecb3c3ee929f5cf2debfed00f14772b0b3e"
+            output: "spec/static-analysis/runs/ci-dev-sec-skills-postfix-2026-11-07.sarif"
+            output_sha256: "b8073caf5aa1284b970f491ee933c22472246c6924d0912ed16b8955bd3ae8d9"
+            report: "spec/static-analysis/runs/ci-dev-sec-skills-postfix-2026-11-07.report.json"
+            report_sha256: "6e6d746b93e0ad46e8aca6bb23dbe7f3309f88fb08cabdb30dc88fa34ecd569c"
+            exit_code: 0
+            started_at: "2026-11-07T23:39:20+03:00"
+            finished_at: "2026-11-07T23:39:26+03:00"
+            status: completed
+            triage: []
+      - kind: test
+        tests: [test_workflow_actions_are_pinned]
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py"
+        artifact: "spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py"
+        commit: "67d0aecb3c3ee929f5cf2debfed00f14772b0b3e"
+        date: "2026-11-07"
+        run_record:
+          runner: "detector (dependency-free python)"
+          command: "python3 spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py"
+          commit: "67d0aecb3c3ee929f5cf2debfed00f14772b0b3e"
+          exit_code: 0
+          started_at: "2026-11-07T23:39:32+03:00"
+          finished_at: "2026-11-07T23:39:32+03:00"
+          log: "spec/pilots/dev-sec-skills/runs/detector-2026-11-07.log"
+          log_sha256: "ada683ca6dbea29d118e9cb98ac3ac2379799cff1ad4d1ea1602c3cfc281358e"
+          artifact_sha256: "85b48341171dada1c6ba164f4966285ac27a350adcdbf04a244aa7f78153eb57"
+          tests_run: 3
+          tests_passed: 3
+    residual_risk: "A commit SHA fixes the action bytes, not the intent of the action or the integrity of the runner that fetches it. A ref can be pinned to a malicious commit that was reviewed once; the detector cannot tell a reviewed SHA from an unreviewed one."
+    limitations: "Text scan of .github/workflows, not a proof about the pinned code. The rule set is authored here, not the Semgrep `p/ci` benchmark; a different rule set would produce a different queue. The pre-fix and post-fix runs are one engine and one rule set. The GitHub-side schedule of fuzz-nightly has not fired yet (V2-19), so the workflow's runtime behavior is unobserved. Without an external anchor (C-13) a forger can rewrite the record and both outputs together."

@@ -24,6 +24,13 @@ PILOT2_LEDGER ?= spec/pilots/craft-i18n/claims.yaml
 PILOT2_SUITE_GLOB ?= crates/craft-i18n-tests/**/*.rs
 PILOT2_MUTATION_TARGET_DIR ?= /tmp/opencode/craft-i18n-target
 
+# Self-pilot: this repository is the target, so a `new` triage has somewhere
+# to land. The registry is separate from the seed on purpose (the seed
+# describes the taxonomy; this one describes what this repository enforces).
+SELF_REGISTRY ?= spec/pilots/dev-sec-skills/cells.yaml
+SELF_LEDGER ?= spec/pilots/dev-sec-skills/claims.yaml
+SELF_SUITE_GLOB ?= spec/pilots/dev-sec-skills/detectors/*.py
+
 # C-02 bounded cross-check: an independent row-grammar model with a path
 # dependency on the second pilot checkout. It needs that checkout and is a
 # bounded model check, not a merge gate, so it is not in `verify`. The target
@@ -118,15 +125,15 @@ PROOF_HEAD ?= HEAD
 # need that checkout and are a point-in-time audit, so they are not in `verify`.
 RED_TEAM_RECORD ?= spec/red-team/2026-11-07-drills.json
 
-.PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
-        lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
+.PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 verify-self evals lint-seed \
+        lint-pilot lint-pilot2 lint-self claims-pilot claims-pilot2 claims-self status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
-        mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint \
-        proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record help
+        mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
+        proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record detectors-self help
 
-verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
+verify: verify-repo verify-pilot verify-pilot2 verify-self unroutable coverage invariants
 
 verify-all: verify mutations-all
 
@@ -135,6 +142,8 @@ verify-repo: evals lint-seed check-fuzz-triage
 verify-pilot: lint-pilot claims-pilot status-pilot
 
 verify-pilot2: lint-pilot2 claims-pilot2 status-pilot2
+
+verify-self: lint-self claims-self detectors-self
 
 evals:
 	@echo "== evals: adversarial cases for the linters =="
@@ -293,6 +302,28 @@ status-pilot2:
 	  $(PYTHON) tools/status_diff.py --first-release "$$tmp" "$(PILOT2_LEDGER)"; \
 	fi
 
+lint-self:
+	@echo "== CL1-CL6: self-pilot registry (this repository as the target) =="
+	$(PYTHON) tools/cell_lint.py \
+	  --root . \
+	  --ledger "$(SELF_LEDGER)" \
+	  --suite-glob "$(SELF_SUITE_GLOB)" \
+	  "$(SELF_REGISTRY)"
+
+claims-self:
+	@echo "== L1-L6: self-pilot claim ledger =="
+	$(PYTHON) tools/claim_lint.py \
+	  --root . \
+	  --suite-glob "$(SELF_SUITE_GLOB)" \
+	  --run-log-root . \
+	  --tool-output-root . \
+	  $(CLAIM_LINT_ARGS) \
+	  "$(SELF_LEDGER)"
+
+detectors-self:
+	@echo "== D-PINNED-ACTIONS: this repository's workflows =="
+	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py
+
 unroutable:
 	@echo "== U: unroutable share of the pilot taxonomies (V2-25) =="
 	$(PYTHON) tools/unroutable.py --max-share 0 \
@@ -415,6 +446,10 @@ mutations-i18n:
 	  --target "$(PILOT2_ROOT)" \
 	  --target-dir "$(PILOT2_MUTATION_TARGET_DIR)"
 
+mutations-self:
+	@echo "== mutation fixtures: dev-sec-skills self-pilot (hermetic) =="
+	$(PYTHON) spec/pilots/dev-sec-skills/mutations/run_mutations.py
+
 crosscheck-c02:
 	@echo "== C-02: independent row model vs read_catalog, bounded space =="
 	CARGO_TARGET_DIR="$(C02_TARGET_DIR)" $(CARGO) run --offline --release --manifest-path "$(C02_MANIFEST)"
@@ -443,18 +478,22 @@ red-team:
 red-team-record:
 	$(PYTHON) spec/red-team/run_drills.py --record "$(RED_TEAM_RECORD)"
 
-mutations-all: mutations mutations-i18n
+mutations-all: mutations mutations-i18n mutations-self
 
 help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
-	@echo "  verify-all    verify plus both mutation batches (needs PostgreSQL and cargo)"
+	@echo "  verify-all    verify plus the three mutation batches (PostgreSQL, cargo, hermetic self-pilot)"
 	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage, choke_points"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
+	@echo "  lint-self     CL1-CL6 over the dev-sec-skills self-pilot registry"
 	@echo "  claims-pilot  L1-L6 over the rbac_pg claim ledger"
 	@echo "  claims-pilot2 L1-L6 over the craft-i18n claim ledger"
+	@echo "  claims-self   L1-L6 over the dev-sec-skills self-pilot claim ledger"
+	@echo "  detectors-self  D-PINNED-ACTIONS over this repository's workflows"
+	@echo "  mutations-self  MUT-001: prove D-PINNED-ACTIONS fails on a mutable ref"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
 	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"

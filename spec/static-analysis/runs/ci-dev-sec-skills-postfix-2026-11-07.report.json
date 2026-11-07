@@ -1,0 +1,59 @@
+{
+  "format": "dev-sec-skills/sarif-evidence/v1",
+  "generated": "2026-11-07",
+  "inputs": [
+    {
+      "path": "spec/static-analysis/runs/ci-dev-sec-skills-postfix-2026-11-07.sarif",
+      "sha256": "b8073caf5aa1284b970f491ee933c22472246c6924d0912ed16b8955bd3ae8d9",
+      "engines": [
+        "Semgrep OSS"
+      ],
+      "runs": 1,
+      "results": 0,
+      "fixture": false
+    }
+  ],
+  "engines": [
+    {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "runs": 1,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "codeql",
+      "name": "CodeQL",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "runs": 0,
+      "findings": 0,
+      "unmapped": 0,
+      "cell_mapped": 0
+    }
+  ],
+  "present_engines": [
+    "semgrep"
+  ],
+  "findings": [],
+  "unmapped": [],
+  "summary": {
+    "inputs": 1,
+    "fixture_inputs": 0,
+    "findings": 0,
+    "mapped": 0,
+    "unmapped": 0,
+    "duplicates": 0,
+    "cell_mapped": 0,
+    "engines_present": 1,
+    "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "errors": []
+}

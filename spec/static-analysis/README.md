@@ -11,6 +11,13 @@ The first recorded run is `ci-craft-i18n-2026-11-07`: Semgrep over the second
 pilot's GitHub configuration, five findings, every one triaged `out-of-scope`
 because the pilot's translation-row taxonomy owns no supply-chain cell.
 
+The second recorded run is the self-pilot: the same rules over this
+repository's own `.github/`. Three findings at the pre-fix commit are triaged
+`new`, routed to CELL-001 in `spec/pilots/dev-sec-skills/cells.yaml`, fixed in
+a separate commit, and the post-fix run returns zero findings. That is the
+first real exercise of `new`; before it, only synthetic linter cases used the
+disposition.
+
 ## Files
 
 - `rules/ci-supply-chain-2026-11-07.yml` — three rules authored in this
@@ -19,6 +26,10 @@ because the pilot's translation-row taxonomy owns no supply-chain cell.
   `tool.driver.name = "Semgrep OSS"`.
 - `runs/ci-craft-i18n-2026-11-07.report.json` — normalized report from
   `tools/sarif_evidence.py`.
+- `runs/ci-dev-sec-skills-prefix-2026-11-07.{sarif,report.json}` — the
+  self-pilot run at `d0c25c2`, three findings.
+- `runs/ci-dev-sec-skills-postfix-2026-11-07.{sarif,report.json}` — the
+  control run at `67d0aec`, zero findings.
 
 The claim that cites this run is C-09 in
 `spec/pilots/craft-i18n/claims.yaml`. Its triage is embedded in the record, as
@@ -103,6 +114,41 @@ and rules are the evidence, and a replay needs `semgrep` 1.184.0 installed
 again. `--config` is relative on purpose: an absolute path prefixes every rule
 ID with the path, which breaks stable adapter mappings.
 
+## The self-pilot run: three findings become `new`
+
+The self-pilot analyzes this repository, not a read-only target. The pre-fix
+commit still carried the mutable refs; the fix is `67d0aec`; the post-fix
+commit is the fix.
+
+| Field | Pre-fix | Post-fix |
+| --- | --- | --- |
+| Target | `/home/admini/projects/dev-sec-skills` | same |
+| Commit | `d0c25c239522371a96dce47caa9bf056d068eb75` | `67d0aecb3c3ee929f5cf2debfed00f14772b0b3e` |
+| Engine | Semgrep OSS 1.184.0 | same |
+| Rule set SHA-256 | `d05187db…` | `d05187db…` |
+| SARIF SHA-256 | `2b09702b…` | `b8073caf…` |
+| Report SHA-256 | `f631739f…` | `6e6d746b…` |
+| Findings | 3 | 0 |
+| Unmapped / fixture | 0 / 0 | 0 / 0 |
+| Status | `completed`, exit 0 | `completed`, exit 0 |
+
+| Finding | Location | Disposition | Route |
+| --- | --- | --- | --- |
+| F-001 | `.github/workflows/fuzz-nightly.yml:27` | `new` | CELL-001 / D-PINNED-ACTIONS / MUT-001 |
+| F-002 | `.github/workflows/fuzz-nightly.yml:29` | `new` | same |
+| F-003 | `.github/workflows/fuzz-nightly.yml:70` | `new` | same |
+
+`new` requires the named cell, detector and fixture to exist, and they do:
+CELL-001 is `mutable-ci-action-ref`, the detector scans every non-local
+`uses:` reference for a 40-hex commit, and MUT-001 turns a pinned ref back
+into `@v7` and requires the detector to fail. The claim is C-01 in
+`spec/pilots/dev-sec-skills/claims.yaml`; the pilot's own notes are in
+`spec/pilots/dev-sec-skills/README.md`.
+
+The post-fix run is the control, not a second opinion: the same rule file
+(same SHA-256) over the same tree returns zero findings. A zero before the
+fix would have shown the rule set was blind, not that the fix worked.
+
 ## Triage: five findings, five decisions
 
 The pilot taxonomy is the translation-row grammar of `docs/catalog-format.md`.
@@ -131,8 +177,9 @@ engine has a run in the report; that no finding is unmapped or authored; that
 every finding has exactly one disposition; and that a routed entry resolves.
 A URL for the SARIF or the report is rejected for a non-open claim: without
 local bytes neither the hash nor the triage can be checked. The `covered` and
-`new` paths are exercised by the linter evals, not by this
-run: the recorded run routes nothing.
+`new` paths are exercised by the linter evals, and the self-pilot above
+exercises `new` for real; `covered` (a finding an existing detector already
+caught) is still synthetic-only.
 
 It does not prove that a finding is exploitable, that `out-of-scope` is a
 harmless finding, or that the engine would catch a different defect. The rules
