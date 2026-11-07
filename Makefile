@@ -24,6 +24,13 @@ PILOT2_LEDGER ?= spec/pilots/craft-i18n/claims.yaml
 PILOT2_SUITE_GLOB ?= crates/craft-i18n-tests/**/*.rs
 PILOT2_MUTATION_TARGET_DIR ?= /tmp/opencode/craft-i18n-target
 
+# C-02 bounded cross-check: an independent row-grammar model with a path
+# dependency on the second pilot checkout. It needs that checkout and is a
+# bounded model check, not a merge gate, so it is not in `verify`.
+CARGO ?= cargo
+C02_MANIFEST ?= crosscheck/c02-row-model/Cargo.toml
+C02_TARGET_DIR ?= /tmp/opencode/c02-crosscheck-target
+
 # Base ref for the status-escalation gates. HEAD compares the working tree
 # against the last commit; CI uses the release tag instead.
 BASE_REF ?= HEAD
@@ -115,7 +122,7 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-07-drills.json
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint \
-        proof-plan proof-plan-selftest red-team red-team-record help
+        proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
 
@@ -406,6 +413,14 @@ mutations-i18n:
 	  --target "$(PILOT2_ROOT)" \
 	  --target-dir "$(PILOT2_MUTATION_TARGET_DIR)"
 
+crosscheck-c02:
+	@echo "== C-02: independent row model vs read_catalog, bounded space =="
+	CARGO_TARGET_DIR="$(C02_TARGET_DIR)" $(CARGO) run --offline --release --manifest-path "$(C02_MANIFEST)"
+
+crosscheck-c02-mutants:
+	@echo "== C-02: model mutation control =="
+	CARGO_TARGET_DIR="$(C02_TARGET_DIR)" $(CARGO) run --offline --release --manifest-path "$(C02_MANIFEST)" -- --mutants
+
 proof-plan:
 	@echo "== proof plan: $(PROOF_BASE)...$(PROOF_HEAD) against $(PROOF_MANIFEST) =="
 	@base=$$(git merge-base "$(PROOF_BASE)" "$(PROOF_HEAD)") || \
@@ -459,5 +474,7 @@ help:
 	@echo "  mutations-all   both mutation batches"
 	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
 	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
+	@echo "  crosscheck-c02  independent row model vs read_catalog over the declared bounded space"
+	@echo "  crosscheck-c02-mutants  every named model edit must be detected"
 	@echo "  red-team      attack the real pilot ledger/log/registry; 13 blocked, 1 recorded gap"
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-07-drills.json"

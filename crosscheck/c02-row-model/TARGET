@@ -1,0 +1,4 @@
+target: craft-i18n
+commit: 5c5c55400e8f7f4ee4f64a64dc196335a6a1f256
+crate: crates/craft-i18n-tests
+model-of: crates/craft-i18n-tests/src/catalog.rs

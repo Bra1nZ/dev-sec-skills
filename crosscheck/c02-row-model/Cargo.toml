@@ -1,0 +1,9 @@
+[package]
+name = "c02-row-model"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Independent executable model of the craft-i18n catalog row grammar, cross-checked against the implementation over a declared bounded input space (dev-sec-skills C-02)."
+
+[dependencies]
+craft-i18n-tests = { path = "../../../astraoffice/craft-i18n/crates/craft-i18n-tests" }
