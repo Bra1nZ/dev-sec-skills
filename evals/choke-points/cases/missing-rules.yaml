@@ -1,0 +1,10 @@
+# Synthetic fixture — not evidence about any real repository.
+description: A missing rules file is a usage error, not a scan with no candidates.
+files:
+  src/x.py: |
+    def check():
+        pass
+rules_path: no-such-rules.yaml
+stderr: [rules not found]
+exit: 2
+name: missing-rules

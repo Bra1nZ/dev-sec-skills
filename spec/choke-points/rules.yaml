@@ -1,0 +1,133 @@
+# Choke-point extraction rules (V2-22).
+#
+# A *signal* decides whether a definition is a candidate at all. A *rule* maps
+# a candidate to the taxonomy enums of `cell-registry.schema.json`. Rules are
+# ordered: the first match wins, so a specific rule must precede a broad one.
+# Within one rule the `match` fields are OR-ed: the rule matches when any field
+# matches. Keep a rule to one field unless that OR is intended.
+#
+# A candidate that matches no rule is reported as `unclassified`, not silently
+# forced into `other`: `other` is a cell escape hatch that demands a
+# `routing_note`, while an unclassified scan result is a gap in these rules.
+#
+# The patterns are heuristics. They are deliberately language-neutral: they run
+# over a function/method/SQL-object name, its decorators or attributes, the
+# calls in its body, its path and its kind. A match is a reason to review the
+# site, not proof that the site enforces anything.
+version: 1
+
+signals:
+  - id: guard-name
+    description: The definition name contains an enforcement verb or noun.
+    fields: [name]
+    pattern: '(?i)(authoriz|permission|access|policy|role|grant|deny|allow|forbid|tenant|owner|can_|guard|check[_-]?|validate|verif|ensure|require|assert|sanitiz|escape|parse|reject|secret|password|credential|token|hmac|encrypt|decrypt|sign|transaction|commit|rollback|savepoint|lock|mutex|atomic|timeout|limit|quota|throttle|paginat|batch|close|dispose|shutdown|cleanup|release|migrat|upgrade|downgrade|backfill|recover)'
+
+  - id: guard-call
+    description: The body calls a guard, validator, policy, crypto or sink API.
+    fields: [calls]
+    pattern: '(?i)(authoriz|permission|access|policy|role|grant|deny|allow|forbid|check|validate|verif|ensure|require|sanitiz|escape|parse|secret|password|credential|token|hmac|encrypt|decrypt|sign|transaction|commit|rollback|lock|acquire|release|execute|query|open|read|write|send|request|subprocess|eval|exec|deserialize)'
+
+  - id: guard-decorator
+    description: The definition carries an enforcement decorator or attribute.
+    fields: [decorators]
+    pattern: '(?i)(auth|permission|login|role|policy|guard|require|transaction|atomic|retry|limit|validat|sanitiz|serializ)'
+
+  - id: sql-object
+    description: A SQL function, procedure, policy, trigger or role statement.
+    fields: [kind]
+    pattern: '^(sql-function|sql-procedure|sql-policy|sql-trigger|sql-role|sql-rls)$'
+
+rules:
+  - id: sql-rls
+    taxonomy_class: security
+    failure_class: broken-access-control
+    failure_mode: deny
+    match:
+      kind: '^(sql-policy|sql-trigger|sql-rls)$'
+
+  - id: authorization
+    taxonomy_class: security
+    failure_class: broken-access-control
+    failure_mode: deny
+    match:
+      name: '(?i)(authoriz|permission|access|policy|role|grant|deny|allow|forbid|tenant|owner|can_|guard)'
+      calls: '(?i)(authoriz|permission|access|policy|role|grant|deny|allow|forbid|can_)'
+      decorators: '(?i)(auth|permission|login|role|policy|guard|require)'
+      path: '(?i)(^|/)(auth|security|policy|rbac|access)(/|_|\.|$)'
+
+  - id: authentication
+    taxonomy_class: security
+    failure_class: broken-authentication
+    failure_mode: deny
+    match:
+      name: '(?i)(authenticat|login|logout|session|password|credential|token|mfa|otp|jwt|oauth)'
+      decorators: '(?i)(login|authenticat|session)'
+
+  - id: secret-crypto
+    taxonomy_class: security
+    failure_class: exposed-secret-or-weak-crypto
+    failure_mode: abort
+    match:
+      name: '(?i)(secret|hmac|encrypt|decrypt|sign|verify|crypto|cipher|digest|hash|nonce|salt)'
+      calls: '(?i)(hmac|encrypt|decrypt|sign|verify|cipher|digest|hash)'
+      path: '(?i)(^|/)(crypto|secrets?|keys?)(/|_|\.|$)'
+
+  - id: input-validation
+    taxonomy_class: security
+    failure_class: invalid-or-injected-input
+    failure_mode: deny
+    match:
+      name: '(?i)(validat|sanitiz|escape|parse|check|verify|reject|normaliz|schema|decode)'
+      calls: '(?i)(validat|sanitiz|escape|parse|check|verify|decode)'
+      decorators: '(?i)(validat|sanitiz)'
+
+  - id: transaction
+    taxonomy_class: correctness
+    failure_class: check-then-act-or-partial-write
+    failure_mode: rollback
+    match:
+      name: '(?i)(transaction|commit|rollback|savepoint|isolation)'
+      calls: '(?i)(transaction|commit|rollback|savepoint|begin)'
+      decorators: '(?i)(transaction|atomic)'
+
+  - id: concurrency
+    taxonomy_class: correctness
+    failure_class: race-or-lost-update
+    failure_mode: abort
+    match:
+      name: '(?i)(lock|mutex|semaphore|atomic|compare[_-]?and[_-]?swap|acquire)'
+      calls: '(?i)(lock|mutex|semaphore|atomic|acquire|compare[_-]?and[_-]?swap)'
+      path: '(?i)(^|/)(concurrency|sync|locking)(/|_|\.|$)'
+
+  - id: resource-lifecycle
+    taxonomy_class: correctness
+    failure_class: leaked-resource-or-use-after-close
+    failure_mode: safe-degrade
+    match:
+      name: '(?i)(close|dispose|shutdown|cleanup|release|finaliz|drop)'
+      calls: '(?i)(close|dispose|shutdown|cleanup|release)'
+
+  - id: resource-bound
+    taxonomy_class: performance
+    failure_class: unbounded-work
+    failure_mode: safe-degrade
+    match:
+      name: '(?i)(timeout|limit|quota|throttle|paginat|batch|budget|deadline)'
+      calls: '(?i)(timeout|limit|quota|throttle|paginat|deadline)'
+      path: '(?i)(^|/)(perf|limits?|budget)(/|_|\.|$)'
+
+  - id: migration
+    taxonomy_class: correctness
+    failure_class: irreversible-migration-or-data-loss
+    failure_mode: rollback
+    match:
+      name: '(?i)(migrat|upgrade|downgrade|backfill|schema[_-]?version)'
+      path: '(?i)(^|/)(migrations?|upgrade|downgrade)(/|_|\.|$)'
+
+  - id: error-handling
+    taxonomy_class: correctness
+    failure_class: swallowed-error-or-wrong-fallback
+    failure_mode: detect
+    match:
+      name: '(?i)(error|exception|panic|recover|fallback|retry|handle)'
+      calls: '(?i)(error|exception|panic|recover|fallback|retry)'

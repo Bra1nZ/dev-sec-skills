@@ -1,0 +1,61 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'Only a Python decorator line changes. The definition span must start at
+  the decorator, so the declared symbol is seen as changed and DC2 must error. An
+  indentation scanner that starts at `def` misses it.'
+base_files:
+  src/guard.py: |
+    @authorize
+    def check_access(user):
+        return user.is_allowed()
+head_files:
+  src/guard.py: |
+    @require_permission("read")
+    def check_access(user):
+        return user.is_allowed()
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: Access is checked before the read.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points:
+    - api
+    failure_mode: deny
+    coverage_status: tested
+    enforced_at: src/guard.py:2 (check_access)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: Access is checked before the read.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: src/guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.symbols.0.symbol: check_access
+  changed.mapped: 1
+  changed.unmapped: 1
+expect:
+  DC1: none
+  DC2: error
+exit: 1
+name: python-decorator

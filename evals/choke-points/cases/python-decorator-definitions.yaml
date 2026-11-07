@@ -1,0 +1,42 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'Python AST extraction: a decorator starts the definition span, a class
+  and its method are separate definitions, and a `def` inside a docstring is not a
+  definition.'
+files:
+  src/guard.py: |
+    """def fake(): pass"""
+
+    @authorize
+    def check_access(user):
+        return validate(user)
+
+    class Policy:
+        def check_role(self, role):
+            return bool(role)
+json:
+  summary.definitions: 3
+  summary.candidates: 3
+  summary.classified: 3
+  summary.unclassified: 0
+  summary.by_class.security: 3
+candidates:
+- symbol: check_access
+  path: src/guard.py
+  start: 3
+  end: 5
+  rule: authorization
+  taxonomy_class: security
+  failure_mode: deny
+  signals: [guard-name, guard-call, guard-decorator]
+- symbol: Policy.check_role
+  path: src/guard.py
+  start: 8
+  end: 9
+  rule: authorization
+  taxonomy_class: security
+absent: [fake]
+expect:
+  CP1: none
+  CP2: none
+exit: 0
+name: python-decorator-definitions

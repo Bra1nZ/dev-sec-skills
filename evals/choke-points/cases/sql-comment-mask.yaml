@@ -1,0 +1,24 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'SQL definitions inside line and block comments are blanked before
+  statements are split, so only the real function is extracted.'
+files:
+  schema.sql: |
+    -- CREATE FUNCTION fake() RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
+    /* CREATE POLICY fake_policy ON t USING (true); */
+    CREATE FUNCTION real_guard() RETURNS void AS $$
+    BEGIN
+      PERFORM 1;
+    END;
+    $$ LANGUAGE plpgsql;
+json:
+  summary.definitions: 1
+  summary.candidates: 1
+candidates:
+- symbol: real_guard
+  path: schema.sql
+  start: 3
+  end: 7
+  rule: authorization
+absent: [fake, fake_policy]
+exit: 0
+name: sql-comment-mask

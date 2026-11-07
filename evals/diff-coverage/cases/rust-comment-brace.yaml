@@ -1,0 +1,65 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A Rust function contains a `}` inside a block comment before the changed
+  line. A brace counter that ignores block comments closes the span early and misses
+  the edit; the comment-aware lexer keeps the span open and DC2 must error.'
+base_files:
+  src/parse.rs: |
+    fn parse_row(text: &str) -> bool {
+        /* } not the end of the function */
+        let ok = true;
+        ok
+    }
+head_files:
+  src/parse.rs: |
+    fn parse_row(text: &str) -> bool {
+        /* } not the end of the function */
+        let ok = false;
+        ok
+    }
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: A parsed row is accepted only when valid.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/parse.rs:1 (parse_row)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_parse.rs
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: A parsed row is accepted only when valid.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: src/parse.rs
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.symbols.0.symbol: parse_row
+  changed.mapped: 1
+  changed.unmapped: 1
+expect:
+  DC1: none
+  DC2: error
+exit: 1
+name: rust-comment-brace

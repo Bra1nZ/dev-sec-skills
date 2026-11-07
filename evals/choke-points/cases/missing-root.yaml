@@ -1,0 +1,6 @@
+# Synthetic fixture — not evidence about any real repository.
+description: A missing scan root is a usage error, not an empty successful scan.
+root: no-such-dir
+stderr: [root not found]
+exit: 2
+name: missing-root

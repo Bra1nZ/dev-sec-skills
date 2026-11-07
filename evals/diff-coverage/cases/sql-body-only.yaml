@@ -1,0 +1,68 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A SQL function body is edited without repeating the function name. The
+  statement span must cover the dollar-quoted body, so the declared symbol is seen as
+  changed; its claim maps only the path, so DC2 must error. A text scanner would miss
+  the edit and turn the gate silently green.'
+base_files:
+  sql/schema.sql: |
+    CREATE OR REPLACE FUNCTION rbac.apply_policy_document(p JSONB)
+    RETURNS VOID AS $$
+    BEGIN
+      PERFORM 1;
+    END;
+    $$ LANGUAGE plpgsql;
+head_files:
+  sql/schema.sql: |
+    CREATE OR REPLACE FUNCTION rbac.apply_policy_document(p JSONB)
+    RETURNS VOID AS $$
+    BEGIN
+      PERFORM 2;
+    END;
+    $$ LANGUAGE plpgsql;
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: Policy application rejects a null document.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: sql/schema.sql:1 - FUNCTION rbac.apply_policy_document
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: Policy application rejects a null document.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: sql/schema.sql
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.symbols.0.symbol: rbac.apply_policy_document
+  changed.mapped: 1
+  changed.unmapped: 1
+expect:
+  DC1: none
+  DC2: error
+exit: 1
+name: sql-body-only

@@ -1,0 +1,23 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A taxonomy class that is absent from the registry schema is rejected,
+  so the rules file cannot invent a class.'
+files:
+  src/x.py: |
+    def check():
+        pass
+rules:
+  version: 1
+  signals:
+  - id: any-name
+    fields: [name]
+    pattern: '.*'
+  rules:
+  - id: invented
+    taxonomy_class: imaginary
+    failure_class: unspecified
+    failure_mode: detect
+    match:
+      name: '.'
+stderr: [unknown taxonomy_class]
+exit: 2
+name: rules-unknown-taxonomy

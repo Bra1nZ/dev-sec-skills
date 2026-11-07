@@ -167,6 +167,9 @@ evals/
   diff-coverage/
     run_evals.py
     cases/
+  choke-points/
+    run_evals.py
+    cases/
   iteration-3/
     RESULTS.md
   iteration-4/
@@ -193,6 +196,11 @@ spec/
     2026-11-07-craft-i18n.json
   diff-coverage/
     README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
+  choke-points/
+    README.md
+    rules.yaml
     2026-11-07-rbac-pg.json
     2026-11-07-craft-i18n.json
   pilots/
@@ -251,7 +259,10 @@ Diff coverage is separate from `verify` for the same reason mutation runs are:
 the gate needs a base ref, while `verify` compares the working tree against this
 repository's last commit. `make diff-coverage` runs DC1–DC5 over the two fixed
 ranges, and `make diff-coverage-record` writes the snapshots into
-`spec/diff-coverage/`.
+`spec/diff-coverage/`. The choke-point scan is separate too: `make choke-points`
+prints the review queue for both pilots, and `make choke-points-record` writes
+the snapshots into `spec/choke-points/`; the CP1 threshold is not in `verify`
+until the rule noise is measured and reduced.
 
 Mutation runs are separate: `make mutations` for `rbac_pg` on a live
 PostgreSQL, `make mutations-i18n` for the `craft-i18n` fixtures (cargo only),
@@ -272,7 +283,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, seven linter suites, and the `spec/` directory with the conveyor concept.
+evals, eight linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -329,17 +340,36 @@ Diff coverage `tools/diff_coverage.py` (V2-07) checks only choke points
 declared in `enforced_at`: a changed path or symbol without a non-open claim is
 DC1/DC2, an unlocatable declaration is always DC3, and an empty range or a
 registry with no declarations is an explicit DC4/DC5 info. An `open` claim never
-counts as coverage. Symbols come from a line scanner — Python indentation, Rust
-brace depth, SQL and unknown extensions by name on a changed line — so a SQL
-body-only edit that never names the function is invisible (V2-22 closes that).
+counts as coverage. Symbols are located by `tools/choke_points.py`: Python uses
+`ast` (decorators join the span); Rust and SQL use structural comment/string
+lexers, and a SQL span covers the whole `CREATE ... FUNCTION ...;` including a
+dollar-quoted body. A SQL body edit, a decorator-only change and a `}` in a Rust
+block comment are therefore visible; the token fallback over masked lines runs
+only where the parser finds no definition.
 The recorded 2026-11-07 measurement: `rbac_pg` `v1.3.1..HEAD` has 110 changed
 files, 1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n`
 `f0dd77b^..f0dd77b` has 3 files, 2 of 2 mapped. The 100 % is two declarations
 (CELL-001 and CELL-003), not 43 cells: a registry without `enforced_at` gets
 DC5, not coverage. Its cases are in
-[`evals/diff-coverage/`](evals/diff-coverage/): 14/14; the method and limits are
+[`evals/diff-coverage/`](evals/diff-coverage/): 19/19; the method and limits are
 in [`spec/diff-coverage/`](spec/diff-coverage/README.md); the PR-gate template
 is [`ci/diff-coverage.yml`](ci/diff-coverage.yml).
+
+Choke-point extraction `tools/choke_points.py` (V2-22) finds structural
+candidates in ordinary code and maps them to cell classes through
+[`spec/choke-points/rules.yaml`](spec/choke-points/rules.yaml): signals decide
+what is a candidate, rules are ordered and validated against the
+`cell-registry.schema.json` enums, and a candidate with no rule is
+`unclassified`, not `other` — a visible rule gap, not a taxonomy class. Measured
+2026-11-07: `rbac_pg` has 75 files, 1585 definitions, 1413 candidates, 867
+classified / 546 unclassified (38.6 %); `craft-i18n` has 9 files, 128
+definitions, 64 candidates, 47 / 17 (26.6 %); together 914/1477 = 61.9 %
+classified. Its cases are in
+[`evals/choke-points/`](evals/choke-points/): 14/14; the method, measurement and
+limits are in [`spec/choke-points/`](spec/choke-points/README.md); the targets
+are `make choke-points` and `make choke-points-record`. The CP1 threshold is not
+in `make verify` until the noise is reduced; a class match is a hypothesis, not
+evidence and not a cell.
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,

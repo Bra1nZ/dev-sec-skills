@@ -1,0 +1,36 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'Rules are ordered and the first match wins: a narrow security rule
+  before a broad correctness rule must decide the classification.'
+files:
+  src/x.py: |
+    def check():
+        pass
+rules:
+  version: 1
+  signals:
+  - id: any-name
+    fields: [name]
+    pattern: '.*'
+  rules:
+  - id: narrow
+    taxonomy_class: security
+    failure_class: broken-access-control
+    failure_mode: deny
+    match:
+      name: '^check$'
+  - id: broad
+    taxonomy_class: correctness
+    failure_class: boundary
+    failure_mode: detect
+    match:
+      name: '.'
+json:
+  summary.candidates: 1
+  summary.classified: 1
+candidates:
+- symbol: check
+  rule: narrow
+  taxonomy_class: security
+  failure_mode: deny
+exit: 0
+name: classification-precedence

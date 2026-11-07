@@ -1,6 +1,6 @@
 # Synthetic fixture — not evidence about any real repository.
-description: A SQL file is added. There is no span parser for SQL, so the symbol is
-  found by its name on an added line; the cell claim maps it.
+description: A SQL file is added. The statement span finds the symbol and the cell claim
+  maps it.
 base_files:
   README.md: 'base
 

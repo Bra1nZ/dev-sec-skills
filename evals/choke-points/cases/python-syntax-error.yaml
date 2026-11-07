@@ -1,0 +1,16 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A Python file with a syntax error is counted, not silently dropped, and
+  CP2 fails when the parse-error threshold is zero.'
+files:
+  src/broken.py: |
+    def broken(:
+        pass
+args: ['--max-parse-errors', '0']
+json:
+  summary.definitions: 0
+  summary.files.parse_errors.0.path: src/broken.py
+expect:
+  CP1: none
+  CP2: error
+exit: 1
+name: python-syntax-error

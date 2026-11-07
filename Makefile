@@ -64,11 +64,19 @@ DIFF_HEAD_I18N ?= f0dd77b
 DIFF_RECORD_RBAC ?= spec/diff-coverage/2026-11-07-rbac-pg.json
 DIFF_RECORD_I18N ?= spec/diff-coverage/2026-11-07-craft-i18n.json
 
+# Choke-point extraction (V2-22). The scan is a review queue, not a gate: the
+# unclassified threshold stays unset until an agreed ceiling exists.
+CHOKE_RULES ?= spec/choke-points/rules.yaml
+CHOKE_SCHEMA ?= spec/conveyor/cell-registry.schema.json
+CHOKE_RECORD_RBAC ?= spec/choke-points/2026-11-07-rbac-pg.json
+CHOKE_RECORD_I18N ?= spec/choke-points/2026-11-07-craft-i18n.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
-        diff-coverage-record mutations mutations-i18n mutations-all \
-        check-fuzz-triage fuzz-claim-lint help
+        diff-coverage-record choke-points choke-points-record \
+        mutations mutations-i18n mutations-all check-fuzz-triage \
+        fuzz-claim-lint help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage
 
@@ -89,6 +97,7 @@ evals:
 	$(PYTHON) evals/fuzz-triage/run_evals.py
 	$(PYTHON) evals/coverage/run_evals.py
 	$(PYTHON) evals/diff-coverage/run_evals.py
+	$(PYTHON) evals/choke-points/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -244,6 +253,30 @@ diff-coverage-record:
 	  --ledger "$(PILOT2_LEDGER)" \
 	  --max-unmapped 0 --json "$(DIFF_RECORD_I18N)"
 
+choke-points:
+	@echo "== CP1-CP2: structural choke-point candidates (V2-22) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/choke_points.py \
+	  --root "$(PILOT_ROOT)" \
+	  --rules "$(CHOKE_RULES)" --schema "$(CHOKE_SCHEMA)"
+	$(PYTHON) tools/choke_points.py \
+	  --root "$(PILOT2_ROOT)" \
+	  --rules "$(CHOKE_RULES)" --schema "$(CHOKE_SCHEMA)"
+
+choke-points-record:
+	@echo "== CP1-CP2: record the choke-point measurement (V2-22) =="
+	@test -d "$(PILOT_ROOT)" || { echo "error: pilot root not found: $(PILOT_ROOT)" >&2; exit 1; }
+	@test -d "$(PILOT2_ROOT)" || { echo "error: pilot root not found: $(PILOT2_ROOT)" >&2; exit 1; }
+	$(PYTHON) tools/choke_points.py \
+	  --root "$(PILOT_ROOT)" \
+	  --rules "$(CHOKE_RULES)" --schema "$(CHOKE_SCHEMA)" \
+	  --json "$(CHOKE_RECORD_RBAC)"
+	$(PYTHON) tools/choke_points.py \
+	  --root "$(PILOT2_ROOT)" \
+	  --rules "$(CHOKE_RULES)" --schema "$(CHOKE_SCHEMA)" \
+	  --json "$(CHOKE_RECORD_I18N)"
+
 check-fuzz-triage:
 	@echo "== T1-T4: fuzz finding triage (V2-18) =="
 	$(PYTHON) tools/fuzz_triage.py \
@@ -277,7 +310,7 @@ help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
 	@echo "  verify-all    verify plus both mutation batches (needs PostgreSQL and cargo)"
-	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage"
+	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage, choke_points"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
@@ -290,6 +323,8 @@ help:
 	@echo "  coverage-record  write the two JSON coverage snapshots into spec/coverage/"
 	@echo "  diff-coverage  DC1-DC5 over both pilots: changed choke points must map to a claim"
 	@echo "  diff-coverage-record  write the two JSON diff-coverage snapshots into spec/diff-coverage/"
+	@echo "  choke-points  CP1-CP2 over both pilots: structural choke-point candidates and their cell classes"
+	@echo "  choke-points-record  write the two JSON choke-point snapshots into spec/choke-points/"
 	@echo "  check-fuzz-triage  T1-T4 over the recorded run and its triage file"
 	@echo "  fuzz-claim-lint  replay the recorded fuzz run and compare executions_digest"
 	@echo "  mutations     rbac_pg mutation suites (MUTATION_DSN, MUTATION_SHAREDIR)"

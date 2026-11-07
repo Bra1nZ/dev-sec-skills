@@ -1,0 +1,21 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'Files outside the Python/Rust/SQL extensions are counted as skipped and
+  never guessed at, so a Go `func` is not reported as a function definition.'
+files:
+  script.go: |
+    package main
+
+    func main() {}
+  notes.txt: |
+    fn pretend() {}
+globs: ['*']
+json:
+  summary.definitions: 0
+  summary.candidates: 0
+  summary.files.scanned: 0
+  summary.files.skipped: 2
+expect:
+  CP1: none
+  CP2: none
+exit: 0
+name: unknown-language-skipped

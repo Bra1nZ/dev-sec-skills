@@ -1,0 +1,23 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A rule may not map a candidate to the `other` cell escape hatch; the
+  rules file is rejected as a usage error.'
+files:
+  src/x.py: |
+    def check():
+        pass
+rules:
+  version: 1
+  signals:
+  - id: any-name
+    fields: [name]
+    pattern: '.*'
+  rules:
+  - id: bad
+    taxonomy_class: other
+    failure_class: unspecified
+    failure_mode: detect
+    match:
+      name: '.'
+stderr: ["maps to 'other'"]
+exit: 2
+name: rules-other-forbidden

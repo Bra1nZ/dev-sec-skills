@@ -1,6 +1,7 @@
 # Template: diff-coverage gate. Copy into the target repo as
 # .github/workflows/diff-coverage.yml and vendor from dev-sec-skills:
 #   tools/diff_coverage.py
+#   tools/choke_points.py   (diff_coverage imports it: spans, masking)
 # Adjust CELLS, LEDGER and MAX_UNMAPPED per repo. The registry must contain
 # `enforced_at` declarations; a registry without them yields DC5 and a green
 # run, which is a visible no-op rather than coverage.

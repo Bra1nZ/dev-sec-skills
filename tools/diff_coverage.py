@@ -25,12 +25,16 @@ A choke point maps to a claim when one of these holds:
 
 An `open` claim does not count: an open claim is a plan, not coverage.
 
-Changed symbols are found by a line scanner, not an AST. Python `def`/`class`
-spans use indentation; Rust `fn` spans use brace depth; SQL and unknown
-extensions fall back to the symbol appearing in an added or removed line.
-Body-only edits are caught for Python and Rust; for SQL a change that never
-mentions the function name is not detected. That limit is deliberate and is
-what the AST extractor in V2-22 is meant to remove.
+Changed symbols are located structurally through `tools/choke_points.py`, not by
+a line scanner. Python definitions use the standard-library `ast`, so a
+decorator, a body-only edit and a `def` inside a docstring are all handled
+exactly. Rust `fn` spans come from a comment/string-aware lexer and brace
+matching. SQL spans cover the whole `CREATE ... FUNCTION ...;` statement,
+including a dollar-quoted body, so an edit that never repeats the function
+name is still attributed. A symbol the parser cannot locate in a side of the
+diff falls back to the token appearing on a changed line, with that file's
+comments and literals blanked first, so a mention inside a comment is not a
+change. Unknown extensions keep only the unmasked token fallback.
 
 Exit codes: 0 no errors, 1 errors, 2 tool/usage error.
 
@@ -53,14 +57,15 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
+try:
+    from choke_points import masked_lines_for, spans_for
+except ImportError:  # vendored alone or imported from another directory
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from choke_points import masked_lines_for, spans_for
+
 ENFORCED_PATH_RE = re.compile(r"^([A-Za-z0-9_./-]+):(\d+)\b")
 FUNCTION_RE = re.compile(r"\bFUNCTION\s+([A-Za-z_][A-Za-z0-9_.]*)")
 CALL_RE = re.compile(r"\(([A-Za-z_][A-Za-z0-9_.]*)")
-PY_DEF_RE = re.compile(r"^(\s*)(?:async\s+)?(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)\b")
-RUST_FN_RE = re.compile(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\b")
-
-PY_EXT = (".py",)
-RUST_EXT = (".rs",)
 
 
 class Finding(object):
@@ -208,72 +213,38 @@ def record_for(records, path):
     return None
 
 
-def py_span(lines, name):
-    for index, line in enumerate(lines):
-        match = PY_DEF_RE.match(line)
-        if not match or match.group(2) != name:
+def symbol_changed(repo, base, head, record, name):
+    """True when a changed line touches a definition of `name`.
+
+    Python and Rust produce structural spans from `choke_points`, and SQL
+    produces a statement span that covers a `$$ ... $$` body, so an edit inside
+    a body is attributed without the symbol name appearing on the line.
+
+    The token fallback runs only when the parser finds no definition of `name`
+    in that side of the diff. It looks at the file's own masked lines, not at
+    the raw diff text, so a name inside a comment or a string cannot match.
+    """
+    pattern = re.compile(r"\b%s\b" % re.escape(name))
+    sides = (
+        (base, record["old_path"], record["removed"]),
+        (head, record["new_path"], record["added"]),
+    )
+    for sha, side_path, touched in sides:
+        if not side_path or not touched:
             continue
-        base_indent = len(match.group(1).expandtabs(8))
-        end = index + 1
-        for probe in range(index + 1, len(lines)):
-            text = lines[probe]
-            if not text.strip() or text.lstrip().startswith("#"):
-                continue
-            if len(text) - len(text.lstrip()) <= base_indent:
-                break
-            end = probe + 1
-        return (index + 1, end)
-    return None
-
-
-def rust_span(lines, name):
-    for index, line in enumerate(lines):
-        if not any(match.group(1) == name for match in RUST_FN_RE.finditer(line)):
+        text = blob(repo, sha, side_path)
+        if text is None:
             continue
-        depth, started, end = 0, False, index + 1
-        for probe in range(index, len(lines)):
-            text = re.sub(r"//.*$", "", lines[probe])
-            text = re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
-            for char in text:
-                if char == "{":
-                    depth += 1
-                    started = True
-                elif char == "}":
-                    depth -= 1
-            end = probe + 1
-            if started and depth <= 0:
-                break
-        return (index + 1, end)
-    return None
-
-
-def span(path, lines, name):
-    if path.endswith(PY_EXT):
-        return py_span(lines, name)
-    if path.endswith(RUST_EXT):
-        return rust_span(lines, name)
-    return None
-
-
-def symbol_changed(repo, base, head, record, path, name):
-    base_text = blob(repo, base, record["old_path"]) if record["old_path"] else None
-    head_text = blob(repo, head, record["new_path"]) if record["new_path"] else None
-    removed = set(record["removed"])
-    added = set(record["added"])
-    for sha, text, touched in ((base, base_text, removed), (head, head_text, added)):
-        if text is None or not touched:
-            continue
-        lines = text.splitlines()
-        located = span(path, lines, name)
-        if located:
-            first, last = located
-            if any(first <= number <= last for number in touched):
+        target = side_path
+        spans = spans_for(target, text, name)
+        if spans:
+            if any(first <= number <= last
+                   for first, last in spans for number in touched):
                 return True
-    # Fallback for SQL, unknown extensions, and symbols whose definition was
-    # not located: the name appears on a changed line.
-    for numbers in (record["added"], record["removed"]):
-        for text in numbers.values():
-            if re.search(r"\b%s\b" % re.escape(name), text):
+            continue
+        masked = masked_lines_for(target, text)
+        for number in touched:
+            if 0 < number <= len(masked) and pattern.search(masked[number - 1]):
                 return True
     return False
 
@@ -409,7 +380,7 @@ def main():
         record = record_for(records, point_path)
         if record is None:
             continue
-        if symbol_changed(repo, base_sha, head_sha, record, point_path, symbol):
+        if symbol_changed(repo, base_sha, head_sha, record, symbol):
             claims = symbol_claims(point, non_open, tests)
             changed_symbols.append({"id": "%s::%s" % (point_path, symbol),
                                     "kind": "symbol", "path": point_path,

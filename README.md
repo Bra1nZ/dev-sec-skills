@@ -178,6 +178,9 @@ evals/
   diff-coverage/
     run_evals.py
     cases/
+  choke-points/
+    run_evals.py
+    cases/
   iteration-3/
     RESULTS.md
   iteration-4/
@@ -204,6 +207,11 @@ spec/
     2026-11-07-craft-i18n.json
   diff-coverage/
     README.md
+    2026-11-07-rbac-pg.json
+    2026-11-07-craft-i18n.json
+  choke-points/
+    README.md
+    rules.yaml
     2026-11-07-rbac-pg.json
     2026-11-07-craft-i18n.json
   pilots/
@@ -263,6 +271,9 @@ Diff-покрытие вынесено из `verify` так же, как mutatio
 base ref, а `verify` сравнивает рабочее дерево с последним коммитом этого
 репозитория. `make diff-coverage` прогоняет DC1–DC5 по двум фиксированным
 диапазонам, `make diff-coverage-record` пишет снимки в `spec/diff-coverage/`.
+Скан choke points тоже вынесен: `make choke-points` печатает очередь ревью по
+двум пилотам, `make choke-points-record` пишет снимки в `spec/choke-points/`;
+порог CP1 не включён в `verify`, пока не измерен и не снижен шум правил.
 
 Mutation-прогоны вынесены: `make mutations` — `rbac_pg` на живом PostgreSQL;
 `make mutations-i18n` — фикстуры `craft-i18n`, нужен только cargo;
@@ -283,7 +294,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, семь наборов для линтеров и каталог `spec/` с концептом конвейера.
+скилов, восемь наборов для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -346,16 +357,34 @@ Diff-покрытие `tools/diff_coverage.py` (V2-07) проверяет тол
 объявленные в `enforced_at`: изменённый путь или символ без non-open claim —
 DC1/DC2, нераспознанное объявление — всегда ошибка DC3, пустой диапазон и
 реестр без объявлений — явные info DC4/DC5. `open` claim покрытием не
-считается. Символы извлекает строчный сканер: Python — по отступу, Rust — по
-глубине скобок, SQL и неизвестные расширения — по имени на изменённой строке;
-поэтому правка тела SQL-функции без упоминания имени не видна (закроет V2-22).
+считается. Символы локализует `tools/choke_points.py`: Python — `ast`
+(декораторы входят в спан), Rust и SQL — структурные лексеры комментариев и
+строк, SQL-спан покрывает всё `CREATE ... FUNCTION ...;` вместе с
+dollar-quoted телом. Поэтому правка тела SQL-функции, декоратора или `}` в
+блочном комментарии Rust видна; token-fallback по маскированным строкам
+остаётся только там, где парсер не нашёл определение.
 Записанное измерение 2026-11-07: `rbac_pg` `v1.3.1..HEAD` — 110 изменённых
 файлов, 1 объявленный путь и 1 символ, 2 из 2 mapped; `craft-i18n`
 `f0dd77b^..f0dd77b` — 3 файла, 2 из 2 mapped. 100 % — это два объявления
 (CELL-001 и CELL-003), а не 43 ячейки: реестр без `enforced_at` получает DC5,
-а не покрытие. Кейсы — [`evals/diff-coverage/`](evals/diff-coverage/): 14/14;
+а не покрытие. Кейсы — [`evals/diff-coverage/`](evals/diff-coverage/): 19/19;
 метод и границы — в [`spec/diff-coverage/`](spec/diff-coverage/README.md);
 шаблон PR-гейта — [`ci/diff-coverage.yml`](ci/diff-coverage.yml).
+
+Извлечение choke points `tools/choke_points.py` (V2-22) ищет структурных
+кандидатов в обычном коде и маппит их на классы ячеек по
+[`spec/choke-points/rules.yaml`](spec/choke-points/rules.yaml): signals решают,
+что считать кандидатом, rules упорядочены и валидируются по enum'ам
+`cell-registry.schema.json`; кандидат без правила — `unclassified`, а не
+`other`, и это видимый пробел правил, а не класс таксономии. Измерено
+2026-11-07: `rbac_pg` — 75 файлов, 1585 определений, 1413 кандидатов, 867
+classified / 546 unclassified (38,6 %); `craft-i18n` — 9 файлов, 128
+определений, 64 кандидата, 47 / 17 (26,6 %); вместе 914/1477 = 61,9 %
+classified. Кейсы — [`evals/choke-points/`](evals/choke-points/): 14/14; метод,
+замер и границы — в [`spec/choke-points/`](spec/choke-points/README.md);
+targets — `make choke-points` и `make choke-points-record`. Порог CP1 не
+включён в `make verify`, пока шум не снижен; совпадение класса — гипотеза, не
+доказательство и не cell.
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.

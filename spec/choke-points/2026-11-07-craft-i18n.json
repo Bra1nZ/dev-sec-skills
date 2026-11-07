@@ -1,0 +1,2053 @@
+{
+  "root": "../astraoffice/craft-i18n",
+  "measured": "2026-11-07",
+  "rules": "spec/choke-points/rules.yaml",
+  "schema": "spec/conveyor/cell-registry.schema.json",
+  "globs": [
+    "*.py",
+    "*.rs",
+    "*.sql"
+  ],
+  "summary": {
+    "definitions": 128,
+    "candidates": 64,
+    "classified": 47,
+    "unclassified": 17,
+    "by_class": {
+      "security": 25,
+      "correctness": 22
+    },
+    "by_signal": {
+      "guard-call": 56,
+      "guard-name": 15
+    },
+    "by_language": {
+      "rust": 23,
+      "python": 41
+    },
+    "files": {
+      "scanned": 9,
+      "skipped": 0,
+      "by_language": {
+        "rust": 5,
+        "python": 4
+      },
+      "parse_errors": []
+    }
+  },
+  "candidates": [
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "read_catalog",
+      "qualname": "read_catalog",
+      "language": "rust",
+      "kind": "function",
+      "start": 22,
+      "end": 45,
+      "decorators": [],
+      "calls": [
+        "strip_prefix",
+        "unwrap_or",
+        "Vec::new",
+        "Vec::new",
+        "HashSet::new",
+        "split",
+        "enumerate",
+        "strip_suffix",
+        "unwrap_or",
+        "is_empty",
+        "starts_with",
+        "parse_row",
+        "and_then",
+        "insert",
+        "clone",
+        "clone",
+        "into",
+        "push",
+        "push"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "exposed-secret-or-weak-crypto",
+      "failure_mode": "abort",
+      "rule": "secret-crypto",
+      "matched_field": "calls",
+      "evidence": "Hash"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "parse_row",
+      "qualname": "parse_row",
+      "language": "rust",
+      "kind": "function",
+      "start": 47,
+      "end": 94,
+      "decorators": [],
+      "calls": [
+        "split",
+        "collect",
+        "as_slice",
+        "len",
+        "chars",
+        "find",
+        "is_control",
+        "is_empty",
+        "into",
+        "unescape",
+        "unescape",
+        "unescape",
+        "is_empty",
+        "into",
+        "as_str",
+        "check_plural",
+        "starts_with",
+        "contains",
+        "placeholders",
+        "placeholders",
+        "into",
+        "ends_with",
+        "ends_with",
+        "into",
+        "check_template"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "parse"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "check_template",
+      "qualname": "check_template",
+      "language": "rust",
+      "kind": "function",
+      "start": 102,
+      "end": 121,
+      "decorators": [],
+      "calls": [
+        "split_once",
+        "split_once",
+        "into",
+        "is_empty",
+        "into",
+        "len",
+        "len",
+        "into"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "check_plural",
+      "qualname": "check_plural",
+      "language": "rust",
+      "kind": "function",
+      "start": 123,
+      "end": 142,
+      "decorators": [],
+      "calls": [
+        "split",
+        "collect",
+        "as_slice",
+        "into",
+        "is_empty",
+        "is_empty",
+        "placeholders",
+        "placeholders",
+        "into",
+        "split",
+        "collect",
+        "len",
+        "iter",
+        "any",
+        "is_empty",
+        "iter",
+        "any",
+        "placeholders",
+        "placeholders",
+        "into"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "unescape",
+      "qualname": "unescape",
+      "language": "rust",
+      "kind": "function",
+      "start": 144,
+      "end": 161,
+      "decorators": [],
+      "calls": [
+        "String::with_capacity",
+        "len",
+        "chars",
+        "next",
+        "push",
+        "next",
+        "push",
+        "push",
+        "push",
+        "into"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "escape"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "valid_rows_pass",
+      "qualname": "valid_rows_pass",
+      "language": "rust",
+      "kind": "function",
+      "start": 182,
+      "end": 189,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "new",
+        "len"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "context_distinguishes_keys",
+      "qualname": "context_distinguishes_keys",
+      "language": "rust",
+      "kind": "function",
+      "start": 191,
+      "end": 198,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "is_empty"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "each_bad_row_is_one_problem",
+      "qualname": "each_bad_row_is_one_problem",
+      "language": "rust",
+      "kind": "function",
+      "start": 200,
+      "end": 231,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "len",
+        "starts_with"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "placeholders_may_reorder",
+      "qualname": "placeholders_may_reorder",
+      "language": "rust",
+      "kind": "function",
+      "start": 233,
+      "end": 236,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "is_empty"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "escapes_unescape",
+      "qualname": "escapes_unescape",
+      "language": "rust",
+      "kind": "function",
+      "start": 238,
+      "end": 244,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "is_empty"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "escape"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "one_form_locale",
+      "qualname": "one_form_locale",
+      "language": "rust",
+      "kind": "function",
+      "start": 246,
+      "end": 253,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "is_empty"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/catalog.rs",
+      "symbol": "crlf_and_bom_are_ignored",
+      "qualname": "crlf_and_bom_are_ignored",
+      "language": "rust",
+      "kind": "function",
+      "start": 255,
+      "end": 262,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "read_catalog",
+        "is_empty"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/locale.rs",
+      "symbol": "check_locale_name",
+      "qualname": "check_locale_name",
+      "language": "rust",
+      "kind": "function",
+      "start": 7,
+      "end": 17,
+      "decorators": [],
+      "calls": [
+        "parse",
+        "map_err",
+        "to_string",
+        "to_lowercase"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/locale.rs",
+      "symbol": "plural_forms",
+      "qualname": "plural_forms",
+      "language": "rust",
+      "kind": "function",
+      "start": 24,
+      "end": 54,
+      "decorators": [],
+      "calls": [
+        "starts_with",
+        "parse",
+        "map_err",
+        "as_str",
+        "LanguageIdentifier::from_parts",
+        "PluralRules::create",
+        "or_else",
+        "PluralRules::create",
+        "map_err",
+        "Vec::new",
+        "select",
+        "map_err",
+        "contains",
+        "push",
+        "len"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "parse"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/locale.rs",
+      "symbol": "locale_names",
+      "qualname": "locale_names",
+      "language": "rust",
+      "kind": "function",
+      "start": 60,
+      "end": 68,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "check_locale_name",
+        "is_ok",
+        "check_locale_name",
+        "is_err"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/tree.rs",
+      "symbol": "check_tree",
+      "qualname": "check_tree",
+      "language": "rust",
+      "kind": "function",
+      "start": 26,
+      "end": 102,
+      "decorators": [],
+      "calls": [
+        "Vec::new",
+        "BTreeMap::new",
+        "entries",
+        "join",
+        "join",
+        "join",
+        "is_dir",
+        "push",
+        "check_locale_name",
+        "push",
+        "plural_forms",
+        "unwrap_or_else",
+        "push",
+        "entries",
+        "push",
+        "read",
+        "join",
+        "map",
+        "into_iter",
+        "map",
+        "collect",
+        "unwrap_or_default",
+        "entry",
+        "clone",
+        "or_default",
+        "is_catalog_name",
+        "push",
+        "read",
+        "join",
+        "push",
+        "extend",
+        "into_iter",
+        "map",
+        "iter",
+        "filter",
+        "contains",
+        "key",
+        "clone",
+        "push",
+        "into_iter",
+        "map",
+        "collect",
+        "strip_suffix",
+        "insert",
+        "to_owned",
+        "has_language_name",
+        "push",
+        "extend",
+        "redundant_regional_rows"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/tree.rs",
+      "symbol": "coverage",
+      "qualname": "coverage",
+      "language": "rust",
+      "kind": "function",
+      "start": 219,
+      "end": 243,
+      "decorators": [],
+      "calls": [
+        "Vec::new",
+        "entries",
+        "join",
+        "unwrap_or_default",
+        "join",
+        "join",
+        "plural_forms",
+        "unwrap_or",
+        "entries",
+        "unwrap_or_default",
+        "is_catalog_name",
+        "read",
+        "join",
+        "map_or",
+        "len",
+        "push",
+        "clone",
+        "BTreeMap::new",
+        "entry",
+        "or_default",
+        "max",
+        "iter",
+        "map",
+        "get",
+        "as_str",
+        "copied",
+        "unwrap_or",
+        "collect"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/tree.rs",
+      "symbol": "read",
+      "qualname": "read",
+      "language": "rust",
+      "kind": "function",
+      "start": 246,
+      "end": 256,
+      "decorators": [],
+      "calls": [
+        "std::fs::read_to_string",
+        "map_err",
+        "to_string",
+        "read_catalog",
+        "lines",
+        "any",
+        "starts_with",
+        "insert",
+        "into"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/src/tree.rs",
+      "symbol": "entries",
+      "qualname": "entries",
+      "language": "rust",
+      "kind": "function",
+      "start": 276,
+      "end": 289,
+      "decorators": [],
+      "calls": [
+        "exists",
+        "Vec::new",
+        "Vec::new",
+        "std::fs::read_dir",
+        "file_name",
+        "to_string_lossy",
+        "into_owned",
+        "starts_with",
+        "push",
+        "sort"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/tests/locales.rs",
+      "symbol": "repository_catalogs_pass",
+      "qualname": "repository_catalogs_pass",
+      "language": "rust",
+      "kind": "function",
+      "start": 13,
+      "end": 19,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "check_tree",
+        "craft_i18n_tests::repo_root",
+        "new"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/tests/locales.rs",
+      "symbol": "fixture",
+      "qualname": "fixture",
+      "language": "rust",
+      "kind": "function",
+      "start": 30,
+      "end": 40,
+      "decorators": [],
+      "calls": [
+        "Path::new",
+        "join",
+        "std::fs::remove_dir_all",
+        "std::fs::create_dir_all",
+        "unwrap",
+        "join",
+        "std::fs::create_dir_all",
+        "parent",
+        "unwrap",
+        "unwrap",
+        "std::fs::write",
+        "unwrap"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "crates/craft-i18n-tests/tests/locales.rs",
+      "symbol": "assert_problems",
+      "qualname": "assert_problems",
+      "language": "rust",
+      "kind": "function",
+      "start": 42,
+      "end": 48,
+      "decorators": [],
+      "calls": [
+        "check_tree",
+        "fixture",
+        "len",
+        "len",
+        "iter",
+        "zip",
+        "starts_with"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "check"
+    },
+    {
+      "path": "crates/craft-i18n-tests/tests/locales.rs",
+      "symbol": "script_and_baseless_locales_have_no_regional_check",
+      "qualname": "script_and_baseless_locales_have_no_regional_check",
+      "language": "rust",
+      "kind": "function",
+      "start": 198,
+      "end": 211,
+      "decorators": [
+        "#[test]"
+      ],
+      "calls": [
+        "assert_problems"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "tools/new_locale.py",
+      "symbol": "main",
+      "qualname": "main",
+      "language": "python",
+      "kind": "function",
+      "start": 41,
+      "end": 63,
+      "decorators": [],
+      "calls": [
+        "ArgumentParser",
+        "split",
+        "add_argument",
+        "add_argument",
+        "add_argument",
+        "parse_args",
+        "fullmatch",
+        "exit",
+        "Tree",
+        "glob",
+        "exit",
+        "join",
+        "sorted",
+        "path",
+        "exists",
+        "print",
+        "relative_to",
+        "starter",
+        "mkdir",
+        "write_text",
+        "sum",
+        "split",
+        "startswith",
+        "endswith",
+        "print",
+        "relative_to"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "Parse"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "parse",
+      "qualname": "parse",
+      "language": "python",
+      "kind": "function",
+      "start": 53,
+      "end": 68,
+      "decorators": [],
+      "calls": [
+        "enumerate",
+        "split",
+        "lstrip",
+        "removesuffix",
+        "strip",
+        "startswith",
+        "split",
+        "len",
+        "append",
+        "len",
+        "append"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "parse"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "escape",
+      "qualname": "escape",
+      "language": "python",
+      "kind": "function",
+      "start": 76,
+      "end": 78,
+      "decorators": [],
+      "calls": [
+        "sub"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "escape"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "fix",
+      "qualname": "fix",
+      "language": "python",
+      "kind": "function",
+      "start": 145,
+      "end": 158,
+      "decorators": [],
+      "calls": [
+        "escape",
+        "escape",
+        "escape",
+        "complete_plural",
+        "unusable_row",
+        "plural_problem",
+        "text_problem"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "escape"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "get",
+      "qualname": "Tree.get",
+      "language": "python",
+      "kind": "method",
+      "start": 198,
+      "end": 204,
+      "decorators": [],
+      "calls": [
+        "path",
+        "exists",
+        "parse",
+        "read_text",
+        "dict"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "parse"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "display_name",
+      "qualname": "Tree.display_name",
+      "language": "python",
+      "kind": "method",
+      "start": 242,
+      "end": 251,
+      "decorators": [],
+      "calls": [
+        "locales",
+        "path",
+        "exists",
+        "split",
+        "read_text",
+        "rpartition",
+        "startswith",
+        "endswith"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "race-or-lost-update",
+      "failure_mode": "abort",
+      "rule": "concurrency",
+      "matched_field": "path",
+      "evidence": "/sync_"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "write",
+      "qualname": "Tree.write",
+      "language": "python",
+      "kind": "method",
+      "start": 253,
+      "end": 269,
+      "decorators": [],
+      "calls": [
+        "sorted",
+        "items",
+        "path",
+        "unlink",
+        "language",
+        "get",
+        "display_name",
+        "mkdir",
+        "write_text",
+        "render",
+        "append"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "race-or-lost-update",
+      "failure_mode": "abort",
+      "rule": "concurrency",
+      "matched_field": "path",
+      "evidence": "/sync_"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "read_catalog",
+      "qualname": "read_catalog",
+      "language": "python",
+      "kind": "function",
+      "start": 272,
+      "end": 286,
+      "decorators": [],
+      "calls": [
+        "locale_name",
+        "removesuffix",
+        "rpartition",
+        "parse",
+        "git",
+        "forms",
+        "items",
+        "fix",
+        "append"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "parse"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "read_app",
+      "qualname": "read_app",
+      "language": "python",
+      "kind": "function",
+      "start": 300,
+      "end": 313,
+      "decorators": [],
+      "calls": [
+        "split",
+        "git",
+        "search",
+        "rpartition",
+        "len",
+        "exit",
+        "join",
+        "sorted",
+        "read_catalog",
+        "exit",
+        "language_names"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "race-or-lost-update",
+      "failure_mode": "abort",
+      "rule": "concurrency",
+      "matched_field": "path",
+      "evidence": "/sync_"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "write_sync",
+      "qualname": "write_sync",
+      "language": "python",
+      "kind": "function",
+      "start": 408,
+      "end": 429,
+      "decorators": [],
+      "calls": [
+        "strip",
+        "git",
+        "strip",
+        "git",
+        "print",
+        "read_app",
+        "sync",
+        "write",
+        "print",
+        "sum",
+        "keys",
+        "keys",
+        "print",
+        "len",
+        "keys",
+        "keys",
+        "len",
+        "keys",
+        "keys",
+        "len",
+        "append",
+        "items",
+        "get",
+        "get",
+        "items",
+        "items",
+        "items"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "race-or-lost-update",
+      "failure_mode": "abort",
+      "rule": "concurrency",
+      "matched_field": "path",
+      "evidence": "/sync_"
+    },
+    {
+      "path": "tools/sync_app.py",
+      "symbol": "main",
+      "qualname": "main",
+      "language": "python",
+      "kind": "function",
+      "start": 449,
+      "end": 471,
+      "decorators": [],
+      "calls": [
+        "ArgumentParser",
+        "add_argument",
+        "add_argument",
+        "add_argument",
+        "add_argument",
+        "add_argument",
+        "add_argument",
+        "parse_args",
+        "error",
+        "app_of",
+        "strip",
+        "git",
+        "Tree",
+        "read_app",
+        "exit",
+        "print",
+        "write_sync",
+        "round_trip_report"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "Parse"
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "write",
+      "qualname": "write",
+      "language": "python",
+      "kind": "function",
+      "start": 13,
+      "end": 17,
+      "decorators": [],
+      "calls": [
+        "mkdir",
+        "join",
+        "join",
+        "write_text",
+        "header"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "setUp",
+      "qualname": "NewLocale.setUp",
+      "language": "python",
+      "kind": "method",
+      "start": 21,
+      "end": 30,
+      "decorators": [],
+      "calls": [
+        "TemporaryDirectory",
+        "addCleanup",
+        "Path",
+        "write",
+        "write",
+        "write"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "leaked-resource-or-use-after-close",
+      "failure_mode": "safe-degrade",
+      "rule": "resource-lifecycle",
+      "matched_field": "calls",
+      "evidence": "Cleanup"
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "read",
+      "qualname": "NewLocale.read",
+      "language": "python",
+      "kind": "method",
+      "start": 37,
+      "end": 38,
+      "decorators": [],
+      "calls": [
+        "read_text"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "test_starts_every_string_commented_out",
+      "qualname": "NewLocale.test_starts_every_string_commented_out",
+      "language": "python",
+      "kind": "method",
+      "start": 40,
+      "end": 56,
+      "decorators": [],
+      "calls": [
+        "run_tool",
+        "read",
+        "assertTrue",
+        "startswith",
+        "assertIn",
+        "assertIn",
+        "assertIn",
+        "assertIn",
+        "assertNotIn",
+        "read",
+        "assertTrue",
+        "startswith",
+        "assertIn",
+        "assertNotIn",
+        "assertIn",
+        "assertIn",
+        "parse",
+        "assertEqual"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "parse"
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "test_never_overwrites",
+      "qualname": "NewLocale.test_never_overwrites",
+      "language": "python",
+      "kind": "method",
+      "start": 58,
+      "end": 63,
+      "decorators": [],
+      "calls": [
+        "write",
+        "run_tool",
+        "assertIn",
+        "assertIn",
+        "read",
+        "assertIn",
+        "read"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_new_locale.py",
+      "symbol": "test_rejects_bad_input",
+      "qualname": "NewLocale.test_rejects_bad_input",
+      "language": "python",
+      "kind": "method",
+      "start": 65,
+      "end": 69,
+      "decorators": [],
+      "calls": [
+        "assertRaises",
+        "redirect_stderr",
+        "StringIO",
+        "run_tool",
+        "assertFalse",
+        "exists"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "reject"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "setUp",
+      "qualname": "Sync.setUp",
+      "language": "python",
+      "kind": "method",
+      "start": 24,
+      "end": 40,
+      "decorators": [],
+      "calls": [
+        "TemporaryDirectory",
+        "addCleanup",
+        "Path",
+        "Path",
+        "mkdir",
+        "git",
+        "git",
+        "git",
+        "locale",
+        "locale",
+        "write_app",
+        "tsv",
+        "tsv",
+        "commit"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "locale",
+      "qualname": "Sync.locale",
+      "language": "python",
+      "kind": "method",
+      "start": 46,
+      "end": 52,
+      "decorators": [],
+      "calls": [
+        "mkdir",
+        "write_text",
+        "header",
+        "tsv",
+        "write_text",
+        "header",
+        "tsv"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "write_app",
+      "qualname": "Sync.write_app",
+      "language": "python",
+      "kind": "method",
+      "start": 54,
+      "end": 61,
+      "decorators": [],
+      "calls": [
+        "mkdir",
+        "items",
+        "unlink",
+        "write_text"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "commit",
+      "qualname": "Sync.commit",
+      "language": "python",
+      "kind": "method",
+      "start": 63,
+      "end": 66,
+      "decorators": [],
+      "calls": [
+        "git",
+        "git",
+        "git"
+      ],
+      "signals": [
+        "guard-name"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "name",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "rows",
+      "qualname": "Sync.rows",
+      "language": "python",
+      "kind": "method",
+      "start": 79,
+      "end": 81,
+      "decorators": [],
+      "calls": [
+        "exists",
+        "parse",
+        "read_text"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "calls",
+      "evidence": "parse"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "snapshot",
+      "qualname": "Sync.snapshot",
+      "language": "python",
+      "kind": "method",
+      "start": 83,
+      "end": 84,
+      "decorators": [],
+      "calls": [
+        "read_bytes",
+        "sorted",
+        "rglob"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_new_and_corrected_app_strings_go_to_the_app_catalog",
+      "qualname": "Sync.test_new_and_corrected_app_strings_go_to_the_app_catalog",
+      "language": "python",
+      "kind": "method",
+      "start": 94,
+      "end": 100,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "assertEqual",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertEqual",
+        "run_sync"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_changed_shared_string_becomes_an_override_and_common_never_changes",
+      "qualname": "Sync.test_changed_shared_string_becomes_an_override_and_common_never_changes",
+      "language": "python",
+      "kind": "method",
+      "start": 102,
+      "end": 113,
+      "decorators": [],
+      "calls": [
+        "read_bytes",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertEqual",
+        "read_bytes",
+        "write_app",
+        "tsv",
+        "commit",
+        "assertEqual",
+        "run_sync",
+        "assertNotIn",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_deleted_rows_leave_the_app_catalog_and_an_unused_shared_row_is_reported",
+      "qualname": "Sync.test_deleted_rows_leave_the_app_catalog_and_an_unused_shared_row_is_reported",
+      "language": "python",
+      "kind": "method",
+      "start": 115,
+      "end": 134,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertNotIn",
+        "rows",
+        "assertIn",
+        "assertIn",
+        "locale",
+        "commit",
+        "write_app",
+        "tsv",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertIn",
+        "read_text"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_new_locale_is_lowercase_bcp47_with_its_language_name",
+      "qualname": "Sync.test_new_locale_is_lowercase_bcp47_with_its_language_name",
+      "language": "python",
+      "kind": "method",
+      "start": 136,
+      "end": 150,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "tsv",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertEqual",
+        "rows",
+        "assertEqual",
+        "rows",
+        "assertIn",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "read_text",
+        "assertTrue",
+        "startswith"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_regional_row_identical_to_its_base_language_is_not_written",
+      "qualname": "Sync.test_regional_row_identical_to_its_base_language_is_not_written",
+      "language": "python",
+      "kind": "method",
+      "start": 152,
+      "end": 158,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertEqual",
+        "run_sync"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_script_variant_does_not_fall_back_to_its_base_language",
+      "qualname": "Sync.test_script_variant_does_not_fall_back_to_its_base_language",
+      "language": "python",
+      "kind": "method",
+      "start": 160,
+      "end": 166,
+      "decorators": [],
+      "calls": [
+        "locale",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertEqual",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_region_of_a_script_variant_falls_back_to_the_script_variant",
+      "qualname": "Sync.test_region_of_a_script_variant_falls_back_to_the_script_variant",
+      "language": "python",
+      "kind": "method",
+      "start": 168,
+      "end": 175,
+      "decorators": [],
+      "calls": [
+        "locale",
+        "locale",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertEqual",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_msg_rows_never_reach_common",
+      "qualname": "Sync.test_msg_rows_never_reach_common",
+      "language": "python",
+      "kind": "method",
+      "start": 177,
+      "end": 182,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertIn",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_raw_escapes_survive_and_unknown_escapes_show_as_written",
+      "qualname": "Sync.test_raw_escapes_survive_and_unknown_escapes_show_as_written",
+      "language": "python",
+      "kind": "method",
+      "start": 184,
+      "end": 192,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "rows",
+        "assertEqual",
+        "assertEqual",
+        "assertEqual",
+        "run_sync"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "escape"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_plural_rows_get_the_locales_form_count",
+      "qualname": "Sync.test_plural_rows_get_the_locales_form_count",
+      "language": "python",
+      "kind": "method",
+      "start": 194,
+      "end": 201,
+      "decorators": [],
+      "calls": [
+        "open",
+        "write",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_invalid_app_rows_are_skipped_and_reported",
+      "qualname": "Sync.test_invalid_app_rows_are_skipped_and_reported",
+      "language": "python",
+      "kind": "method",
+      "start": 203,
+      "end": 210,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertNotIn",
+        "rows",
+        "assertIn"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_msg_templates_that_never_match_are_skipped",
+      "qualname": "Sync.test_msg_templates_that_never_match_are_skipped",
+      "language": "python",
+      "kind": "method",
+      "start": 212,
+      "end": 220,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertEqual",
+        "rows",
+        "assertIn"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_check_lists_mismatches",
+      "qualname": "Sync.test_check_lists_mismatches",
+      "language": "python",
+      "kind": "method",
+      "start": 222,
+      "end": 226,
+      "decorators": [],
+      "calls": [
+        "write_text",
+        "header",
+        "run_sync",
+        "assertEqual",
+        "assertIn"
+      ],
+      "signals": [
+        "guard-name",
+        "guard-call"
+      ],
+      "taxonomy_class": "security",
+      "failure_class": "invalid-or-injected-input",
+      "failure_mode": "deny",
+      "rule": "input-validation",
+      "matched_field": "name",
+      "evidence": "check"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_rerun_changes_nothing",
+      "qualname": "Sync.test_rerun_changes_nothing",
+      "language": "python",
+      "kind": "method",
+      "start": 228,
+      "end": 235,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "tsv",
+        "tsv",
+        "tsv",
+        "commit",
+        "run_sync",
+        "snapshot",
+        "run_sync",
+        "assertEqual",
+        "snapshot"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_rows_the_app_did_not_touch_keep_craft_i18n_wording",
+      "qualname": "Sync.test_rows_the_app_did_not_touch_keep_craft_i18n_wording",
+      "language": "python",
+      "kind": "method",
+      "start": 237,
+      "end": 247,
+      "decorators": [],
+      "calls": [
+        "write_text",
+        "header",
+        "tsv",
+        "write_app",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "assertIn",
+        "assertEqual",
+        "rows",
+        "assertEqual",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_app_keeps_english_where_a_shared_row_means_something_else",
+      "qualname": "Sync.test_app_keeps_english_where_a_shared_row_means_something_else",
+      "language": "python",
+      "kind": "method",
+      "start": 249,
+      "end": 259,
+      "decorators": [],
+      "calls": [
+        "locale",
+        "locale",
+        "locale",
+        "write_app",
+        "tsv",
+        "tsv",
+        "tsv",
+        "tsv",
+        "commit",
+        "run_sync",
+        "assertEqual",
+        "rows",
+        "assertNotIn",
+        "rows"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_refuses_a_ref_without_catalogs",
+      "qualname": "Sync.test_refuses_a_ref_without_catalogs",
+      "language": "python",
+      "kind": "method",
+      "start": 261,
+      "end": 266,
+      "decorators": [],
+      "calls": [
+        "write_app",
+        "commit",
+        "run_sync",
+        "assertNotEqual",
+        "assertIn"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": "correctness",
+      "failure_class": "check-then-act-or-partial-write",
+      "failure_mode": "rollback",
+      "rule": "transaction",
+      "matched_field": "calls",
+      "evidence": "commit"
+    },
+    {
+      "path": "tools/test_sync_app.py",
+      "symbol": "test_header_matches_the_catalog_format_doc",
+      "qualname": "Sync.test_header_matches_the_catalog_format_doc",
+      "language": "python",
+      "kind": "method",
+      "start": 268,
+      "end": 272,
+      "decorators": [],
+      "calls": [
+        "read_text",
+        "Path",
+        "split",
+        "split",
+        "assertEqual",
+        "format"
+      ],
+      "signals": [
+        "guard-call"
+      ],
+      "taxonomy_class": null,
+      "failure_class": null,
+      "failure_mode": null,
+      "rule": null,
+      "matched_field": null,
+      "evidence": null
+    }
+  ]
+}

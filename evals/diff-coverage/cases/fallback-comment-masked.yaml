@@ -1,0 +1,67 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'The declared symbol is a call, not a definition, so the token fallback is
+  used. A changed comment mentions the symbol; the fallback must read masked lines and
+  not count that mention, so DC2 stays clean. A raw-text fallback would report a false
+  positive.'
+base_files:
+  sql/schema.sql: |
+    CREATE FUNCTION apply() RETURNS void AS $$
+    BEGIN
+      -- check_access is called below
+      PERFORM check_access();
+    END;
+    $$ LANGUAGE plpgsql;
+head_files:
+  sql/schema.sql: |
+    CREATE FUNCTION apply() RETURNS void AS $$
+    BEGIN
+      -- check_access is still called below
+      PERFORM check_access();
+    END;
+    $$ LANGUAGE plpgsql;
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: Apply checks access before writing.
+    taxonomy_class: security
+    failure_class: broken-access-control
+    entry_points:
+    - api
+    failure_mode: deny
+    coverage_status: tested
+    enforced_at: sql/schema.sql:1 (check_access)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: Apply checks access before writing.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: sql/schema.sql
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.mapped: 1
+  changed.unmapped: 0
+expect:
+  DC1: none
+  DC2: none
+exit: 0
+name: fallback-comment-masked

@@ -68,40 +68,41 @@ entity.
 
 ## Extractor, and its boundaries
 
-Symbols are extracted by a line scanner, not an AST:
+Symbols are located through `tools/choke_points.py` (V2-22), not by a line
+scanner:
 
 | Extension | How the span is found |
 | --- | --- |
-| `.py` | `def` / `class` at any indentation; the span ends at the first non-blank, non-comment line indented at or below the definition |
-| `.rs` | `fn`; brace depth from the definition, with `//` comments and string literals stripped |
-| everything else (SQL, unknown) | no span; the symbol counts when its name appears on an added or removed line |
+| `.py` | standard-library `ast`; the span starts at the first decorator and ends at `end_lineno`; a `def` inside a docstring is not a definition |
+| `.rs` | a comment/string-aware lexer and brace matching; `//`, nested `/* */`, strings, raw/byte strings and char literals are blanked; preceding `#[...]` attributes join the span |
+| `.sql` | a comment/string/dollar-quote-aware lexer; the span is the whole `CREATE/DROP/ALTER ...;` statement, including a `$tag$ ... $tag$` body |
+| everything else | no span; the symbol counts when its name appears on an added or removed line |
+
+The Python path is a real parser; Rust and SQL are structural lexers, not full
+grammars.
 
 Consequences that are real and not hypothetical:
 
 - A Python body-only edit is caught even when the diff never repeats the
-  function name, because the changed line falls inside the indentation span.
-- A Rust body-only edit is caught the same way, unless a brace inside a block
-  comment or a character literal breaks the depth count. Those forms are not
-  stripped.
-- A SQL body-only edit is **not** caught: if the changed lines never mention the
-  function name, no span exists to place them in. Adding `CREATE OR REPLACE
-  FUNCTION` or an `ALTER` line catches it; changing one expression inside the
-  body does not. This is the gap V2-22 (an AST/parser extractor) is meant to
-  close.
-- A decorator or an attribute line above a Python definition is outside the
-  span; changing only the decorator does not count as changing the symbol. The
-  path still changes, so DC1 still sees the file.
+  function name, and so is an edit that only changes a decorator line.
+- A Rust body-only edit is caught, including when the function contains a `}`
+  in a block comment, a string or a char literal. Macros and generated code can
+  still defeat the span.
+- A SQL body-only edit **is** caught: the statement span covers the whole
+  dollar-quoted body, so changing one expression inside it is attributed to the
+  function even though no changed line names the function. This closes the gap
+  V2-07 recorded.
 - A symbol named in `enforced_at` is the first identifier after `FUNCTION `, or
   otherwise the first identifier inside `(`. A declaration written as
   `path:12 - the guard` has a path but no symbol; only the path is checked.
 - Renames are followed: the old side of a rename is treated as the declared
   path, so a choke point that moved is still located.
 
-The scanner errs toward false positives when it falls back to name matching: a
-symbol name that appears in a comment or an unrelated string on a changed line
-counts as changed. That direction is deliberate — the gate exists to force a
-mapping, and a false positive costs a claim link, while a false negative hides a
-changed choke point.
+The token fallback now runs only when the parser finds no definition of that
+name on that side of the diff. It reads the file's masked lines, so a name in a
+comment or a string literal cannot make a symbol look changed in Python, Rust or
+SQL. Unknown extensions keep the unmasked fallback, because there is no lexer to
+mask them; a comment mention there is still a false positive.
 
 ## Measured 2026-11-07
 
@@ -135,11 +136,15 @@ unrelated files, but it says nothing about the other 28 cells.
 
 ## Negative controls
 
-- `evals/diff-coverage/` — 14 cases: clean path and symbol, unmapped path,
+- `evals/diff-coverage/` — 19 cases: clean path and symbol, unmapped path,
   unmapped symbol, symbol mapped only by a test ID, untouched choke point (DC4),
   missing declaration path, prose declaration, open claim excluded, deleted
   file, added SQL symbol, no declarations (DC5), threshold that tolerates one
-  unmapped entity, renamed file, and a missing ref (exit 2). All pass.
+  unmapped entity, renamed file, a missing ref (exit 2), a SQL body-only edit, a
+  Rust block-comment brace, a Python decorator-only change, a comment-only
+  symbol mention that the masked fallback must ignore, and a head file whose
+  definitions shift down so head line numbers must not be applied to the base
+  blob. All pass.
 - The clean control asserts `share = 1.0` and both entities mapped, so a tool
   that always reports zero cannot pass the suite.
 - Removing `claim_ids` from CELL-001 in a copy of the `rbac_pg` registry under
@@ -173,10 +178,15 @@ coverage gate needs the PR base SHA. The template:
   claim.
 - Only cells with `enforced_at` participate. The gate cannot report that a cell
   omitted the declaration.
-- The extractor is a scanner. SQL body-only changes, decorators, macros and
-  generated code are invisible or only partially visible (V2-22).
+- The extractor is a structural lexer outside Python. Rust macros, generated
+  code and const-generic braces can confuse a span; SQL `BEGIN ATOMIC` bodies
+  with internal semicolons and quoted identifiers are outside the statement
+  patterns (V2-22). Python is parsed by `ast`.
 - The token fallback can mark a symbol changed because its name appeared in a
-  comment or a string; that is a false positive by design.
+  comment or a string only for unknown extensions, where no masking exists. In
+  Python, Rust and SQL the fallback reads masked lines and does not match a
+  comment or literal. If a Python file cannot be tokenized, that file's fallback
+  uses raw lines, so a comment mention there can still count.
 - The share counts entities, not the amount of changed code. One changed symbol
   and a thousand changed lines weigh the same.
 - The range is whatever the caller passes. `v1.3.1..HEAD` is a measurement

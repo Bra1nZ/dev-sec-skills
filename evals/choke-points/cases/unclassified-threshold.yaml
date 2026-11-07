@@ -1,0 +1,32 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A candidate that matches a signal but no class rule is reported as
+  unclassified, never forced into `other`, and CP1 fails at a zero threshold.'
+files:
+  src/x.py: |
+    def ordinary():
+        pass
+rules:
+  version: 1
+  signals:
+  - id: any-name
+    fields: [name]
+    pattern: '.*'
+  rules:
+  - id: only-login
+    taxonomy_class: security
+    failure_class: broken-authentication
+    failure_mode: deny
+    match:
+      name: '^login$'
+args: ['--max-unclassified', '0']
+json:
+  summary.candidates: 1
+  summary.classified: 0
+  summary.unclassified: 1
+  candidates.0.rule: null
+  candidates.0.taxonomy_class: null
+expect:
+  CP1: error
+  CP2: none
+exit: 1
+name: unclassified-threshold

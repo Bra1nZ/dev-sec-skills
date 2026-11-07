@@ -50,6 +50,9 @@ evals/
   diff-coverage/
     run_evals.py        # diff_coverage.py: DC1-DC5 fail closed on a git range
     cases/
+  choke-points/
+    run_evals.py        # choke_points.py: CP1-CP2, spans and classification
+    cases/
 ```
 
 ## Prompts
@@ -113,14 +116,24 @@ dangling negative test, a stale claim at info, above a threshold, and with no
 usable date, a missing fixture above a threshold, an exempted detector, a
 non-test detector that owes no fixture, open work excluded from both checks, a
 run without `--suite-glob`, and a missing root returning a usage error.
-`evals/diff-coverage/` runs 14 cases for `tools/diff_coverage.py`, each built
+`evals/diff-coverage/` runs 19 cases for `tools/diff_coverage.py`, each built
 from a synthetic git repository: a clean path and symbol, an unmapped path, an
 unmapped symbol, a symbol mapped only by a test ID, an untouched choke point
 (DC4), a missing declaration path, a prose declaration, an open claim that does
 not count, a deleted file, an added SQL symbol, a registry with no declarations
-(DC5), a threshold that tolerates one unmapped entity, a renamed file, and a
-missing ref returning 2.
-Reproduce all seven:
+(DC5), a threshold that tolerates one unmapped entity, a renamed file, a
+missing ref returning 2, a SQL body-only edit, a Rust block-comment brace, a
+Python decorator-only change, a comment-only symbol mention that the masked
+fallback must ignore, and a head file whose definitions shift down so the base
+blob is not read with head line numbers. `evals/choke-points/` runs 14 cases for
+`tools/choke_points.py`: Python decorator spans and a docstring `def`, a syntax
+error counted with CP2 red, Rust comments/raw strings/char literals, SQL
+dollar-quoted bodies with internal semicolons, SQL definitions inside comments,
+rule precedence, unclassified reported with CP1 red at zero, the same candidate
+green at a threshold of one, `taxonomy_class: other` rejected, unknown taxonomy
+and failure-mode enums rejected, unknown extensions skipped, and a missing root
+or rules file returning 2.
+Reproduce all eight:
 
 ```bash
 python3 evals/linter/run_evals.py
@@ -130,6 +143,7 @@ python3 evals/fuzz/run_evals.py
 python3 evals/fuzz-triage/run_evals.py
 python3 evals/coverage/run_evals.py
 python3 evals/diff-coverage/run_evals.py
+python3 evals/choke-points/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -155,7 +169,10 @@ the clean control passes every threshold at zero, so an always-red report
 cannot pass the suite, but a green case says nothing about a real target's
 coverage. The diff-coverage cases exercise the gate on synthetic git
 repositories; they show that DC1–DC5 fail closed on the named defects, not that
-a real PR range maps every changed choke point.
+a real PR range maps every changed choke point. The choke-point cases exercise
+the extractor and the rule gate on synthetic trees; they show spans and
+classification fail closed on the named forms, not that a real codebase has a
+particular unclassified share.
 
 ## Reproduce
 

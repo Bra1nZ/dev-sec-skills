@@ -48,6 +48,11 @@ spec/
     README.md                     # DC1-DC5: declarations, extractor, measured numbers, limits
     2026-11-07-rbac-pg.json       # recorded diff-coverage snapshot
     2026-11-07-craft-i18n.json    # recorded diff-coverage snapshot
+  choke-points/
+    README.md                     # CP1-CP2: signals, rules, extractor, measured numbers, limits
+    rules.yaml                    # signals and ordered class-mapping rules
+    2026-11-07-rbac-pg.json       # recorded choke-point scan snapshot
+    2026-11-07-craft-i18n.json    # recorded choke-point scan snapshot
 ```
 
 ## Status
@@ -137,14 +142,32 @@ changed in a git range maps to a non-open claim (DC1 path, DC2 symbol). An
 an untouched range (DC4) or a registry with no declarations (DC5) is an explicit
 info, not a silent pass. Mapping is by cell `claim_ids`, claim evidence
 `artifact`, or a claim/negative-test symbol; an `open` claim never counts.
-Symbols come from a line scanner — Python indentation, Rust brace depth, SQL by
-name on a changed line — so a SQL body-only edit is invisible (V2-22). The
-recorded 2026-11-07 measurement: `rbac_pg` `v1.3.1..HEAD`, 110 changed files,
-1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n` `f0dd77b^..f0dd77b`,
-3 files, 2 of 2 mapped. Only CELL-001 and CELL-003 declare `enforced_at` at all,
-so 100 % is two declarations, not the 43 cells. The gate is not in `make verify`
-— a PR gate needs a base SHA — and `ci/diff-coverage.yml` is the untested
-template for one.
+Symbols now come from `tools/choke_points.py`: Python `ast`, comment/string-aware
+Rust and SQL structural lexers, and an SQL statement span that covers a
+dollar-quoted body. A SQL body-only edit, a Rust block-comment brace and a
+Python decorator-only change are all attributed to the symbol; the token
+fallback runs only when no definition is found and reads masked lines (V2-22).
+The recorded 2026-11-07 measurement: `rbac_pg` `v1.3.1..HEAD`, 110 changed
+files, 1 declared path and 1 symbol, 2 of 2 mapped; `craft-i18n`
+`f0dd77b^..f0dd77b`, 3 files, 2 of 2 mapped. Only CELL-001 and CELL-003 declare
+`enforced_at` at all, so 100 % is two declarations, not the 43 cells. The gate is
+not in `make verify` — a PR gate needs a base SHA — and `ci/diff-coverage.yml`
+is the untested template for one.
+
+Choke-point extraction is a review queue, not a gate (V2-22):
+`tools/choke_points.py` scans ordinary code, uses `spec/choke-points/rules.yaml`
+to decide which definitions are candidates and which cell class each one would
+belong to, and validates the rules against the registry schema enums. Rules are
+ordered, first match wins, and a candidate that matches no rule is reported as
+`unclassified` rather than forced into `other`. Python is parsed with `ast`;
+Rust and SQL use comment/string-aware structural lexers, not full parsers.
+Measured 2026-11-07: `rbac_pg` 75 files, 1585 definitions, 1413 candidates,
+867 classified and 546 unclassified (38.6 %); `craft-i18n` 9 files, 128
+definitions, 64 candidates, 47 classified and 17 unclassified (26.6 %); both
+914/1477 = 61.9 % classified. The unclassified share is a measured gap in the
+signal/rule file, not a taxonomy class, and no CP1 threshold is gated until the
+noise is reduced. A class match is a hypothesis, not evidence that the site
+enforces an invariant.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

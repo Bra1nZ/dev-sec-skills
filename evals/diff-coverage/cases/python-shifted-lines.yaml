@@ -1,0 +1,67 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'The head file shifts every definition down by two comment lines. The
+  changed body line must be located in the head span, not by applying head line numbers
+  to the base text. A mixed-up side reads the base blob and misses the edit.'
+base_files:
+  src/guard.py: |
+    def helper():
+        pass
+
+    def check(x):
+        return x > 0
+head_files:
+  src/guard.py: |
+    # a comment added at the top
+    # and a second one
+    def helper():
+        pass
+
+    def check(x):
+        return x >= 0
+cells:
+  project: synthetic/diff
+  generated: '2026-11-07'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - correctness
+  cells:
+  - id: CELL-001
+    title: The guard rejects a non-positive value.
+    taxonomy_class: correctness
+    failure_class: boundary
+    entry_points:
+    - api
+    failure_mode: detect
+    coverage_status: tested
+    enforced_at: src/guard.py:4 (check)
+    detectors:
+    - id: D-GUARD
+      kind: test
+      artifact: tests/test_guard.py
+      status: tested
+    claim_ids: []
+    owner: synthetic maintainer
+    last_seen: '2026-11-07'
+ledger:
+  claims:
+  - id: C-01
+    claim: The guard rejects a non-positive value.
+    status: tested
+    evidence:
+    - kind: test
+      tests:
+      - F1
+      artifact: src/guard.py
+      date: '2026-11-07'
+    last_verified: '2026-11-07'
+json:
+  changed.symbols.0.symbol: check
+  changed.mapped: 1
+  changed.unmapped: 1
+expect:
+  DC1: none
+  DC2: error
+exit: 1
+name: python-shifted-lines

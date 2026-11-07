@@ -1,0 +1,22 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'A failure mode that is absent from the registry schema is rejected.'
+files:
+  src/x.py: |
+    def check():
+        pass
+rules:
+  version: 1
+  signals:
+  - id: any-name
+    fields: [name]
+    pattern: '.*'
+  rules:
+  - id: invented
+    taxonomy_class: security
+    failure_class: unspecified
+    failure_mode: explode
+    match:
+      name: '.'
+stderr: [unknown failure_mode]
+exit: 2
+name: rules-unknown-failure-mode

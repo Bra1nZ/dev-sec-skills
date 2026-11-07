@@ -1,0 +1,31 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'Rust lexer: `fn` in line and block comments, in a raw string, and a `}`
+  char literal or comment brace must not truncate the real function span.'
+files:
+  src/lib.rs: |
+    // fn fake_line() {}
+    /* fn fake_block() { } */
+    const S: &str = r#"{"fn": "fake_raw"}"#;
+    fn parse_row(text: &str) -> bool {
+        let close = '}';
+        // } not the end
+        let life: &'static str = "x";
+        text.len() > 0
+    }
+json:
+  summary.definitions: 1
+  summary.candidates: 1
+  summary.unclassified: 0
+candidates:
+- symbol: parse_row
+  path: src/lib.rs
+  start: 4
+  end: 9
+  rule: input-validation
+  taxonomy_class: security
+absent: [fake_line, fake_block, fake_raw]
+expect:
+  CP1: none
+  CP2: none
+exit: 0
+name: rust-lexer-mask

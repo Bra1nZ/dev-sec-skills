@@ -1,0 +1,40 @@
+# Synthetic fixture — not evidence about any real repository.
+description: 'SQL statement span covers a tagged dollar-quoted body, including internal
+  semicolons, and a policy statement classifies as RLS by kind alone.'
+files:
+  schema.sql: |
+    -- CREATE FUNCTION fake() RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql;
+    CREATE OR REPLACE FUNCTION rbac.apply_policy_document(p JSONB)
+    RETURNS VOID AS $body$
+    BEGIN
+      PERFORM rbac.check_access(p);
+      IF p IS NULL THEN
+        RAISE EXCEPTION E'null\'s; still inside the string';
+      END IF;
+    END;
+    $body$ LANGUAGE plpgsql;
+
+    CREATE POLICY tenant_isolation ON invoices USING (tenant_id = current_tenant());
+json:
+  summary.definitions: 2
+  summary.candidates: 2
+  summary.unclassified: 0
+candidates:
+- symbol: rbac.apply_policy_document
+  path: schema.sql
+  start: 2
+  end: 10
+  rule: authorization
+  taxonomy_class: security
+- symbol: tenant_isolation
+  path: schema.sql
+  start: 12
+  end: 12
+  rule: sql-rls
+  taxonomy_class: security
+absent: [fake]
+expect:
+  CP1: none
+  CP2: none
+exit: 0
+name: sql-dollar-body
