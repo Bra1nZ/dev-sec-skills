@@ -1,6 +1,6 @@
 {
   "format": "dev-sec-skills/sarif-evidence/v1",
-  "generated": "2026-11-07",
+  "generated": "2026-11-08",
   "inputs": [
     {
       "path": "spec/sarif/fixtures/bandit.sarif",
@@ -40,7 +40,7 @@
       "runs": 1,
       "findings": 2,
       "unmapped": 0,
-      "cell_mapped": 2
+      "cell_mapped": 0
     },
     {
       "id": "codeql",
@@ -48,7 +48,7 @@
       "runs": 1,
       "findings": 2,
       "unmapped": 0,
-      "cell_mapped": 1
+      "cell_mapped": 0
     },
     {
       "id": "bandit",
@@ -56,7 +56,7 @@
       "runs": 1,
       "findings": 3,
       "unmapped": 0,
-      "cell_mapped": 2
+      "cell_mapped": 0
     }
   ],
   "present_engines": [
@@ -78,7 +78,7 @@
       "taxonomy_class": "security",
       "failure_class": "invalid-or-injected-input",
       "failure_mode": "deny",
-      "cell": "rbac_pg/CELL-010",
+      "cell": null,
       "mapped": true,
       "id": "F-001"
     },
@@ -112,7 +112,7 @@
       "taxonomy_class": "security",
       "failure_class": "invalid-or-injected-input",
       "failure_mode": "deny",
-      "cell": "rbac_pg/CELL-008",
+      "cell": null,
       "mapped": true,
       "id": "F-003"
     },
@@ -146,7 +146,7 @@
       "taxonomy_class": "security",
       "failure_class": "invalid-or-injected-input",
       "failure_mode": "deny",
-      "cell": "rbac_pg/CELL-010",
+      "cell": null,
       "mapped": true,
       "id": "F-005"
     },
@@ -163,7 +163,7 @@
       "taxonomy_class": "security",
       "failure_class": "invalid-or-injected-input",
       "failure_mode": "deny",
-      "cell": "rbac_pg/CELL-010",
+      "cell": null,
       "mapped": true,
       "id": "F-006"
     },
@@ -180,7 +180,7 @@
       "taxonomy_class": "security",
       "failure_class": "invalid-or-injected-input",
       "failure_mode": "deny",
-      "cell": "rbac_pg/CELL-008",
+      "cell": null,
       "mapped": true,
       "id": "F-007"
     }
@@ -193,9 +193,9 @@
     "mapped": 7,
     "unmapped": 0,
     "duplicates": 1,
-    "cell_mapped": 5,
+    "cell_mapped": 0,
     "engines_present": 3,
-    "digest": "a46e207e87225a46493ef6f4773db7714ee6246989b5097e6439c48d995e1254"
+    "digest": "caf2a4f9fe24ba42d25b679421153e84491a82425771372c89ee4b1301db4e4e"
   },
   "errors": []
 }

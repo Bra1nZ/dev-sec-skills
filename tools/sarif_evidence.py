@@ -157,12 +157,22 @@ def load_config(config_path, root, schema):
         if not os.path.exists(path):
             raise ValueError("registry %r not found: %s" % (alias, path))
         doc = read_yaml(path)
-        registries[alias] = {c.get("id") for c in doc.get("cells") or []
+        registries[alias] = {c.get("id"): c.get("failure_class")
+                             for c in doc.get("cells") or []
                              if c.get("id")}
     return config, engines, registries
 
 
 def validate_cell(rule, registries):
+    """A cell mapping is only as good as the failure class it claims.
+
+    Naming a cell asserts that the adapter's `failure_class` is the cell's
+    `failure_class`. If they differ, the rule does not resolve to that cell:
+    the finding would land in a review queue labelled with a defect class the
+    cell does not own. The check is fail-closed in both directions -- a cell
+    that declares no `failure_class` cannot be named either, because then the
+    assertion cannot be checked at all.
+    """
     cell = rule.get("cell")
     if not cell:
         return None
@@ -176,6 +186,14 @@ def validate_cell(rule, registries):
     if not CELL_RE.match(cid) or cid not in registries[alias]:
         raise ValueError("rule %r: cell %r does not exist in %r"
                          % (rule.get("id"), cid, alias))
+    declared = registries[alias][cid]
+    if not declared:
+        raise ValueError("rule %r: cell %r declares no failure_class, so the "
+                         "mapping cannot be checked" % (rule.get("id"), cell))
+    if declared != rule.get("failure_class"):
+        raise ValueError(
+            "rule %r: failure_class %r does not match cell %r (%r)"
+            % (rule.get("id"), rule.get("failure_class"), cell, declared))
     return cell
 
 

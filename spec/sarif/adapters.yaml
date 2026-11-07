@@ -6,8 +6,15 @@
 # this file is `unmapped`, not silently classified.
 #
 # `cell` is optional. A rule can map to a class without naming a cell; the
-# report then says `cell: null`, which is honest, while a rule that names a
-# cell must resolve through `registries`. `cell` syntax: <registry>/<CELL-ID>.
+# report then says `cell: null`, which is honest. Naming a cell is an assertion
+# that the rule's `failure_class` equals the cell's `failure_class`: the loader
+# fails with exit 2 when they differ, and a cell that declares no
+# `failure_class` cannot be named at all. `cell` syntax: <registry>/<CELL-ID>.
+#
+# No rule here names a cell. The engines' classes (invalid-or-injected-input,
+# supply-chain-integrity) are not the invariant cells' classes (code-injection,
+# input-validation, mutable-ci-action-ref), so a cell mapping would mislabel
+# the finding. The adapter reports the class and leaves `cell: null`.
 #
 # The fixtures under fixtures/ are AUTHORED SARIF documents that follow the
 # engines' documented shape. They are not captured engine runs; the report
@@ -30,19 +37,16 @@ engines:
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-008
       - id: semgrep-formatted-sql
         match: '^python\.lang\.security\.audit\.formatted-sql-query'
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-010
       - id: semgrep-dangerous-subprocess
         match: '^python\.lang\.security\.audit\.dangerous-subprocess-use'
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-008
       - id: semgrep-hardcoded-secret
         match: '^python\.lang\.security\.secrets\.hardcoded'
         taxonomy_class: security
@@ -68,14 +72,13 @@ engines:
         failure_class: supply-chain-integrity
         failure_mode: detect
       # Python rule authored for the two-engine run (C-08). Bandit B608 and
-      # this rule name the same failure class and resolve to the same cell, so
-      # the report shows two engines contributing to one cell.
+      # this rule name the same failure class, so both land in the same class
+      # bucket; neither names a cell.
       - id: semgrep-authored-formatted-sql
         match: '^dev-sec-skills\.py\.formatted-sql$'
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-010
 
   - id: codeql
     name: CodeQL
@@ -85,13 +88,11 @@ engines:
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-010
       - id: codeql-command-injection
         match: '^py/command-line-injection$'
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-008
       - id: codeql-cleartext-logging
         match: '^py/clear-text-logging-sensitive-data$'
         taxonomy_class: security
@@ -106,7 +107,6 @@ engines:
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-010
       - id: bandit-hardcoded-password
         match: '^B105$'
         taxonomy_class: security
@@ -117,4 +117,3 @@ engines:
         taxonomy_class: security
         failure_class: invalid-or-injected-input
         failure_mode: deny
-        cell: rbac_pg/CELL-008

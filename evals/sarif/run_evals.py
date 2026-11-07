@@ -66,7 +66,8 @@ def _config(rules=None, registries=None, engines=None):
 
 def _cells():
     return {"cells": [
-        {"id": "CELL-001"}, {"id": "CELL-002"}]}
+        {"id": "CELL-001", "failure_class": "invalid-or-injected-input"},
+        {"id": "CELL-002", "failure_class": "check-then-act"}]}
 
 
 def _result(rule, path="src/app.py", start=10, end=None, fingerprint="fp-1",
@@ -219,6 +220,30 @@ SCENARIOS = [
         "json": {"fixture_inputs": 1},
     }, args=["--max-unmapped", "0", "--reject-fixtures"]),
 
+    _scenario("cell-failure-class-matches", {
+        "semgrep.sarif": _sarif("Semgrep", [
+            _result("py/sql-injection", fingerprint="s-1")]),
+    }, {
+        "exit": 0, "errors": [],
+        "json": {"findings": 1, "unmapped": 0, "cell_mapped": 1},
+    }, args=["--max-unmapped", "0"]),
+
+    _scenario("cell-failure-class-mismatch-is-config-error", {
+        "semgrep.sarif": _sarif("Semgrep", [
+            _result("py/sql-injection", fingerprint="s-1")]),
+    }, {
+        "exit": 2, "errors": ["SARIF3"],
+    }, config=_config(rules=[
+        # CELL-002 is check-then-act; the rule claims security.
+        _rule("semgrep", "^py/sql-injection$", cell="demo/CELL-002")])),
+
+    _scenario("cell-without-failure-class-is-config-error", {
+        "semgrep.sarif": _sarif("Semgrep", [
+            _result("py/sql-injection", fingerprint="s-1")]),
+    }, {
+        "exit": 2, "errors": ["SARIF3"],
+    }, cells={"cells": [{"id": "CELL-001"}]}),
+
     _scenario("unknown-cell-is-config-error", {
         "semgrep.sarif": _sarif("Semgrep", [
             _result("py/sql-injection", fingerprint="s-1")]),
@@ -323,7 +348,7 @@ def run(scenario, tool):
     problems = []
     td = tempfile.mkdtemp(prefix="sarif-eval-")
     try:
-        _write(td, "cells.yaml", _cells())
+        _write(td, "cells.yaml", scenario.get("cells") or _cells())
         config = copy.deepcopy(scenario["config"] or _config())
         with open(os.path.join(td, "config.yaml"), "w", encoding="utf-8") as f:
             yaml.safe_dump(config, f, sort_keys=False)

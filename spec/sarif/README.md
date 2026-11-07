@@ -22,7 +22,7 @@ with a reason — `unknown-engine`, `unmapped-rule`, `missing-rule-id` or
 - `2026-11-07-report.json` — normalized report from `make sarif-record`.
 - `schemas/sarif-evidence.schema.json` — output contract.
 - `tools/sarif_evidence.py` — the normalizer.
-- `evals/sarif/` — 17 synthetic adversarial cases.
+- `evals/sarif/` — 20 synthetic adversarial cases.
 
 ## Mapping: class first, cell optionally
 
@@ -36,8 +36,17 @@ taxonomy does not have.
 declared in the same file. A rule may map to a class without an exact cell; the
 finding then carries `cell: null`. That is deliberate. A class says "this
 finding belongs to this failure family"; it does not say the rule exercises a
-specific invariant, so inventing a cell would overstate the link. A rule that
-does name a cell must resolve, or the run exits 2 before reading a log.
+specific invariant, so inventing a cell would overstate the link.
+
+Naming a cell is an assertion, and the loader checks it: the rule's
+`failure_class` must equal the cell's `failure_class`, and a cell that declares
+no `failure_class` cannot be named at all. A mismatch is a config error (exit 2)
+before any SARIF is read, because otherwise the finding would be queued under a
+defect class the cell does not own. No rule in `adapters.yaml` names a cell
+today: the engines speak in classes (`invalid-or-injected-input`,
+`supply-chain-integrity`) and the invariant cells speak in narrower ones
+(`code-injection`, `input-validation`, `mutable-ci-action-ref`), so every
+finding is class-mapped and `cell` stays null.
 
 ## What is proven, and what is not
 
@@ -45,19 +54,23 @@ The 2026-11-07 measurement over the three authored fixtures:
 
 | Engine | Findings | Unmapped | Mapped to a cell |
 | --- | --- | --- | --- |
-| Semgrep | 2 | 0 | 2 |
-| CodeQL | 2 | 0 | 1 |
-| Bandit | 3 | 0 | 2 |
+| Semgrep | 2 | 0 | 0 |
+| CodeQL | 2 | 0 | 0 |
+| Bandit | 3 | 0 | 0 |
 
 Inputs: 3, findings: 7, unmapped: 0, duplicates: 1, fixture inputs: 3,
-digest `a46e207e87225a46`. The duplicate is the same Semgrep fingerprint
-repeated in one log; the normalizer counts it and keeps one finding.
+cell_mapped: 0, digest `caf2a4f9fe24ba42`. The duplicate is the same Semgrep
+fingerprint repeated in one log; the normalizer counts it and keeps one
+finding. The earlier revision of this report mapped 5 findings to cells; those
+mappings asserted a cell `failure_class` that the adapter rule did not have,
+and were removed rather than relabelled.
 
 What this proves: the three adapters resolve engine names and rule IDs, produce
 a deterministic finding per unique result, drop exact duplicates, and fail
 closed on an unknown engine, an unmapped rule, a missing rule ID, a missing
-location, a bad SARIF version, invalid JSON and an unknown cell. The report
-digest is stable when the input order changes.
+location, a bad SARIF version, invalid JSON, an unknown cell and a cell whose
+`failure_class` differs from the rule's. The report digest is stable when the
+input order changes.
 
 What it does not prove: that any engine produced these findings. The fixtures
 are authored documents, not captured runs; every input is marked

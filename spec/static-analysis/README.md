@@ -24,8 +24,10 @@ disposition.
   repository, not copied from a registry.
 - `rules/python-audit-2026-11-07.yml` — one authored Python rule
   (`execute(f"...")` / `%`-formatted SQL) used by the two-engine measurement.
-  It shares `rbac_pg/CELL-010` with Bandit B608, so the normalized report shows
-  two engines contributing to one cell.
+  It carries the same `failure_class` as Bandit B608, but neither maps to a
+  cell: `rbac_pg/CELL-010` is `input-validation`, the engines' class is
+  `invalid-or-injected-input`. Both findings keep `cell: null`; the two-engine
+  report records `cell_mapped: 0`.
 - `runs/ci-craft-i18n-2026-11-07.sarif` — raw Semgrep SARIF at
   `tool.driver.name = "Semgrep OSS"`.
 - `runs/ci-craft-i18n-2026-11-07.report.json` — normalized report from

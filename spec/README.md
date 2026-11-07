@@ -277,8 +277,9 @@ as `unmapped` with a reason; nothing falls into `other`. `--max-unmapped 0` and
 `spec/sarif/fixtures/` are **authored** documents, not captured engine runs:
 each is marked `properties.dev-sec-skills/fixture = true`, the report records
 `fixture_inputs: 3`, and `--reject-fixtures` refuses them in a production job.
-Measured 2026-11-07 on the fixtures: 3 engines, 7 findings, 0 unmapped, 1
-duplicate, 5 findings mapped to a cell and 2 to a class only. `make sarif`
+Measured 2026-11-07 on the fixtures (regenerated 2026-11-08): 3 engines, 7
+findings, 0 unmapped, 1 duplicate, all 7 mapped to a class and none to a cell.
+`make sarif`
 exercises the fixtures and `make sarif-record` writes
 `spec/sarif/2026-11-07-report.json`; neither is in `make verify`, because a
 green fixture run is not evidence about a repository. The adapter proves

@@ -57,14 +57,23 @@ mapping.
 | Unmapped | 0 |
 | Duplicates | 0 |
 | Fixture inputs | 0 |
-| Findings with a cell | 235 |
-| Report digest | `8201d73fb0e3f4de79317fd0865285d4e02f29e28828b4623b030514c2001bf0` |
+| Findings with a cell | 0 |
+| Report digest | `6ebf84561298157750adab39b3c41e9d18c5b16d24bdaf51bdd75af3e10352f8` |
 
 Bandit's B608 (49) and the authored Semgrep rule (186) name the same failure
-class and resolve to `rbac_pg/CELL-010`; 38 source lines are reported by both
-engines. B105 (14) maps to `exposed-secret-or-weak-crypto` but no cell, so the
-adapter leaves `cell` empty rather than inventing one. B602 produced no
-findings on this target.
+class, `invalid-or-injected-input`; 38 source lines are reported by both
+engines. Neither resolves to a cell. An earlier revision of the adapter mapped
+both to `rbac_pg/CELL-010`, but that cell's `failure_class` is
+`input-validation`, so the mapping claimed a class the cell does not own. The
+mapping was removed and the loader now rejects such a mismatch (exit 2); every
+finding in this report keeps `cell: null`. B105 (14) maps to
+`exposed-secret-or-weak-crypto` with no cell. B602 produced no findings on this
+target. The digest changed with the adapter revision: the normalized finding
+carries the `cell` field.
+
+Revision note (2026-11-08): the adapter's cell mappings were class-only before
+this report was regenerated; the two SARIF inputs and the engines' output are
+unchanged.
 
 ## What it proves and what it does not
 
