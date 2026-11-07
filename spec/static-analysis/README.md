@@ -8,8 +8,12 @@ is `schemas/static-analysis-run.schema.json`; the checks are L1/L2/L4 in
 `tools/claim_lint.py`.
 
 The first recorded run is `ci-craft-i18n-2026-11-07`: Semgrep over the second
-pilot's GitHub configuration, five findings, every one triaged `out-of-scope`
-because the pilot's translation-row taxonomy owns no supply-chain cell.
+pilot's GitHub configuration, five findings. The translation-row taxonomy owns
+no supply-chain cell, so F-003 and F-004 (mutable action refs) are routed
+across pilots to CELL-001 in `spec/pilots/dev-sec-skills/cells.yaml`, and
+F-001, F-002 and F-005 stay `out-of-scope`. The `covered` route was re-checked
+on 2026-11-08 by running D-PINNED-ACTIONS read-only over the craft-i18n
+workflow directory: it exits 1 and names `ci.yml:17` and `sonarcloud.yml:20`.
 
 The second recorded run is the self-pilot: the same rules over this
 repository's own `.github/`. Three findings at the pre-fix commit are triaged
@@ -212,7 +216,8 @@ rewrite, but it does not remove the key-holder and `allowed_signers` gaps.
 Every static-analysis run carries an `anchor`: an ed25519 SSH signature over
 the canonical bytes of the record. `tools/anchor_subject.py` defines those
 bytes (engine and version, command, rule hashes, target commit, both output
-hashes, exit code, timestamps, status and the whole triage list);
+hashes, exit code, timestamps, status, the `cells` registry and the whole
+triage list);
 `tools/anchor_run.py` signs and verifies; L2 recomputes the bytes and calls
 `ssh-keygen -Y verify` against `spec/static-analysis/anchor/allowed_signers`.
 The anchor is checked before the output paths, so a URL output cannot bypass

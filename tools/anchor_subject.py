@@ -9,9 +9,10 @@ record, which is the failure the anchor exists to prevent.
 The subject is canonical JSON: sorted keys, no insignificant whitespace, one
 trailing newline. It covers the fields a forger would change to move a finding
 or its decision: engine and command, the rule set hash, target commit, both
-output hashes, exit code, timestamps, status, and the full triage list. It
-deliberately excludes the anchor block itself, so adding or replacing an
-anchor cannot change what was signed.
+output hashes, exit code, timestamps, status, the cells registry a `covered`
+entry resolves against, and the full triage list. It deliberately excludes the
+anchor block itself, so adding or replacing an anchor cannot change what was
+signed.
 """
 
 import hashlib
@@ -20,7 +21,7 @@ import json
 ANCHOR_FIELDS = (
     "tool", "version", "command", "rules", "target_commit",
     "output_sha256", "report_sha256", "exit_code",
-    "started_at", "finished_at", "status", "triage",
+    "started_at", "finished_at", "status", "cells", "triage",
 )
 RULE_FIELDS = ("name", "source", "sha256")
 TRIAGE_FIELDS = ("finding", "disposition", "cell", "detector", "fixture",

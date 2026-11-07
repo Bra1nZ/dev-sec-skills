@@ -93,13 +93,17 @@ two Dependabot update blocks without a `cooldown`, two mutable `uses:` refs
 (`actions/checkout@v7`, a reusable workflow at `@main`) and one
 `secrets: inherit`.
 
-Every finding is triaged `out-of-scope` with a reason. They are real
-supply-chain hygiene gaps, but this pilot's taxonomy is the translation-row
-grammar of `docs/catalog-format.md`; no cell owns that failure class. The
-alternative was to drop them or call them false positives, and both would make
-the record dishonest. `out-of-scope` records the boundary instead. The target
-is read-only here, so no detector or mutation fixture was added and `new` was
-not available.
+F-003 and F-004 are triaged `covered`; F-001, F-002 and F-005 are
+`out-of-scope` with a reason. All five are real supply-chain hygiene gaps, and
+this pilot's taxonomy is the translation-row grammar of
+`docs/catalog-format.md`; no cell here owns that failure class. The two
+mutable refs are instead routed across pilots to CELL-001,
+D-PINNED-ACTIONS and MUT-001 in
+[`spec/pilots/dev-sec-skills/`](../dev-sec-skills/cells.yaml), the self-pilot
+registry. On 2026-11-08 the route was re-checked by running that detector
+read-only over the craft-i18n workflow directory: it exits 1 and names
+`ci.yml:17` and `sonarcloud.yml:20`. The target stays read-only, the detector
+is not wired into its CI, and `new` was not available here.
 
 The record is [`spec/static-analysis/`](../../static-analysis/README.md); the
 claim is C-09. The rule set and both outputs are hashed, the report hashes the
@@ -322,10 +326,12 @@ check would have reported a false pass.
   (cargo 1.99.1). No flakiness study was done.
 - The CELL-013 exemption is an argument, not a measurement: the cell is not
   mutation-verified on its own.
-- C-09 measures the target's CI configuration, not its translation rows. All
-  five findings are `out-of-scope`, so the pilot's taxonomy gained no
-  supply-chain cell and no detector; the rule set is authored here and is not
-  the Semgrep `p/ci` benchmark.
+- C-09 measures the target's CI configuration, not its translation rows. Two
+  findings are `covered` by the self-pilot's detector through a cross-pilot
+  route, and three are `out-of-scope`; this pilot's taxonomy gained no
+  supply-chain cell and no detector, and the detector is not wired into the
+  target's CI. The rule set is authored here and is not the Semgrep `p/ci`
+  benchmark.
 
 ## Reproduction
 

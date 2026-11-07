@@ -51,11 +51,11 @@ claims:
               signer: dev-sec-skills-anchor-2026-11-07
               namespace: dev-sec-skills-static-analysis
               subject: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json
-              subject_sha256: a4dd8a531c36f9ff8aa8f43d27fe8d664f9f0bc3debe8e9d9c21e5d3c85a1a75
+              subject_sha256: fabf31421f905c7e70dd5eea1171adff1494a5ff237c37417a6fa87e8f3f9633
               signature: spec/static-analysis/anchor/ci-dev-sec-skills-prefix-2026-11-07.json.sig
-              signature_sha256: 6e0072d445f8f118f2e72994379cf34a7f6c88177a6cf1e6cb9d3a154ac958cf
+              signature_sha256: cee7d7b922f5d0abcc8efb09077eadb9f274ed4b0737e4b7c55097db3eb6a2ac
               allowed_signers: spec/static-analysis/anchor/allowed_signers
-              date: "2026-11-07"
+              date: "2026-11-08"
             cells: "spec/pilots/dev-sec-skills/cells.yaml"
             triage:
               - finding: F-001

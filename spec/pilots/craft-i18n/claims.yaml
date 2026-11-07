@@ -300,8 +300,8 @@ claims:
   # repository. Every finding is out of the pilot's translation-row taxonomy;
   # the record says so instead of dropping them.
   - id: C-09
-    claim: "The pilot's CI supply chain is measured by a static-analysis run, and every finding it raises is either routed to a pilot cell or recorded as an explicit out-of-scope gap with a reason"
-    mechanism: "semgrep 1.184.0 with spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml over .github/ at 5c5c554; the SARIF is normalized by tools/sarif_evidence.py; every finding gets one triage entry, and an out-of-scope entry carries the boundary reason"
+    claim: "The pilot's CI supply chain is measured by a static-analysis run, and every finding it raises is either routed to a cell in a named registry or recorded as an explicit out-of-scope gap with a reason"
+    mechanism: "semgrep 1.184.0 with spec/static-analysis/rules/ci-supply-chain-2026-11-07.yml over .github/ at 5c5c554; the SARIF is normalized by tools/sarif_evidence.py; every finding gets one triage entry, a covered entry resolves cell, detector and fixture in the self-pilot registry (spec/pilots/dev-sec-skills/cells.yaml), and an out-of-scope entry carries the boundary reason"
     status: static-refinement
     scope:
       platforms: "semgrep 1.184.0; the rule set ci-supply-chain-2026-11-07; GitHub Actions and Dependabot configuration at commit 5c5c554"
@@ -330,16 +330,17 @@ claims:
             started_at: "2026-11-07T22:54:14+03:00"
             finished_at: "2026-11-07T22:54:20+03:00"
             status: completed
+            cells: "spec/pilots/dev-sec-skills/cells.yaml"
             anchor:
               type: ssh-ed25519
               signer: dev-sec-skills-anchor-2026-11-07
               namespace: dev-sec-skills-static-analysis
               subject: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json
-              subject_sha256: 12af569c215e9cea0f77ee7d4eaff2e26385eb1c7bf255728ff148c73b4f820f
+              subject_sha256: 70123d0e8fcdddd53106671f818c14f92152c569798ce63f8b6c7b3d2026f675
               signature: spec/static-analysis/anchor/ci-craft-i18n-2026-11-07.json.sig
-              signature_sha256: 1fe04c90d20c88f4918b2c68c632ea0f684bb08bae9aeb7699f28fb5141afd91
+              signature_sha256: daf9d2a90f28c3ff1f7b4269e46bb493999534e2b111e0a7756c7f83c6a4448b
               allowed_signers: spec/static-analysis/anchor/allowed_signers
-              date: "2026-11-07"
+              date: "2026-11-08"
             triage:
               - finding: F-001
                 disposition: out-of-scope
@@ -352,19 +353,23 @@ claims:
                 reason: "The github-actions update entry sets no Dependabot cooldown. Same boundary as F-001: a real gap in a failure class this pilot does not own."
                 note: "Observed in .github/dependabot.yml:19-30; no fix, the target is read-only."
               - finding: F-003
-                disposition: out-of-scope
+                disposition: covered
+                cell: CELL-001
+                detector: D-PINNED-ACTIONS
+                fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
                 date: "2026-11-07"
-                reason: "actions/checkout@v7 is a mutable tag. Pinning third-party actions to a commit SHA is a repository-wide CI policy, not a catalog-format invariant, so the translation taxonomy has no cell for it."
-                note: "Observed in .github/workflows/ci.yml:17; dtolnay/rust-toolchain on the next line is pinned to a SHA."
+                note: "actions/checkout@v7 at .github/workflows/ci.yml:17. The translation taxonomy has no cell, so the route is the self-pilot registry. Re-checked 2026-11-08: DEVSEC_WORKFLOWS_ROOT=<craft-i18n>/.github/workflows python3 spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py exits 1 and names ci.yml:17 actions/checkout@v7. The target stays read-only; the detector is not wired into craft-i18n's CI."
               - finding: F-004
-                disposition: out-of-scope
+                disposition: covered
+                cell: CELL-001
+                detector: D-PINNED-ACTIONS
+                fixture: "spec/pilots/dev-sec-skills/mutations/mutations.yaml#MUT-001"
                 date: "2026-11-07"
-                reason: "The reusable workflow is called at @main. The caller accepts whatever the branch resolves to at run time, which is a supply-chain property outside the pilot's taxonomy."
-                note: "Observed in .github/workflows/sonarcloud.yml:20; the rule reports reusable workflows and steps alike."
+                note: "storytold/craft-common-actions/.github/workflows/sonarcloud.yml@main at .github/workflows/sonarcloud.yml:20. Same cell and detector as F-003; re-checked 2026-11-08 in the same read-only detector run, which names sonarcloud.yml:20. The reusable workflow's own repository was not inspected."
               - finding: F-005
                 disposition: out-of-scope
                 date: "2026-11-07"
                 reason: "secrets: inherit hands every caller secret to the reusable workflow. This belongs to an exposure class the pilot does not own; no pilot cell names a CI secret boundary."
                 note: "Observed in .github/workflows/sonarcloud.yml:21; the called workflow is in another repository and was not inspected."
-    limitations: "out-of-scope is a boundary decision, not a verdict: all five findings describe real hygiene gaps, and the record does not say the target is clean. The pilot owns no supply-chain cell and the target is read-only, so no detector or mutation fixture was added. The rule set is authored in this repository and is not the Semgrep p/ci benchmark; other supply-chain issues may stay invisible. The normalized report is a review queue, not a proof that a finding is exploitable. A forger can rewrite the record, the rule file and both outputs together (C-13)."
-    last_verified: "2026-11-07"
+    limitations: "The translation pilot owns no supply-chain cell, so F-003 and F-004 are routed across pilots to CELL-001 in the self-pilot registry; the detector belongs to that pilot and is not wired into craft-i18n's CI, and the target stays read-only. The 2026-11-08 re-check is a manual read-only run of D-PINNED-ACTIONS over the craft-i18n workflow directory, not a craft-i18n gate. F-001, F-002 and F-005 remain out-of-scope: the boundary decision is not a verdict, and the record does not say the target is clean. The rule set is authored in this repository and is not the Semgrep p/ci benchmark; other supply-chain issues may stay invisible. The normalized report is a review queue, not a proof that a finding is exploitable. The anchor's signed subject now includes the cells registry path (2026-11-08 revision, re-signed); a forger who can replace allowed_signers and re-sign still bypasses it (C-13)."
+    last_verified: "2026-11-08"
