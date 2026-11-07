@@ -167,7 +167,7 @@ lint-pilot:
 	  "$(PILOT_REGISTRY)"
 
 claims-pilot:
-	@echo "== L1-L5: pilot claim ledger =="
+	@echo "== L1-L6: pilot claim ledger =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT_ROOT)" \
 	  --suite-glob "$(PILOT_SUITE_GLOB)" \
@@ -262,7 +262,7 @@ lint-pilot2:
 	  "$(PILOT2_REGISTRY)"
 
 claims-pilot2:
-	@echo "== L1-L5: second pilot claim ledger (craft-i18n) =="
+	@echo "== L1-L6: second pilot claim ledger (craft-i18n) =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT2_ROOT)" \
 	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
@@ -435,8 +435,8 @@ help:
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
-	@echo "  claims-pilot  L1-L5 over the rbac_pg claim ledger"
-	@echo "  claims-pilot2 L1-L5 over the craft-i18n claim ledger"
+	@echo "  claims-pilot  L1-L6 over the rbac_pg claim ledger"
+	@echo "  claims-pilot2 L1-L6 over the craft-i18n claim ledger"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
 	@echo "  unroutable    measure U over both pilot taxonomies; fails on any 'other' cell"
@@ -458,5 +458,5 @@ help:
 	@echo "  mutations-all   both mutation batches"
 	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
 	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
-	@echo "  red-team      attack the real pilot ledger/log/registry; 10 blocked, 2 recorded gaps"
+	@echo "  red-team      attack the real pilot ledger/log/registry; 12 blocked, 1 recorded gap"
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-07-drills.json"

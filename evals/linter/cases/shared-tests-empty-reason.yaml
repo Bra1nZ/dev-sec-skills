@@ -1,0 +1,30 @@
+# Synthetic fixture — not evidence about any real project.
+name: shared-tests-empty-reason
+description: "A shared_tests declaration carries a blank reason. A declaration\n      with no reason says nothing about why the test applies to this claim, so L1\n      rejects the shape (V2-34).\n"
+files:
+  tests/test_suite.py: "def test_gate():\n    report(\"F1 gate rejects anonymous\")\n"
+ledger:
+  claims:
+  - id: C-01
+    claim: The gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      shared_tests:
+      - id: F1
+        reason: '   '
+    scope: Synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: error
+  L3: none
+  L4: none
+  L6: none
+exit: 1
+suite_glob: '**/*.py'

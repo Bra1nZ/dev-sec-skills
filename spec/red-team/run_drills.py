@@ -8,12 +8,12 @@ one attack each, and run the real gate. A drill passes only when the gate exits
 with the expected code AND prints the expected message — a crash or an unrelated
 error is not a block.
 
-Two drills are recorded as ALLOWED on purpose. They are the gates staying
-silent, not bugs in the drill: re-dating a run (the evidence identity includes
-the date, so a shifted date is "new evidence") and borrowing another claim's
-real evidence (L3 checks that a test ID exists in the suite, nothing checks that
-it tests the claim). The harness fails if either starts or stops being allowed,
-so the recorded result cannot drift away from the code.
+One drill is recorded as ALLOWED on purpose. It is a gate staying silent, not a
+bug in the drill: re-dating a run (the evidence identity includes the date, so
+a shifted date is "new evidence"). The harness fails if it stops being allowed,
+so the recorded result cannot drift away from the code. Borrowing another
+claim's real evidence used to be allowed; L6 now blocks it, and the second
+borrowing drill shows that declaring the sharing does not reopen the gap.
 
 The target repository is read, never modified: every attack works on a copy in
 a temp directory. The suite needs the craft-i18n checkout and its cargo log at
@@ -251,7 +251,7 @@ def _redated_run(td):
 
 
 def _borrowed_evidence(td):
-    """ALLOWED: an open claim takes another claim's real tests and becomes tested."""
+    """BLOCKED by L6: an open claim takes another claim's real tests and becomes tested."""
     base = load(LEDGER)
     target = copy.deepcopy(base)
     c8 = claim(target, "C-08")
@@ -262,8 +262,36 @@ def _borrowed_evidence(td):
     dump(base, base_path)
     dump(target, target_path)
     return [
-        {"gate": "claim_lint", "argv": lint_args(target_path), "exit": 0,
-         "contains": ["total: 0 error(s), 0 warning(s)"]},
+        {"gate": "claim_lint", "argv": lint_args(target_path), "exit": 1,
+         "contains": ["not declared in shared_tests with a reason (V2-34)",
+                      "needs at least one test of its own (V2-34)"]},
+        {"gate": "status_diff", "argv": status_args(base_path, target_path),
+         "exit": 0, "contains": ["C-08: open -> tested with 1 new evidence entry"]},
+    ]
+
+
+def _borrowed_evidence_declared(td):
+    """BLOCKED by L6 rule 2 even when both claims declare the shared test."""
+    base = load(LEDGER)
+    target = copy.deepcopy(base)
+    c1 = claim(target, "C-01")
+    tid = c1["evidence"][0]["tests"][0]
+    c1["evidence"][0].setdefault("shared_tests", []).append({
+        "id": tid, "reason": "The attack declares that the test is shared."})
+    c8 = claim(target, "C-08")
+    c8["status"] = "tested"
+    ev = copy.deepcopy(c1["evidence"][0])
+    ev["tests"] = [tid]
+    ev["shared_tests"] = [{
+        "id": tid, "reason": "The attack declares that the test is shared."}]
+    c8["evidence"] = [ev]
+    c8.pop("limitations", None)
+    base_path, target_path = os.path.join(td, "base.yaml"), os.path.join(td, "target.yaml")
+    dump(base, base_path)
+    dump(target, target_path)
+    return [
+        {"gate": "claim_lint", "argv": lint_args(target_path), "exit": 1,
+         "contains": ["C-08", "needs at least one test of its own (V2-34)"]},
         {"gate": "status_diff", "argv": status_args(base_path, target_path),
          "exit": 0, "contains": ["C-08: open -> tested with 1 new evidence entry"]},
     ]
@@ -306,8 +334,10 @@ DRILLS = [
      "gap": "the evidence identity includes the date, so a shifted date is new evidence"},
     {"name": "borrow-another-claims-evidence", "build": _borrowed_evidence,
      "attack": "give the open C-08 claim C-01's real tests and call it tested",
-     "verdict": "allowed",
-     "gap": "L3 checks that a test ID exists in the suite, not that it tests this claim"},
+     "verdict": "blocked"},
+    {"name": "borrow-and-declare-sharing", "build": _borrowed_evidence_declared,
+     "attack": "borrow one of C-01's tests and declare it shared; C-08 still has no test of its own",
+     "verdict": "blocked"},
 ]
 
 

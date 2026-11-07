@@ -3,8 +3,8 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Ten attacks are blocked by the check named for them; two pass
-with every gate green, and those two are the point of the exercise.
+what happened. Twelve attacks are blocked by the check named for them; one
+passes with every gate green, and that one is the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
 applies exactly one mutation, runs the real tool, and passes only when the exit
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 12 attacks, one mutation each
-  2026-11-07-drills.json       # recorded result: 10 blocked, 2 allowed
+  run_drills.py                # the 13 attacks, one mutation each
+  2026-11-07-drills.json       # recorded result: 12 blocked, 1 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -41,9 +41,10 @@ spec/red-team/
 | `cell-runtime-without-response` | drop `violation_response` | blocked by CL1 (V2-15) |
 | `stale-proof-passes-gate` | declare a proof whose record predates a change to its dependency | blocked by `--require-fresh` (V2-29) |
 | `redate-the-same-run` | shift the run date one day, escalate `reviewed` → `tested` | **allowed** |
-| `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | **allowed** |
+| `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | blocked by L6 (V2-34) |
+| `borrow-and-declare-sharing` | borrow one test, declare it shared, still call C-08 `tested` | blocked by L6 rule 2 (V2-34) |
 
-## The two silent paths
+## The one silent path
 
 ### Re-dating
 
@@ -57,26 +58,33 @@ This is the known C-13 gap: without an external anchor, a consistent forgery is
 indistinguishable from a real re-run. The drill makes it concrete on a real
 ledger rather than in a fixture.
 
-### Borrowed evidence
+## Borrowing, now blocked
 
-L3 resolves a cited test ID against the suite: it proves the test exists.
-Nothing proves the test exercises *this* claim. In the drill, C-08 — the open
-claim about invisible Unicode Cf characters — takes C-01's real tests about
-catalog provenance headers, changes its status to `tested`, and every check
-passes: L1 shape, L2 hashes, L3 traceability, L4 consistency, L5 prose, and
-`status_diff` reports a legitimate `open -> tested` escalation with new evidence.
+L3 resolves a cited test ID against the suite: it proves the test exists, not
+that it exercises *this* claim. In the original drill, C-08 — the open claim
+about invisible Unicode Cf characters — took C-01's real tests about catalog
+provenance headers, changed its status to `tested`, and every check passed.
 
-This is worse than re-dating in one respect: no forgery is involved. Every byte
-is real; only the link between the test and the claim is missing. A recorded gap
-can be closed with another claim's passing tests.
+L6 (V2-34) now closes that path with two rules. A test cited by two claims must
+be declared in `shared_tests` with a reason next to each citation, and a
+non-open claim must cite at least one test no other claim cites. The second
+rule is what makes the declaration insufficient: the second drill borrows one
+test, declares the sharing in both ledgers, and is still blocked because C-08
+has no evidence of its own. In both drills `status_diff` still reports a
+legitimate `open -> tested` escalation with new evidence; the block comes from
+the linter.
+
+L6 does not check that a test's assertions match the claim's wording. A test
+that belongs to the claim's area but asserts something weaker still passes; the
+rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 10 blocked drills show that those specific checks fire on real artifacts,
+- The 12 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
-- The 2 allowed drills are recorded as `allowed` in the harness. If a later gate
-  starts blocking one of them, the drill fails and the gap entry must be
-  updated, so this document cannot quietly become stale.
+- The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
+  starts blocking it, the drill fails and the gap entry must be updated, so this
+  document cannot quietly become stale.
 - The drills run `claim_lint --no-vale`: L5 prose scanning is not exercised here
   (L5 is covered by the linter evals and `make verify`).
 - Only the craft-i18n ledger is attacked. It is one pilot with eight claims; the

@@ -314,7 +314,7 @@ make verify
 ```
 
 Она прогоняет адверсариальные наборы (`evals/`), CL1–CL6 по сид-реестру и по
-двум пилотным реестрам вместе с их claim-леджерами, L1–L5 по леджерам, гейт
+двум пилотным реестрам вместе с их claim-леджерами, L1–L6 по леджерам, гейт
 эскалации статусов и отчёт покрытия по двум пилотам. Пилоты ищутся по
 `PILOT_ROOT` (по умолчанию `../rbac_pg`) и `PILOT2_ROOT`
 (`../astraoffice/craft-i18n`); если цели нет, команда падает, а не пропускает
@@ -353,15 +353,17 @@ evals, а не истинность свойств и не чистоту produc
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md).
 
-Исполняемая часть: `tools/claim_lint.py` (L1–L5 над claim-леджером, Vale-first
+Исполняемая часть: `tools/claim_lint.py` (L1–L6 над claim-леджером, Vale-first
 для прозы, встроенный сканер как fallback; L2 проверяет run-record — хэши лога и
 артефакта, exit code, дату, исполненные ID — и сверяет артефакт с его блобом на
 процитированном коммите; tool-output для `model-checked`/`proven` — хэш вывода,
-exit code, дату, обязательный `status` и bound), `tools/status_diff.py` (гейт эскалации статусов между
+exit code, дату, обязательный `status` и bound; L6 требует объявить общий тест
+через `shared_tests` с причиной и оставляет non-open claim хотя бы один
+собственный тест), `tools/status_diff.py` (гейт эскалации статусов между
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
-Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 40/40
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 46/46
 проходят, включая негативный контроль самого runner'а, кейсы для Rust
 `#[test] fn`, 8 кейсов run-record (валидный, хэш артефакта, хэш лога,
 неисполненный ID, ненулевой exit, отсутствие записи, несовпадение даты,
@@ -372,8 +374,10 @@ exit code, дату, обязательный `status` и bound), `tools/status_
 `model-checked` без вывода, `model-checked` без bound) и пять кейсов V2-28
 (`unverified` при exit 0, таймаут с обрезанным логом, `timed_out`,
 противоречащий статусу, запись без `status`, open claim с честной
-`unverified`-записью). Исторический прогон из 12 кейсов —
-`evals/iteration-3/RESULTS.md`.
+`unverified`-записью) и шесть кейсов V2-34 `shared-*` (необъявленный общий
+тест, объявленный sharing без собственного теста, sharing с собственным
+тестом, id не из `tests`, пустая причина, open claim). Исторический прогон из
+12 кейсов — `evals/iteration-3/RESULTS.md`.
 
 Bounded-прогон `tools/bounded_check.py` (V2-28) запускает внешний инструмент
 в отдельной группе процессов и убивает её по wall-clock bound. Запись
@@ -436,12 +440,12 @@ claim объявляет код, модель, encoding и tooling, от кот�
 Силу гейтов измерили на реальных артефактах (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) берёт леджер
 craft-i18n, его записанный cargo-лог и реестр ячеек, применяет по одной атаке на
-drill и требует ожидаемый exit code и сообщение. 10 из 12 атак блокируются; две
-проходят молча и записаны как пробелы: пере-датировка прогона (C-13) и
-заимствование реальных тестов другой claim (V2-34) — открытая C-08 стала
-`tested` тестами C-01 при зелёных L1–L5 и `status_diff`. Drill с ожиданием
-`allowed` падает, если гейт начнёт блокировать, поэтому запись не устареет
-молча. Результат — [`spec/red-team/2026-11-07-drills.json`](spec/red-team/2026-11-07-drills.json);
+drill и требует ожидаемый exit code и сообщение. 12 из 13 атак блокируются; одна
+проходит молча и записана как пробел: пере-датировка прогона (C-13).
+Заимствование реальных тестов другой claim (V2-34) теперь блокирует L6:
+открытая C-08, получившая тесты C-01, падает, даже если sharing объявлен, потому
+что у неё нет собственного теста. Drill с ожиданием `allowed` падает, если гейт
+начнёт блокировать, поэтому запись не устареет молча. Результат — [`spec/red-team/2026-11-07-drills.json`](spec/red-team/2026-11-07-drills.json);
 drill'ы требуют checkout craft-i18n и в `make verify` не входят.
 
 Отчёт покрытия `tools/coverage_report.py` (V2-20) проверяет, что процитированный
@@ -501,7 +505,7 @@ targets — `make choke-points` и `make choke-points-record`. Порог CP1 н
 Второй пилот — [`spec/pilots/craft-i18n/`](spec/pilots/craft-i18n/README.md),
 намеренно не-RBAC и не-БД: Rust-крейт, проверяющий каталоги переводов.
 14 ячеек (13 tested, 1 open), 13 детекторов, 12 из 13 с mutation fixture и один
-документированный exemption; claim-леджер из 8 claim'ов, 0 замечаний L1–L5.
+документированный exemption; claim-леджер из 8 claim'ов, 0 замечаний L1–L6.
 Открытая CELL-002 — реальный пробел: Unicode Cf-символы (U+202E, U+200B,
 U+2066) проходят проверку, а U+0007 и U+FEFF отклоняются.
 

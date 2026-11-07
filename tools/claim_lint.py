@@ -24,6 +24,11 @@ schemas/claim-ledger.schema.json):
   L5  prose:         unqualified absolutes in .md documents. Engine order:
                      Vale (if installed; styles/RussianAbsolutes package),
                      fallback to the built-in line scanner.
+  L6  relevance:     a test cited by two claims must be declared in
+                     shared_tests with a reason next to each citation, and a
+                     non-open claim must cite at least one test no other claim
+                     cites (V2-34) — declaring the sharing does not let a claim
+                     inherit a neighbour's evidence.
 
 A run_record (schemas/run-record.schema.json) is optional: a kind=test record
 without one gets an L2 warning, because re-dating and citing a test that never
@@ -210,6 +215,52 @@ def find_vale():
 
 # ---------------------------------------------------------------- L1 schema
 
+def _check_shared_tests(ev, j, who, findings):
+    """Shape of evidence[].shared_tests (V2-34).
+
+    A test that two claims cite must be declared shared next to each citation,
+    with a reason. L1 checks the shape; L6 enforces that the declaration
+    exists and that a non-open claim keeps evidence of its own.
+    """
+    shared = ev.get("shared_tests")
+    if shared is None:
+        return
+    if ev.get("kind") != "test":
+        findings.append(Finding("L1", "error",
+                                "evidence[%d].shared_tests is only valid for kind=test" % j, who))
+        return
+    if not isinstance(shared, list):
+        findings.append(Finding("L1", "error",
+                                "evidence[%d].shared_tests is not a list" % j, who))
+        return
+    tests = ev.get("tests") or []
+    seen = set()
+    for k, entry in enumerate(shared):
+        if not isinstance(entry, dict):
+            findings.append(Finding("L1", "error",
+                                    "evidence[%d].shared_tests[%d] is not an object" % (j, k), who))
+            continue
+        tid = entry.get("id")
+        if not isinstance(tid, str) or not tid.strip():
+            findings.append(Finding("L1", "error",
+                                    "evidence[%d].shared_tests[%d] requires a non-empty id"
+                                    % (j, k), who))
+        elif tid not in tests:
+            findings.append(Finding("L1", "error",
+                                    "evidence[%d].shared_tests id %r is not in this evidence "
+                                    "item's tests" % (j, tid), who))
+        elif tid in seen:
+            findings.append(Finding("L1", "error",
+                                    "evidence[%d].shared_tests duplicates id %r" % (j, tid), who))
+        else:
+            seen.add(tid)
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            findings.append(Finding("L1", "error",
+                                    "evidence[%d].shared_tests[%d] requires a non-empty reason"
+                                    % (j, k), who))
+
+
 def check_schema(ledger, findings):
     claims = ledger.get("claims") if isinstance(ledger, dict) else None
     if not isinstance(claims, list) or not claims:
@@ -242,6 +293,7 @@ def check_schema(ledger, findings):
                 findings.append(Finding("L1", "error", "kind=test requires a non-empty tests list", who))
             if ev["kind"] == "test" and not (ev.get("command") or ev.get("artifact")):
                 findings.append(Finding("L1", "error", "kind=test requires command or artifact", who))
+            _check_shared_tests(ev, j, who, findings)
     return [c for c in claims if isinstance(c, dict)]
 
 
@@ -872,6 +924,66 @@ def check_prose_internal(root, docs_glob, findings):
                                         "unqualified absolute %r" % m.group(0), None, rel, n))
 
 
+# ------------------------------------------------------- L6 relevance
+
+def _test_owners(claims):
+    """Map each cited test ID to the claim IDs that cite it (V2-34)."""
+    owners = {}
+    for c in claims:
+        cid = c.get("id")
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("kind") != "test":
+                continue
+            for tid in ev.get("tests") or []:
+                if isinstance(tid, str):
+                    owners.setdefault(tid, set()).add(cid)
+    return owners
+
+
+def _declared_shared(ev):
+    """Test IDs declared in one evidence item's shared_tests list."""
+    declared = set()
+    for entry in ev.get("shared_tests") or []:
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            declared.add(entry["id"])
+    return declared
+
+
+def check_relevance(claims, findings):
+    """A cited test must be tied to the claim that cites it (V2-34).
+
+    Two rules, because a declaration alone is cheap:
+
+      1. A test cited by more than one claim must appear in each citing
+         claim's `shared_tests` with a reason.
+      2. A non-open claim must cite at least one test no other claim cites.
+         This stays an error even when the sharing is declared, so moving a
+         claim onto a neighbour's test does not inherit the neighbour's
+         evidence.
+    """
+    owners = _test_owners(claims)
+    for c in claims:
+        cid = c.get("id")
+        cited, declared = set(), set()
+        for ev in c.get("evidence") or []:
+            if not isinstance(ev, dict) or ev.get("kind") != "test":
+                continue
+            cited.update(t for t in ev.get("tests") or [] if isinstance(t, str))
+            declared.update(_declared_shared(ev))
+        shared_here = {t for t in cited if len(owners.get(t, ())) > 1}
+        for tid in sorted(shared_here - declared):
+            findings.append(Finding(
+                "L6", "error",
+                "test %r is cited by %s but not declared in shared_tests with a reason (V2-34)"
+                % (tid, ", ".join(sorted(owners[tid]))), cid))
+        if c.get("status") != "open" and cited and all(
+                len(owners.get(t, ())) > 1 for t in cited):
+            findings.append(Finding(
+                "L6", "error",
+                "every cited test is also evidence for another claim; a non-open claim "
+                "needs at least one test of its own (V2-34)", cid))
+
+
 # -------------------------------------------------------------------- main
 
 def main():
@@ -922,6 +1034,7 @@ def main():
         report_ids, def_names = build_suite_index(root, args.suite_glob)
         check_traceability(claims, report_ids, def_names, findings)
         check_consistency(claims, report_ids, def_names, findings)
+        check_relevance(claims, findings)
     if os.path.isdir(root):
         if args.no_vale:
             check_prose_internal(root, args.docs_glob, findings)
@@ -933,10 +1046,10 @@ def main():
     infos = [f for f in findings if f.severity == "info"]
 
     print("ledger: %s | claims: %d" % (args.ledger, len(claims)))
-    for check in ("L1", "L2", "L3", "L4", "L5"):
+    for check in ("L1", "L2", "L3", "L4", "L5", "L6"):
         rows = [f for f in findings if f.check == check]
         label = {"L1": "schema", "L2": "evidence", "L3": "traceability",
-                 "L4": "consistency", "L5": "prose"}[check]
+                 "L4": "consistency", "L5": "prose", "L6": "relevance"}[check]
         if not rows:
             print("  %s %-13s OK" % (check, label))
         else:

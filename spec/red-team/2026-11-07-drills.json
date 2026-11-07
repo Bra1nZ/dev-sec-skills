@@ -62,15 +62,19 @@
     },
     {
       "name": "borrow-another-claims-evidence",
-      "verdict": "allowed",
-      "attack": "give the open C-08 claim C-01's real tests and call it tested",
-      "gap": "L3 checks that a test ID exists in the suite, not that it tests this claim"
+      "verdict": "blocked",
+      "attack": "give the open C-08 claim C-01's real tests and call it tested"
+    },
+    {
+      "name": "borrow-and-declare-sharing",
+      "verdict": "blocked",
+      "attack": "borrow one of C-01's tests and declare it shared; C-08 still has no test of its own"
     }
   ],
   "summary": {
-    "drills": 12,
-    "blocked": 10,
-    "allowed": 2,
+    "drills": 13,
+    "blocked": 12,
+    "allowed": 1,
     "failed": 0
   }
 }

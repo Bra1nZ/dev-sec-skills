@@ -32,7 +32,7 @@ A ledger is a JSON or YAML document with a `claims` array. Each claim:
 | `id` | yes | stable ID, `C-<n>` |
 | `claim` | yes | falsifiable statement |
 | `mechanism` | yes | what makes the claim true |
-| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `run_record`, `tool_output`, `note` |
+| `evidence` | yes | list of records: `kind`, plus `artifact`, `command`, `commit`, `date`, `tests`, `shared_tests`, `run_record`, `tool_output`, `note` |
 | `scope` | yes | `platforms`, `actors_excluded`, `assumptions` |
 | `status` | yes | `proven` / `model-checked` / `tested` / `static-refinement` / `reviewed` / `open` |
 | `limitations` | open only | known limits, next to the claim |
@@ -88,6 +88,24 @@ which proofs must be re-run; `../spec/proofs/manifest.yaml` is empty because no
 claim in this repository is `proven`. The schema does not encode freshness:
 that is a comparison of the record's `finished_at` against commit times, and it
 is described in `../spec/proofs/README.md`.
+
+### Shared tests (V2-34)
+
+A test may legitimately support more than one claim, so the schema does not
+force test IDs to be unique. Instead, a `kind=test` evidence item lists the
+shared IDs in `shared_tests: [{id, reason}]`, where `id` is one of its own
+`tests` and `reason` is a non-empty explanation of why the test is evidence for
+*this* claim. L1 checks that shape. L6 then enforces two rules:
+
+1. a test cited by two or more claims must be declared in `shared_tests` by
+   every citing claim;
+2. a non-open claim must cite at least one test that no other claim cites.
+
+The second rule is what makes the declaration insufficient by itself: moving a
+claim onto a neighbour's tests does not inherit the neighbour's evidence.
+`open` is exempt from rule 2 because it claims no evidence status. Neither rule
+compares the test's assertions with the claim's wording, so one own-but-
+irrelevant citation still passes; that remains a human review question.
 
 ### Tool output
 
@@ -160,11 +178,12 @@ The gate proves the artifacts exist, not that the routing decision was right.
 
 | Check | What it enforces |
 | --- | --- |
-| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` and `tool_output` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
+| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record`, `tool_output` and `shared_tests` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
 | L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, tool-output hash, exit code and `status=completed` for a non-open claim (V2-28), cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
 | L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning; `model-checked` and `proven` need a `tool_output`, `model-checked` also needs a bound |
 | L5 | prose: unqualified absolutes in docs. Engine order: Vale (`styles/RussianAbsolutes` package) if the `vale` binary is available, fallback to the built-in line scanner |
+| L6 | relevance: a test cited by two claims is declared in `shared_tests` with a reason by each of them, and a non-open claim cites at least one test no other claim cites (V2-34) |
 
 ## Usage
 
@@ -182,7 +201,7 @@ Pilot ledger: `rbac_pg/docs/claims.yaml` — 7 claims derived from ROLES.md and
 `docs/fstek-compliance.md`, test IDs cross-checked against
 `setup/test_fstek.py` (57 report-based checks, IDs F2..F15b, M0..M6).
 
-- L1–L4: clean on 7/7 claims; evidence anchored to real commits
+- L1–L4 and L6: clean on 7/7 claims; evidence anchored to real commits
   (`2e120b6`, 2026-10-30).
 - L3/L4: caught a planted fixture (nonexistent test ID `F16` declared as
   `tested`) — 1/1 fabricated traceability rows detected.

@@ -1,0 +1,31 @@
+# Synthetic fixture — not evidence about any real project.
+name: shared-tests-id-not-cited
+description: "A shared_tests entry names a test that the evidence item does not\n      cite. The declaration would point at evidence this claim never offered, so\n      L1 rejects it and L6 stays quiet (V2-34).\n"
+files:
+  tests/test_suite.py: "def test_gate():\n    report(\"F1 gate rejects anonymous\")\n\n\ndef test_audit():\n    report(\"F2 audit log records the denial\")\n\n\ndef test_scope():\n    report(\"F3 scope check\")\n"
+ledger:
+  claims:
+  - id: C-01
+    claim: The gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      - F2
+      shared_tests:
+      - id: F3
+        reason: The test attempts the scope check.
+    scope: Synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: error
+  L3: none
+  L4: none
+  L6: none
+exit: 1
+suite_glob: '**/*.py'

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://dev-sec-skills.invalid/schemas/claim-ledger.schema.json",
   "title": "Evidence-first claim ledger",
-  "description": "Machine-readable claim ledger. Every material claim carries a mechanism, evidence, scope, and status. The checkable subset of this schema is enforced by tools/claim_lint.py (checks L1-L4); check L5 scans prose documents for unqualified absolutes.",
+  "description": "Machine-readable claim ledger. Every material claim carries a mechanism, evidence, scope, and status. The checkable subset of this schema is enforced by tools/claim_lint.py (checks L1-L6); L1 covers this schema, L2-L4 and L6 read the ledger, and L5 scans prose documents for unqualified absolutes.",
   "type": "object",
   "required": ["claims"],
   "properties": {
@@ -70,6 +70,19 @@
           "items": { "type": "string" },
           "minItems": 1,
           "description": "Test IDs that attempt the violation. Required when kind=test. Lint check L3 verifies each ID exists in the suite."
+        },
+        "shared_tests": {
+          "type": "array",
+          "description": "Tests in `tests` that another claim also cites (V2-34). Each entry states why the test is legitimate evidence for this claim. Lint check L1 verifies that the id is one of this evidence item's tests and that the reason is non-empty; L6 requires the declaration for every shared test and still rejects a non-open claim whose every test is shared.",
+          "items": {
+            "type": "object",
+            "required": ["id", "reason"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "reason": { "type": "string", "minLength": 1 }
+            }
+          }
         },
         "run_record": {
           "$ref": "run-record.schema.json",

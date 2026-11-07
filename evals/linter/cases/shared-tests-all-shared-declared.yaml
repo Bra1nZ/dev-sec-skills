@@ -1,0 +1,44 @@
+# Synthetic fixture — not evidence about any real project.
+name: shared-tests-all-shared-declared
+description: "Both claims declare the shared test with a reason, but one claim\n      cites nothing else. Rule 1 passes and rule 2 still fails: declaring the\n      sharing does not let a claim inherit a neighbour's evidence (V2-34).\n"
+files:
+  tests/test_suite.py: "def test_gate():\n    report(\"F1 gate rejects anonymous\")\n\n\ndef test_audit():\n    report(\"F2 audit log records the denial\")\n"
+ledger:
+  claims:
+  - id: C-01
+    claim: The gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      - F2
+      shared_tests:
+      - id: F1
+        reason: The test attempts both the gate and the audit path.
+    scope: Synthetic fixture.
+    status: tested
+  - id: C-02
+    claim: The gate records the denial in the audit log.
+    mechanism: Handler logs the denied session before returning.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      shared_tests:
+      - id: F1
+        reason: The test attempts both the gate and the audit path.
+    scope: Synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L3: none
+  L4: none
+  L6: error
+exit: 1
+suite_glob: '**/*.py'

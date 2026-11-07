@@ -1,0 +1,39 @@
+# Synthetic fixture — not evidence about any real project.
+name: shared-test-not-declared
+description: "One test is cited by two claims and neither declares it in\n      shared_tests. Each claim still has a test of its own, so only rule 1 of\n      L6 fires: an undeclared shared test is borrowed evidence (V2-34).\n"
+files:
+  tests/test_suite.py: "def test_gate():\n    report(\"F1 gate rejects anonymous\")\n\n\ndef test_audit():\n    report(\"F2 audit log records the denial\")\n\n\ndef test_scope():\n    report(\"F3 scope check\")\n"
+ledger:
+  claims:
+  - id: C-01
+    claim: The gate rejects anonymous requests.
+    mechanism: Session check before handler dispatch.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      - F2
+    scope: Synthetic fixture.
+    status: tested
+  - id: C-02
+    claim: The gate records the denial in the audit log.
+    mechanism: Handler logs the denied session before returning.
+    evidence:
+    - kind: test
+      command: python3 -m pytest -v
+      tests:
+      - F1
+      - F3
+    scope: Synthetic fixture.
+    status: tested
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: none
+  L3: none
+  L4: none
+  L6: error
+exit: 1
+suite_glob: '**/*.py'

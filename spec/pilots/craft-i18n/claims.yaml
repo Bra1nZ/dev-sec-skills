@@ -54,6 +54,9 @@ claims:
     evidence:
       - kind: test
         tests: [each_bad_row_is_one_problem, valid_rows_pass, context_distinguishes_keys]
+        shared_tests:
+          - id: each_bad_row_is_one_problem
+            reason: "This is the row-grammar test for this claim: it attempts empty fields, a duplicate key, unknown escapes and an unknown @context."
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/catalog.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
@@ -84,6 +87,9 @@ claims:
     evidence:
       - kind: test
         tests: [placeholders_may_reorder, each_bad_row_is_one_problem, msg_templates_one_good_two_bad]
+        shared_tests:
+          - id: each_bad_row_is_one_problem
+            reason: "The bundled malformed-row test also attempts the @msg and placeholder defects this claim names (unmatched placeholder sets, adjacent placeholders, an unclosed brace)."
         command: "cargo test --offline -p craft-i18n-tests"
         artifact: "crates/craft-i18n-tests/src/catalog.rs"
         commit: "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"

@@ -66,9 +66,9 @@ spec/
     README.md                     # what a re-run trigger is, how freshness is decided, limits
     manifest.yaml                 # empty: no claim is `proven` or `model-checked`
   red-team/
-    README.md                     # 12 attacks on the real pilot artifacts, 2 recorded gaps
+    README.md                     # 13 attacks on the real pilot artifacts, 1 recorded gap
     run_drills.py                 # one mutation per drill, real tool, expected message
-    2026-11-07-drills.json        # recorded result: 10 blocked, 2 allowed
+    2026-11-07-drills.json        # recorded result: 12 blocked, 1 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -182,15 +182,16 @@ timestamps, so a record produced from a stale checkout still looks fresh.
 Gate strength is measured against the real artifacts, not only fixtures (C-35):
 `spec/red-team/run_drills.py` takes the committed craft-i18n ledger, its cargo
 log and the cell registry, applies one attack per drill, and requires the exit
-code and the expected message. Ten of twelve attacks are blocked; the record is
-`spec/red-team/2026-11-07-drills.json`. Two stay green and are recorded as gaps:
-re-dating a run (identity includes the date, so a shifted date is "new
-evidence", the C-13 hole) and borrowing another claim's real tests (L3 checks
-that a test ID exists in the suite, not that it tests the claim; tracked as
-V2-34). An `allowed` drill fails the harness if a future gate starts blocking
-it, so the recorded gap cannot become stale silently. The drills need the
-craft-i18n checkout and are not in `make verify`; they run `claim_lint
---no-vale`, so L5 is not exercised there.
+code and the expected message. Twelve of thirteen attacks are blocked; the
+record is `spec/red-team/2026-11-07-drills.json`. One stays green and is
+recorded as a gap: re-dating a run (identity includes the date, so a shifted
+date is "new evidence", the C-13 hole). Borrowing another claim's real tests is
+now blocked by L6 (V2-34): a shared test must be declared with a reason, and a
+non-open claim must keep at least one test of its own, so declaring the sharing
+does not reopen the gap. An `allowed` drill fails the harness if a future gate
+starts blocking it, so the recorded gap cannot become stale silently. The
+drills need the craft-i18n checkout and are not in `make verify`; they run
+`claim_lint --no-vale`, so L5 is not exercised there.
 
 Every finding must become a cell, a detector and a fixture (V2-18):
 `tools/fuzz_triage.py` checks one entry per finding, resolves the cell and

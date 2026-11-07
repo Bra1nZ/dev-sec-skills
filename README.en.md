@@ -295,7 +295,7 @@ make verify
 ```
 
 It runs the adversarial suites (`evals/`), CL1–CL6 over the seed registry and
-over both pilot registries together with their claim ledgers, L1–L5 over the
+over both pilot registries together with their claim ledgers, L1–L6 over the
 ledgers, the status-escalation gates, and the coverage report for both pilots.
 The pilots are located by `PILOT_ROOT` (defaults to `../rbac_pg`) and
 `PILOT2_ROOT` (`../astraoffice/craft-i18n`); if one is missing, the command
@@ -336,15 +336,17 @@ Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md). Planned:
 executable checks for static analysis and trigger evals.
 
-The executable part also includes `tools/claim_lint.py` (L1–L5; L2 verifies
+The executable part also includes `tools/claim_lint.py` (L1–L6; L2 verifies
 run-record hashes, exit code, date and executed IDs, compares the artifact with
 its blob at the cited commit, and checks tool-output hashes, mandatory `status` and bounds for
-`model-checked`/`proven`), `tools/cell_lint.py` (CL1–CL6: structure,
+`model-checked`/`proven`; L6 requires a shared test to be declared in
+`shared_tests` with a reason and leaves every non-open claim at least one test
+of its own), `tools/cell_lint.py` (CL1–CL6: structure,
 coverage, evidence, traceability, taxonomy, status-escalation gate; a
 `runtime-enforcement` detector needs a negative test, and the cell needs
 `enforced_at`, `oracle` and `violation_response`),
 `tools/unroutable.py` (the `unroutable` share) and the `ci/cell-lint.yml`
-template. The linter cases are in [`evals/linter/`](evals/linter/): 40/40,
+template. The linter cases are in [`evals/linter/`](evals/linter/): 46/46,
 including 8 run-record cases, two V2-09 controls — `unrelated-commit` (the
 commit resolves but the artifact changed after it) and `empty-claims` (an empty
 ledger must fail instead of passing vacuously) — and seven V2-10 `tool-output-*`
@@ -352,7 +354,10 @@ cases (valid, output hash, missing output, non-zero exit, date, a model-checked
 claim with no output, a model-checked claim with no bound) and five V2-28 cases (`unverified` at
 exit 0, a timeout with a truncated log, `timed_out` contradicting the
 status, a record without `status`, and an open claim that honestly keeps an
-`unverified` record). The historical
+`unverified` record), and six V2-34 `shared-*` cases (an undeclared shared
+test, declared sharing with no test of the claim's own, declared sharing with a
+test of its own, an id not cited by the evidence, an empty reason, and an open
+claim). The historical
 12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 40/40, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
@@ -414,10 +419,11 @@ checkout still looks fresh.
 Gate strength was measured on the real artifacts (C-35):
 [`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) takes the craft-i18n
 ledger, its recorded cargo log and the cell registry, applies one attack per
-drill, and requires the expected exit code and message. 10 of 12 attacks are
-blocked; two stay green and are recorded as gaps: re-dating a run (C-13) and
-borrowing another claim's real tests (V2-34) — the open C-08 became `tested` on
-C-01's tests with L1–L5 and `status_diff` all green. A drill that expects
+drill, and requires the expected exit code and message. 12 of 13 attacks are
+blocked; one stays green and is recorded as a gap: re-dating a run (C-13).
+Borrowing another claim's real tests (V2-34) is now blocked by L6: the open
+C-08 that takes C-01's tests fails even when the sharing is declared, because
+it has no test of its own. A drill that expects
 `allowed` fails if a gate starts blocking, so the record cannot go stale
 silently. The result is
 [`spec/red-team/2026-11-07-drills.json`](spec/red-team/2026-11-07-drills.json);
@@ -484,7 +490,7 @@ The second pilot is
 [`spec/pilots/craft-i18n/`](spec/pilots/craft-i18n/README.md), deliberately
 non-RBAC and non-database: a Rust crate that validates translation catalogs.
 14 cells (13 tested, 1 open), 13 detectors, 12 of 13 with a mutation fixture
-and one documented exemption; an 8-claim ledger with 0 L1–L5 findings. The open
+and one documented exemption; an 8-claim ledger with 0 L1–L6 findings. The open
 CELL-002 is a real gap: Unicode Cf characters (U+202E, U+200B, U+2066) pass the
 checker, while U+0007 and U+FEFF are rejected.
 
