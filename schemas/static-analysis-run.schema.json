@@ -144,7 +144,8 @@
         },
         "date": {
           "type": "string",
-          "format": "date"
+          "format": "date",
+          "description": "Date the signature was made (`YYYY-MM-DD`). For a backfilled record this is later than the run's `finished_at`: the signature proves immutability after signing, not the run date. Quote it in YAML (`date: \"2026-11-08\"`): an unquoted value parses as a date object, not a string, and L1 rejects the record."
         }
       }
     }

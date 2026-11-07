@@ -70,6 +70,10 @@ spec/
     runs/
       ci-craft-i18n-2026-11-07.sarif       # raw Semgrep SARIF
       ci-craft-i18n-2026-11-07.report.json # normalized report, triaged by C-09
+  anchor/                        # C-41: one anchor directory, three evidence channels
+    README.md                    # adding, retiring, rotating and losing a key
+    allowed_signers              # committed public key(s); the private half is not here
+    *.json{,.sig}                # 13 canonical subjects + detached signatures
   proofs/
     README.md                     # re-run triggers, freshness, P-01/P-02, limits
     manifest.yaml                 # P-01/P-02: the bounded C-02 cross-check
