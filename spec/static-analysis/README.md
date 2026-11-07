@@ -22,6 +22,10 @@ disposition.
 
 - `rules/ci-supply-chain-2026-11-07.yml` — three rules authored in this
   repository, not copied from a registry.
+- `rules/python-audit-2026-11-07.yml` — one authored Python rule
+  (`execute(f"...")` / `%`-formatted SQL) used by the two-engine measurement.
+  It shares `rbac_pg/CELL-010` with Bandit B608, so the normalized report shows
+  two engines contributing to one cell.
 - `runs/ci-craft-i18n-2026-11-07.sarif` — raw Semgrep SARIF at
   `tool.driver.name = "Semgrep OSS"`.
 - `runs/ci-craft-i18n-2026-11-07.report.json` — normalized report from
@@ -148,6 +152,15 @@ into `@v7` and requires the detector to fail. The claim is C-01 in
 The post-fix run is the control, not a second opinion: the same rule file
 (same SHA-256) over the same tree returns zero findings. A zero before the
 fix would have shown the rule set was blind, not that the fix worked.
+
+## Two engines, one report
+
+`two-engine-2026-11-07.md` records the C-08 measurement: Bandit 1.9.4 and
+Semgrep 1.184.0 over `rbac_pg/setup` at `d978609`, normalized together with
+`--require-engines 2 --max-unmapped 0`. The three commands took 10.018 s in
+total; the report has 249 findings, both engines present, 0 unmapped, 0
+duplicates and 0 fixture inputs. The findings are not triaged, so the
+measurement says nothing about coverage; C-08 stays `open`.
 
 ## Triage: five findings, five decisions
 

@@ -1,0 +1,19 @@
+rules:
+  - id: dev-sec-skills.py.formatted-sql
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      A SQL statement is assembled inside the `execute`/`executemany` call from
+      an f-string or `%` formatting. Values interpolated this way bypass the
+      driver's parameter binding, so a value that reaches the statement can
+      change its structure rather than stay a value.
+    paths:
+      include:
+        - "**/*.py"
+    pattern-regex: '(?i)\b(?:execute|executemany)\s*\(\s*(?:f["'']|["''][^"''\n]*["'']\s*%\s*\(?)'
+    metadata:
+      category: security
+      confidence: MEDIUM
+      license: MIT
+      references:
+        - https://owasp.org/www-community/attacks/SQL_Injection

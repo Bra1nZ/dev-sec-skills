@@ -1,0 +1,2507 @@
+{
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Bandit",
+          "rules": [
+            {
+              "id": "B608",
+              "name": "hardcoded_sql_expressions",
+              "helpUri": "https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html"
+            },
+            {
+              "id": "B105",
+              "name": "hardcoded_password_string",
+              "helpUri": "https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html"
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "endTimeUtc": "2026-11-07T20:44:13Z"
+        }
+      ],
+      "properties": {
+        "metrics": {
+          "_totals": {
+            "loc": 7286,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "SEVERITY.LOW": 14,
+            "CONFIDENCE.LOW": 5,
+            "SEVERITY.MEDIUM": 49,
+            "CONFIDENCE.MEDIUM": 58,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/chaos_enginiring.py": {
+            "loc": 164,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 3,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 3,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/chaos_enginiring_v2.py": {
+            "loc": 142,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 11,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 11,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/rbac_install.py": {
+            "loc": 75,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/rbac_token.py": {
+            "loc": 56,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/setup_rbac_test.py": {
+            "loc": 221,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_4_lvl.py": {
+            "loc": 199,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_all_features.py": {
+            "loc": 126,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_fstek.py": {
+            "loc": 522,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 3,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 2,
+            "CONFIDENCE.MEDIUM": 2,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_gitops.py": {
+            "loc": 98,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_label_equivalence.py": {
+            "loc": 63,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_negative.py": {
+            "loc": 339,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_perf_envelope.py": {
+            "loc": 312,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 4,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 2,
+            "CONFIDENCE.MEDIUM": 3,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_plan_contract.py": {
+            "loc": 214,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 2,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 3,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_plan_index_cond.py": {
+            "loc": 128,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 2,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_side_channels.py": {
+            "loc": 235,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 2,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v12_security.py": {
+            "loc": 253,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 12,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 13,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v13_security.py": {
+            "loc": 475,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v14_migration.py": {
+            "loc": 222,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v14_security.py": {
+            "loc": 406,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 3,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 4,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v151_ranges.py": {
+            "loc": 342,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v15_ceiling_trigger.py": {
+            "loc": 270,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v15_idempotency.py": {
+            "loc": 254,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 0,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v15_migration.py": {
+            "loc": 338,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 0,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v15_perf.py": {
+            "loc": 295,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 1,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v15_security.py": {
+            "loc": 298,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 0,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 1,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v16_guards.py": {
+            "loc": 475,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 2,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 3,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v17_events.py": {
+            "loc": 425,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 2,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 3,
+            "CONFIDENCE.HIGH": 0
+          },
+          "setup/test_v191_fixes.py": {
+            "loc": 339,
+            "nosec": 0,
+            "skipped_tests": 0,
+            "SEVERITY.UNDEFINED": 0,
+            "SEVERITY.LOW": 1,
+            "SEVERITY.MEDIUM": 1,
+            "SEVERITY.HIGH": 0,
+            "CONFIDENCE.UNDEFINED": 0,
+            "CONFIDENCE.LOW": 0,
+            "CONFIDENCE.MEDIUM": 2,
+            "CONFIDENCE.HIGH": 0
+          }
+        }
+      },
+      "results": [
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 71
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    ROWS = 500000 \n    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 72,
+                  "startLine": 70
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 72
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 73,
+                  "startLine": 71
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 73
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n\n"
+                  },
+                  "endLine": 74,
+                  "startLine": 72
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 84
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    ROWS = 200000 # \u041f\u043e 200k \u0441\u0442\u0440\u043e\u043a \u0432 \u043a\u0430\u0436\u0434\u0443\u044e \u0442\u0430\u0431\u043b\u0438\u0446\u0443 = 2 \u043c\u0438\u043b\u043b\u0438\u043e\u043d\u0430\n    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) VALUES (2, 'HACK_TARGET');\") # \u0426\u0435\u043b\u044c \u0434\u043b\u044f \u0432\u0437\u043b\u043e\u043c\u0430\n"
+                  },
+                  "endLine": 85,
+                  "startLine": 83
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) VALUES (2, 'HACK_TARGET');\") # \u0426\u0435\u043b\u044c \u0434\u043b\u044f \u0432\u0437\u043b\u043e\u043c\u0430\n"
+                  },
+                  "startLine": 85
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, 'Customer ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) VALUES (2, 'HACK_TARGET');\") # \u0426\u0435\u043b\u044c \u0434\u043b\u044f \u0432\u0437\u043b\u043e\u043c\u0430\n    cur.execute(f\"INSERT INTO c_products (tenant_id, title, price) SELECT (random()*4+1)::int, 'Prod ' || id, random()*100 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 86,
+                  "startLine": 84
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_products (tenant_id, title, price) SELECT (random()*4+1)::int, 'Prod ' || id, random()*100 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 86
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_customers (tenant_id, name) VALUES (2, 'HACK_TARGET');\") # \u0426\u0435\u043b\u044c \u0434\u043b\u044f \u0432\u0437\u043b\u043e\u043c\u0430\n    cur.execute(f\"INSERT INTO c_products (tenant_id, title, price) SELECT (random()*4+1)::int, 'Prod ' || id, random()*100 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 87,
+                  "startLine": 85
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 87
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_products (tenant_id, title, price) SELECT (random()*4+1)::int, 'Prod ' || id, random()*100 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 88,
+                  "startLine": 86
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 88
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_invoices (tenant_id, order_id, amount) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 89,
+                  "startLine": 87
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_invoices (tenant_id, order_id, amount) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 89
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_items (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_invoices (tenant_id, order_id, amount) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_payments (tenant_id, invoice_id, status) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'PAID' FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 90,
+                  "startLine": 88
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_payments (tenant_id, invoice_id, status) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'PAID' FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 90
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_invoices (tenant_id, order_id, amount) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_payments (tenant_id, invoice_id, status) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'PAID' FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_shipments (tenant_id, order_id, address) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Address ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 91,
+                  "startLine": 89
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_shipments (tenant_id, order_id, address) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Address ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 91
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_payments (tenant_id, invoice_id, status) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'PAID' FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_shipments (tenant_id, order_id, address) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Address ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_reviews (tenant_id, product_id, rating) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*4+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 92,
+                  "startLine": 90
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_reviews (tenant_id, product_id, rating) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*4+1)::int FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 92
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_shipments (tenant_id, order_id, address) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Address ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_reviews (tenant_id, product_id, rating) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*4+1)::int FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_tickets (tenant_id, customer_id, issue) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Issue ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 93,
+                  "startLine": 91
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_tickets (tenant_id, customer_id, issue) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Issue ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 93
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_reviews (tenant_id, product_id, rating) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*4+1)::int FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_tickets (tenant_id, customer_id, issue) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Issue ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_logs (tenant_id, action) SELECT (random()*4+1)::int, 'Log ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "endLine": 94,
+                  "startLine": 92
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_logs (tenant_id, action) SELECT (random()*4+1)::int, 'Log ' || id FROM generate_series(1, {ROWS}) id;\")\n"
+                  },
+                  "startLine": 94
+                },
+                "artifactLocation": {
+                  "uri": "setup/chaos_enginiring_v2.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"INSERT INTO c_tickets (tenant_id, customer_id, issue) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, 'Issue ' || id FROM generate_series(1, {ROWS}) id;\")\n    cur.execute(f\"INSERT INTO c_logs (tenant_id, action) SELECT (random()*4+1)::int, 'Log ' || id FROM generate_series(1, {ROWS}) id;\")\n\n"
+                  },
+                  "endLine": 95,
+                  "startLine": 93
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'RBAC_APP_SECRET'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "RBAC_APP_SECRET_ENV = \"RBAC_APP_SECRET\"\n"
+                  },
+                  "startLine": 26
+                },
+                "artifactLocation": {
+                  "uri": "setup/rbac_token.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "# \u0418\u0441\u0442\u043e\u0447\u043d\u0438\u043a \u0441\u0435\u043a\u0440\u0435\u0442\u0430: \u043f\u0435\u0440\u0435\u043c\u0435\u043d\u043d\u0430\u044f \u043e\u043a\u0440\u0443\u0436\u0435\u043d\u0438\u044f (\u0438\u043b\u0438 \u043f\u0435\u0440\u0435\u0434\u0430\u0439\u0442\u0435 \u044f\u0432\u043d\u043e).\nRBAC_APP_SECRET_ENV = \"RBAC_APP_SECRET\"\n\n"
+                  },
+                  "endLine": 27,
+                  "startLine": 25
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 75
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_fstek.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nDB_FRESH = 'rbac_fstek_fresh'\n"
+                  },
+                  "endLine": 76,
+                  "startLine": 74
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            cur.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 165
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_fstek.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        if cur.fetchone():\n            cur.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                        \"JOIN pg_database d ON d.oid = s.dbid \"\n                        \"WHERE s.refobjid = '%s'::regrole\" % login\n                        + \" AND d.datname <> current_database()\")\n"
+                  },
+                  "endLine": 168,
+                  "startLine": 164
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        ok, d = expect_fail(acur, f\"SELECT count(*) FROM {tbl}\", '42501')\n"
+                  },
+                  "startLine": 253
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_fstek.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "                'rbac.integrity_baseline'):\n        ok, d = expect_fail(acur, f\"SELECT count(*) FROM {tbl}\", '42501')\n        report(f\"F1 SELECT {tbl} \u043e\u0442\u0432\u0435\u0440\u0433\u043d\u0443\u0442\", ok, d)\n"
+                  },
+                  "endLine": 254,
+                  "startLine": 252
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "LOW",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    ok, d = expect_fail(cur, f\"INSERT INTO rbac.role_mappings (group_id, role_id) \"\n"
+                  },
+                  "startLine": 455
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_fstek.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    admin_role = cur.fetchone()[0]\n    ok, d = expect_fail(cur, f\"INSERT INTO rbac.role_mappings (group_id, role_id) \"\n                             f\"VALUES ('g-evil', {admin_role})\", '42501')\n    report(\"F12a I1: \u043c\u0430\u043f\u043f\u0438\u043d\u0433 \u0432 \u0441\u0438\u0441\u0442\u0435\u043c\u043d\u0443\u044e \u0440\u043e\u043b\u044c (\u0431\u0435\u0437 \u044f\u043a\u043e\u0440\u044f/pg_role) \u043e\u0442\u0432\u0435\u0440\u0433\u043d\u0443\u0442\", ok, d)\n"
+                  },
+                  "endLine": 457,
+                  "startLine": 454
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "LOW",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            cur.execute(f\"\"\"\n"
+                  },
+                  "startLine": 72
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_negative.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        with conn.cursor() as cur:\n            cur.execute(f\"\"\"\n                DO $$ BEGIN\n                    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{POOL_USER}') THEN\n                        EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '{POOL_USER}', '{POOL_PASSWORD}');\n                    END IF;\n                END $$;\n                GRANT rbac_readwrite TO \"{POOL_USER}\";\n            \"\"\")\n\n"
+                  },
+                  "endLine": 80,
+                  "startLine": 71
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 59
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_perf_envelope.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "APP_ROLE = 'rbac_perf_app'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nROWS = 100_000\n"
+                  },
+                  "endLine": 60,
+                  "startLine": 58
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    dcur.execute(f\"\"\"INSERT INTO t_vanilla(id, tenant_id, owner_id, mac_level,\n"
+                  },
+                  "startLine": 233
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_perf_envelope.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    dcur.execute(f\"CREATE TABLE t_guarded({shape})\")\n    dcur.execute(f\"\"\"INSERT INTO t_vanilla(id, tenant_id, owner_id, mac_level,\n                    mac_categories, mic_level, mic_categories, payload)\n                    SELECT g, 1 + (g %% 2), 1, 1, '{{}}'::int[], 1,\n                           '{{}}'::int[], 'row-' || g\n                    FROM generate_series(1, %s) g\"\"\", (ROWS,))\n    dcur.execute(f\"\"\"INSERT INTO t_guarded(id, tenant_id, owner_id, mac_level,\n"
+                  },
+                  "endLine": 238,
+                  "startLine": 232
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    dcur.execute(f\"\"\"INSERT INTO t_guarded(id, tenant_id, owner_id, mac_level,\n"
+                  },
+                  "startLine": 238
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_perf_envelope.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "                    FROM generate_series(1, %s) g\"\"\", (ROWS,))\n    dcur.execute(f\"\"\"INSERT INTO t_guarded(id, tenant_id, owner_id, mac_level,\n                    mac_categories, mic_level, mic_categories, payload)\n                    SELECT g, 1 + (g %% 2), 1, 1, '{{}}'::int[], 1,\n                           '{{}}'::int[], 'row-' || g\n                    FROM generate_series(1, %s) g\"\"\", (ROWS,))\n    dcur.execute(\"ANALYZE t_vanilla\")\n"
+                  },
+                  "endLine": 243,
+                  "startLine": 237
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "                        \"SELECT payload INTO v FROM t_vanilla\"\n"
+                  },
+                  "startLine": 262
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_perf_envelope.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    us_van = measure_us(acur,\n                        \"SELECT payload INTO v FROM t_vanilla\"\n                        \" WHERE id = 1 + (i * 7919) %% %d\" % ROWS, n=200)\n    us_gua = measure_us(acur,\n"
+                  },
+                  "endLine": 264,
+                  "startLine": 261
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "LOW",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "                        \"SELECT payload INTO v FROM t_guarded\"\n"
+                  },
+                  "startLine": 265
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_perf_envelope.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    us_gua = measure_us(acur,\n                        \"SELECT payload INTO v FROM t_guarded\"\n                        \" WHERE id = 1 + (i * 7919) %% %d\" % ROWS, n=200)\n    overhead = us_gua - us_van\n"
+                  },
+                  "endLine": 267,
+                  "startLine": 264
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "LOW",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 34
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_plan_contract.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "DB_NAME = 'rbac_vpc_test'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nPASSED, FAILED = [], []\n"
+                  },
+                  "endLine": 35,
+                  "startLine": 33
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 93
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_plan_contract.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    if mkc.fetchall():\n        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                    \"JOIN pg_database d ON d.oid = s.dbid \"\n                    f\"WHERE s.refobjid = '{APP_ROLE}'::regrole \"\n                    \"AND d.datname <> current_database()\")\n        for (db,) in mkc.fetchall():\n"
+                  },
+                  "endLine": 97,
+                  "startLine": 92
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"\"\"INSERT INTO docs(id, tenant_id, owner_id, mac_level, payload)\n"
+                  },
+                  "startLine": 150
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_plan_contract.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    half = rows // 2\n    cur.execute(f\"\"\"INSERT INTO docs(id, tenant_id, owner_id, mac_level, payload)\n                    SELECT g, 1, 1, CASE WHEN g <= {half} THEN 1 ELSE 3 END,\n                           'row-' || g\n                    FROM generate_series(1, {rows}) g\"\"\")\n    cur.execute(\"ANALYZE docs\")\n"
+                  },
+                  "endLine": 154,
+                  "startLine": 149
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 35
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_plan_index_cond.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "DB_NAME = 'rbac_xcond_test'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nROWS = 100_000\n"
+                  },
+                  "endLine": 36,
+                  "startLine": 34
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"\"\"INSERT INTO docs(id, tenant_id, owner_id, mac_level,\n"
+                  },
+                  "startLine": 104
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_plan_index_cond.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"CREATE TABLE docs({shape})\")\n    cur.execute(f\"\"\"INSERT INTO docs(id, tenant_id, owner_id, mac_level,\n                    mac_categories, mic_level, mic_categories, payload)\n                    SELECT g, 1 + (g %% 2), 1, 1, '{{}}'::int[], 1, '{{}}'::int[],\n                           'row-' || g\n                    FROM generate_series(1, %s) g\"\"\", (ROWS,))\n    cur.execute(\"ANALYZE docs\")\n"
+                  },
+                  "endLine": 109,
+                  "startLine": 103
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 37
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_side_channels.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "DB_NAME = 'rbac_vsc_test'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\n\n"
+                  },
+                  "endLine": 38,
+                  "startLine": 36
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 120
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_side_channels.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    if mkc.fetchall():\n        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                    \"JOIN pg_database d ON d.oid = s.dbid \"\n                    f\"WHERE s.refobjid = '{APP_ROLE}'::regrole \"\n                    \"AND d.datname <> current_database()\")\n        for (db,) in mkc.fetchall():\n"
+                  },
+                  "endLine": 124,
+                  "startLine": 119
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'v12-suite-app-secret-0123456789abcdef'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "APP_SECRET = \"v12-suite-app-secret-0123456789abcdef\"\n"
+                  },
+                  "startLine": 26
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "# v1.3: \u0441\u0435\u0441\u0441\u0438\u0438 \u0441\u043e\u0437\u0434\u0430\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u043e HMAC-\u0442\u043e\u043a\u0435\u043d\u0443 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f\nAPP_SECRET = \"v12-suite-app-secret-0123456789abcdef\"\n\n"
+                  },
+                  "endLine": 27,
+                  "startLine": 25
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"DELETE FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 135
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "\n        cur.execute(f\"DELETE FROM public.{TABLE};\")\n        cur.execute(f\"\"\"\n"
+                  },
+                  "endLine": 136,
+                  "startLine": 134
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"\"\"\n"
+                  },
+                  "startLine": 136
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"DELETE FROM public.{TABLE};\")\n        cur.execute(f\"\"\"\n            INSERT INTO public.{TABLE} (id, tenant_id, owner_id, label, mac_lvl)\n            VALUES (1, 1, 1, '\u043e\u0431\u044b\u0447\u043d\u044b\u0439 \u043f\u0440\u0438\u043a\u0430\u0437', 1),\n                   (2, 1, 1, '\u0413\u041e\u0421\u0422\u0410\u0419\u041d\u0410 mac=50', 50),\n                   (3, 2, 2, '\u0447\u0443\u0436\u043e\u0439 \u0442\u0435\u043d\u0430\u043d\u0442', 1);\n        \"\"\")\n    conn.commit()\n"
+                  },
+                  "endLine": 142,
+                  "startLine": 135
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 152
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        # 1.1 \u0410\u0442\u0430\u043a\u0430 \u0431\u0435\u0437 \u0438\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u0438 \u0441\u0435\u0441\u0441\u0438\u0438\n        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n        n = cur.fetchone()[0]\n"
+                  },
+                  "endLine": 153,
+                  "startLine": 151
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 162
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "                    \"set_config('app.ctx_sig','deadbeef',false);\")\n        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n        n = cur.fetchone()[0]\n"
+                  },
+                  "endLine": 163,
+                  "startLine": 161
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 169
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        init_session(cur)\n        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n        n = cur.fetchone()[0]\n"
+                  },
+                  "endLine": 170,
+                  "startLine": 168
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 176
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        cur.execute(\"SELECT set_config('app.tenant_id','2',false);\")\n        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n        n = cur.fetchone()[0]\n"
+                  },
+                  "endLine": 177,
+                  "startLine": 175
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 185
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n            report(\"\u0418\u0441\u0442\u0451\u043a\u0448\u0438\u0439 TTL \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430 -> SQLSTATE 28000\", False, \"\u043e\u0448\u0438\u0431\u043a\u0438 \u043d\u0435 \u0431\u044b\u043b\u043e\")\n"
+                  },
+                  "endLine": 186,
+                  "startLine": 184
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n"
+                  },
+                  "startLine": 198
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        status = cur.fetchone()[0]\n        cur.execute(f\"SELECT COUNT(*) FROM public.{TABLE};\")\n        n = cur.fetchone()[0]\n"
+                  },
+                  "endLine": 199,
+                  "startLine": 197
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"UPDATE public.{TABLE} SET label='HACKED' WHERE id = 2;\")\n"
+                  },
+                  "startLine": 213
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        # 2.1 UPDATE \u043d\u0435\u0432\u0438\u0434\u0438\u043c\u043e\u0439 \u0441\u0442\u0440\u043e\u043a\u0438 \u0441 mac=50 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\n        cur.execute(f\"UPDATE public.{TABLE} SET label='HACKED' WHERE id = 2;\")\n        n = cur.rowcount\n"
+                  },
+                  "endLine": 214,
+                  "startLine": 212
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"DELETE FROM public.{TABLE} WHERE id = 2;\")\n"
+                  },
+                  "startLine": 218
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        # 2.2 DELETE \u0441\u0442\u0440\u043e\u043a\u0438 \u0441 mac=50 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\n        cur.execute(f\"DELETE FROM public.{TABLE} WHERE id = 2;\")\n        n = cur.rowcount\n"
+                  },
+                  "endLine": 219,
+                  "startLine": 217
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"UPDATE public.{TABLE} SET label='ok' WHERE id = 1;\")\n"
+                  },
+                  "startLine": 223
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        # 2.3 \u0421\u0430\u043d\u0438\u0442\u0438: \u0441\u0432\u043e\u0438 \u0441\u0442\u0440\u043e\u043a\u0438 (mac=0) \u043f\u043e-\u043f\u0440\u0435\u0436\u043d\u0435\u043c\u0443 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u043d\u0430 \u0437\u0430\u043f\u0438\u0441\u044c\n        cur.execute(f\"UPDATE public.{TABLE} SET label='ok' WHERE id = 1;\")\n        n = cur.rowcount\n"
+                  },
+                  "endLine": 224,
+                  "startLine": 222
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        cur.execute(f\"SELECT id, label FROM public.{TABLE} ORDER BY id;\")\n"
+                  },
+                  "startLine": 305
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v12_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        init_session(cur)\n        cur.execute(f\"SELECT id, label FROM public.{TABLE} ORDER BY id;\")\n        rows = cur.fetchall()\n"
+                  },
+                  "endLine": 306,
+                  "startLine": 304
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            q.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n"
+                  },
+                  "startLine": 249
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v14_migration.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            q.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n            report(f\"{APP_ROLE} -> rbac.{t}\", False, \"\u043f\u0440\u043e\u0448\u043b\u043e\")\n"
+                  },
+                  "endLine": 250,
+                  "startLine": 248
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'rbac_test_app'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    pwd = 'rbac_test_app'\n"
+                  },
+                  "startLine": 117
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v14_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    dbname = 'rbac_v14_test'\n    pwd = 'rbac_test_app'\n    adm = admin_dsn()\n"
+                  },
+                  "endLine": 118,
+                  "startLine": 116
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            app.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n"
+                  },
+                  "startLine": 431
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v14_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            app.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n            report(f\"\u043f\u0440\u0438\u043a\u043b\u0430\u0434\u043d\u0430\u044f \u0440\u043e\u043b\u044c: SELECT rbac.{t}\", False, \"\u043f\u0440\u043e\u0448\u043b\u043e\")\n"
+                  },
+                  "endLine": 432,
+                  "startLine": 430
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            ctrl.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n"
+                  },
+                  "startLine": 439
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v14_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            ctrl.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n            report(f\"rbac_admin: SELECT rbac.{t} \u043e\u0442\u043a\u043b\u043e\u043d\u0451\u043d\", False, \"\u043f\u0440\u043e\u0448\u043b\u043e\")\n"
+                  },
+                  "endLine": 440,
+                  "startLine": 438
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            ctrl.execute(f\"SELECT count(*) FROM rbac.{t}\")\n"
+                  },
+                  "startLine": 447
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v14_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            ctrl.execute(f\"SELECT count(*) FROM rbac.{t}\")\n            report(f\"rbac_admin \u0447\u0438\u0442\u0430\u0435\u0442 rbac.{t}\", True)\n"
+                  },
+                  "endLine": 448,
+                  "startLine": 446
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'rbac_cov_app'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    pwd = 'rbac_cov_app'\n"
+                  },
+                  "startLine": 125
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v15_ceiling_trigger.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    dbname = 'rbac_v15_ceilt'\n    pwd = 'rbac_cov_app'\n\n"
+                  },
+                  "endLine": 126,
+                  "startLine": 124
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            q.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n"
+                  },
+                  "startLine": 388
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v15_migration.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        try:\n            q.execute(f\"SELECT * FROM rbac.{t} LIMIT 1\")\n            report(f\"{APP_ROLE} -> rbac.{t}\", False, \"\u043f\u0440\u043e\u0448\u043b\u043e\")\n"
+                  },
+                  "endLine": 389,
+                  "startLine": 387
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'rbac_perf_app'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    pwd = 'rbac_perf_app'\n"
+                  },
+                  "startLine": 130
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v15_perf.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    dbname = os.getenv('PERF_DB', 'rbac_v15_perf')\n    pwd = 'rbac_perf_app'\n\n"
+                  },
+                  "endLine": 131,
+                  "startLine": 129
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        sql = (f\"SELECT count(*) FROM public.docs \"\n"
+                  },
+                  "startLine": 272
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v15_perf.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    for per_tenant in (10, 100, 1000, 10000):\n        sql = (f\"SELECT count(*) FROM public.docs \"\n               f\"WHERE tenant_id = 1 AND amount <= {per_tenant}\")\n        cur.execute(sql.replace('tenant_id = 1', 'tenant_id >= 1'))\n"
+                  },
+                  "endLine": 274,
+                  "startLine": 271
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "LOW",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'rbac_v15_app'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    pwd = 'rbac_v15_app'\n"
+                  },
+                  "startLine": 94
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v15_security.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    dbname = 'rbac_v15_test'\n    pwd = 'rbac_v15_app'\n\n"
+                  },
+                  "endLine": 95,
+                  "startLine": 93
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 64
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v16_guards.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "APP_ROLE = 'rbac_v16_app'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nPASSED, FAILED = [], []\n"
+                  },
+                  "endLine": 65,
+                  "startLine": 63
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 142
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v16_guards.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    if role_exists:\n        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                    \"JOIN pg_database d ON d.oid = s.dbid \"\n                    \"WHERE s.refobjid = '%s'::regrole\" % APP_ROLE\n                    + \" AND d.datname <> current_database()\")\n"
+                  },
+                  "endLine": 145,
+                  "startLine": 141
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"\"\"INSERT INTO {table}(tenant_id, owner_id, mac_level, payload)\n"
+                  },
+                  "startLine": 210
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v16_guards.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    # \u0414\u0430\u043d\u043d\u044b\u0435: \u0442\u0440\u0438 \u0443\u0440\u043e\u0432\u043d\u044f \u041c\u0420\u0414, alice (2) \u0432\u0438\u0434\u0438\u0442 1 \u0438 2\n    cur.execute(f\"\"\"INSERT INTO {table}(tenant_id, owner_id, mac_level, payload)\n                    VALUES (1, 1, 1, 'low'), (1, 1, 2, 'mid'), (1, 1, 3, 'high')\"\"\")\n    return alice_id\n"
+                  },
+                  "endLine": 212,
+                  "startLine": 209
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 69
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v17_events.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "APP_ROLE = 'rbac_v17_app'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nPASSED, FAILED = [], []\n"
+                  },
+                  "endLine": 70,
+                  "startLine": 68
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 145
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v17_events.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    if role_exists:\n        mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                    \"JOIN pg_database d ON d.oid = s.dbid \"\n                    \"WHERE s.refobjid = '%s'::regrole\" % APP_ROLE\n                    + \" AND d.datname <> current_database()\")\n"
+                  },
+                  "endLine": 148,
+                  "startLine": 144
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "    cur.execute(f\"\"\"INSERT INTO {table}(tenant_id, owner_id, mac_level, payload)\n"
+                  },
+                  "startLine": 203
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v17_events.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "    # \u0414\u0430\u043d\u043d\u044b\u0435: \u0442\u0440\u0438 \u0443\u0440\u043e\u0432\u043d\u044f \u041c\u0420\u0414, alice (2) \u0432\u0438\u0434\u0438\u0442 1 \u0438 2\n    cur.execute(f\"\"\"INSERT INTO {table}(tenant_id, owner_id, mac_level, payload)\n                    VALUES (1, 1, 1, 'low'), (1, 1, 2, 'mid'), (1, 1, 3, 'high')\"\"\")\n    return alice_id\n"
+                  },
+                  "endLine": 205,
+                  "startLine": 202
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        },
+        {
+          "message": {
+            "text": "Possible hardcoded password: 'citadel-test-secret-32-chars-minimum!!'"
+          },
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "SECRET = 'citadel-test-secret-32-chars-minimum!!'\n"
+                  },
+                  "startLine": 64
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v191_fixes.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "LABEL_ROLE = 'rbac_v191_lbladm'\nSECRET = 'citadel-test-secret-32-chars-minimum!!'\nPASSED, FAILED = [], []\n"
+                  },
+                  "endLine": 65,
+                  "startLine": 63
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "LOW"
+          },
+          "ruleId": "B105",
+          "ruleIndex": 1
+        },
+        {
+          "message": {
+            "text": "Possible SQL injection vector through string-based query construction."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "region": {
+                  "snippet": {
+                    "text": "            mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n"
+                  },
+                  "startLine": 127
+                },
+                "artifactLocation": {
+                  "uri": "setup/test_v191_fixes.py"
+                },
+                "contextRegion": {
+                  "snippet": {
+                    "text": "        if mkc.fetchall():\n            mkc.execute(\"SELECT d.datname FROM pg_shdepend s \"\n                        \"JOIN pg_database d ON d.oid = s.dbid \"\n                        \"WHERE s.refobjid = '%s'::regrole\" % role\n                        + \" AND d.datname <> current_database()\")\n"
+                  },
+                  "endLine": 130,
+                  "startLine": 126
+                }
+              }
+            }
+          ],
+          "properties": {
+            "issue_confidence": "MEDIUM",
+            "issue_severity": "MEDIUM"
+          },
+          "ruleId": "B608",
+          "ruleIndex": 0
+        }
+      ]
+    }
+  ],
+  "version": "2.1.0",
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
+}

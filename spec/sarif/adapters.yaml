@@ -67,6 +67,15 @@ engines:
         taxonomy_class: security
         failure_class: supply-chain-integrity
         failure_mode: detect
+      # Python rule authored for the two-engine run (C-08). Bandit B608 and
+      # this rule name the same failure class and resolve to the same cell, so
+      # the report shows two engines contributing to one cell.
+      - id: semgrep-authored-formatted-sql
+        match: '^dev-sec-skills\.py\.formatted-sql$'
+        taxonomy_class: security
+        failure_class: invalid-or-injected-input
+        failure_mode: deny
+        cell: rbac_pg/CELL-010
 
   - id: codeql
     name: CodeQL
