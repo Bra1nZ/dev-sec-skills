@@ -1,0 +1,32 @@
+# Synthetic fixture — not evidence about any real project.
+name: traceback-oracle
+files:
+  target.py: 'raise RuntimeError("synthetic crash")
+
+    '
+  corpus/seed.txt: 'x
+
+    '
+target: python3 target.py @INPUT@
+args:
+- --runs
+- '0'
+- --seed
+- '2'
+- --max-findings
+- '1'
+- --oracle
+- stderr-contains:Traceback (most recent call last)
+expect:
+  verdict: findings
+  findings: 1
+exit: 1
+description: 'The target exits 1, which many harnesses treat as a normal failure. The
+
+  oracle here is the traceback marker, not the exit code: an uncaught exception
+
+  is a crash even when the code is in the allowed set. This proves the adapter
+
+  is not hard-wired to exit codes.
+
+  '

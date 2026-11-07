@@ -1,0 +1,13 @@
+claims:
+  - id: C-02
+    claim: A surviving claim keeps the ledger non-empty.
+    mechanism: A synthetic mechanism.
+    evidence:
+      - kind: planned
+    scope: {}
+    status: open
+    limitations: No detector yet.
+retired:
+  - id: C-01
+    reason: Superseded by C-02.
+    date: "2026-11-01"

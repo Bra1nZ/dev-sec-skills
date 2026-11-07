@@ -1,0 +1,54 @@
+{
+  "tool": "fuzz_run.py",
+  "version": "1",
+  "target": "python3 tools/claim_lint.py --root . --docs-glob no-such-docs/*.md --suite-glob no-such-suite/*.py --no-vale @INPUT@",
+  "cwd": "/home/admini/projects/dev-sec-skills",
+  "commit": "35b36750bf3d290ce8de9710000595f4e2b471b7",
+  "seed": 20261107,
+  "oracle": [
+    "stderr-contains:Traceback (most recent call last)",
+    "exit-not-in:0,1,2"
+  ],
+  "corpus": {
+    "path": "spec/fuzz/corpus/claim-lint",
+    "manifest": [
+      {
+        "path": "empty-claims.yaml",
+        "sha256": "ba203e4d0d15b629a194730c9ef62752c8a7029a83df41ad00df34540ce43f15",
+        "size": 30
+      },
+      {
+        "path": "open.yaml",
+        "sha256": "a503e736f068bea4f98e1df3d27911d0809a7d403fa3434239aad577104183aa",
+        "size": 233
+      },
+      {
+        "path": "retired.yaml",
+        "sha256": "12a55371d1d950b223c191b9c66e1dddaf3401e6220b224243605683623bc434",
+        "size": 294
+      },
+      {
+        "path": "scalar.yaml",
+        "sha256": "98fd6929511a53eaeff610e9ead892ecb1bad7497db1686f055cb07d1a303835",
+        "size": 28
+      },
+      {
+        "path": "valid.yaml",
+        "sha256": "fab74ea87b0dd9a29de27e34c8770a8a80399cf5133ada1e234194b6927d47a6",
+        "size": 496
+      }
+    ]
+  },
+  "budget": {
+    "runs": 150,
+    "executions": 155,
+    "timeout_seconds": 10.0,
+    "max_findings": 10,
+    "stopped_early": false
+  },
+  "started_at": "2026-11-07T14:35:10+03:00",
+  "finished_at": "2026-11-07T14:36:02+03:00",
+  "executions_digest": "93e1af3183658aa6f161f37872583be27ee3862c086399aa5eb62bba55563342",
+  "findings": [],
+  "verdict": "clean"
+}

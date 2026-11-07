@@ -1,0 +1,17 @@
+project: synthetic
+generated: "2026-11-01"
+claims:
+  - id: C-01
+    claim: The checker rejects an empty source string.
+    mechanism: read_catalog returns a problem for an empty value.
+    evidence:
+      - kind: test
+        command: python3 -m pytest -q
+        artifact: tests/test_suite.py
+        tests: [test_empty]
+        date: "2026-11-01"
+    scope:
+      platforms: [synthetic]
+      assumptions: [the fixture matches the parser]
+    status: tested
+    limitations: Synthetic fixture.

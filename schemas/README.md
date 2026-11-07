@@ -9,6 +9,8 @@ evidence-first contract. The ledger turns the prose discipline of
 - `claim-ledger.schema.json` — JSON Schema (draft-07) for the ledger.
 - `run-record.schema.json` — JSON Schema (draft-07) for `evidence[].run_record`.
 - `tool-output.schema.json` — JSON Schema (draft-07) for `evidence[].tool_output`.
+- `fuzz-run.schema.json` — JSON Schema (draft-07) for a fuzz run record (V2-17),
+  written by `../tools/fuzz_run.py`.
 - `../tools/claim_lint.py` — the linter (Python 3 stdlib; PyYAML for `.yaml` ledgers).
 
 ## Ledger format
@@ -83,6 +85,17 @@ when a `model-checked` claim's record states no `bound`: a bounded run whose
 bound is unrecorded overstates what was explored. The record does not check the
 tool's semantics or the soundness of the encoding, and without an external
 anchor a consistent forgery passes, exactly as with run records.
+
+## Fuzz run record
+
+`fuzz-run.schema.json` describes what `tools/fuzz_run.py` writes (V2-17): the
+target command, the oracle rules, the corpus manifest with a SHA-256 per seed,
+the budget, the fixed seed, every finding with its input and captured log, and
+`executions_digest`. The digest is the SHA-256 of the ordered input hashes, so
+the same corpus and seed must reproduce it; a different corpus, budget or seed
+is a different run. A `clean` verdict is scoped to that oracle and budget: the
+adapter records a run it can replay, not the absence of bugs. See
+`../spec/fuzz/README.md`.
 
 ## Checks
 

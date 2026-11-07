@@ -1,0 +1,26 @@
+# Synthetic fixture — not evidence about any real project.
+name: missing-corpus
+files:
+  target.py: 'import sys
+
+    sys.exit(0)
+
+    '
+target: python3 target.py @INPUT@
+args:
+- --runs
+- '1'
+- --seed
+- '0'
+expect:
+  record: false
+exit: 2
+description: 'No corpus directory exists, so there is nothing to mutate. The adapter must
+
+  exit 2 and write no record: a run with no seeds is a usage error, not a clean
+
+  run. Writing a clean record here would turn an empty corpus into false
+
+  assurance.
+
+  '

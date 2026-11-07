@@ -1,0 +1,9 @@
+claims:
+  - id: C-01
+    claim: A role-less session cannot write tenant data.
+    mechanism: Session check before handler dispatch.
+    evidence:
+      - kind: planned
+    scope: {}
+    status: open
+    limitations: No detector yet.

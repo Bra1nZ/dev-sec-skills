@@ -38,6 +38,9 @@ evals/
     cases/
   status-diff/
     run_evals.py        # fail-closed base handling; one recorded known gap
+  fuzz/
+    run_evals.py        # fuzz_run.py: oracle, budget, determinism
+    cases/
 ```
 
 ## Prompts
@@ -83,12 +86,18 @@ tombstone with no reason) and six V2-15/V2-16 cases (a valid runtime-enforcement
 cell, missing `enforced_at`/`oracle`/`violation_response`, no `negative_test`, an
 unresolved negative test, an unchecked one without `--suite-glob`, and a status
 overclaim). The status-diff evals cover fail-closed base handling
-and 13 scenarios in total, five of them for V2-05. Reproduce all three:
+and 13 scenarios in total, five of them for V2-05. `evals/fuzz/` runs 5 cases
+for `tools/fuzz_run.py`: a failing seed (one finding, source named), a clean
+target whose two identical runs must produce the same `executions_digest`, a
+traceback oracle that fires on exit 1 (the oracle is not hard-wired to exit
+codes), `max_findings` stopping the run and saying so, and a missing corpus
+exiting 2 with no record. Reproduce all four:
 
 ```bash
 python3 evals/linter/run_evals.py
 python3 evals/cell-lint/run_evals.py
 python3 evals/status-diff/run_evals.py
+python3 evals/fuzz/run_evals.py
 ```
 
 A case may declare `git.commits`; the runner commits them in order and
@@ -104,6 +113,9 @@ open: the tool compares evidence identities and cannot tell a genuinely new run
 from a re-dated one. A `run_record` lets `claim_lint` L2 catch re-dating in the
 ledger, but without an external anchor (C-13) a consistent forgery of the record
 and the log still passes.
+
+The fuzz cases exercise the adapter, not a real target: a passing run says the
+oracle, budget and determinism rules hold, not that any program is bug-free.
 
 ## Reproduce
 

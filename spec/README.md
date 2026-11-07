@@ -35,6 +35,10 @@ spec/
         README.md                 # results, a negative result, harness notes
       probes/
         invisible-characters/     # C-08 evidence: Cf chars pass the checker
+  fuzz/
+    README.md                     # what a fuzz record proves, oracle rules
+    corpus/claim-lint/            # five seed ledgers
+    runs/claim-lint-2026-11-07.json  # recorded run: 155 executions, clean
 ```
 
 ## Status
@@ -85,6 +89,16 @@ resolves the test ID against `--suite-glob`, and CL2 caps such a cell at
 and `craft-i18n` CELL-003 (`parse_row` returns `line N: ...`, negative test
 `each_bad_row_is_one_problem`); `make verify` passes the suite glob for both, so
 the IDs resolve rather than being assumed.
+
+Fuzzing (V2-17) has a record instead of a session: `tools/fuzz_run.py` runs a
+target over a seed corpus and random mutations with a fixed seed, checks every
+execution against explicit oracle rules, and writes
+`schemas/fuzz-run.schema.json`. The committed run is `fuzz/runs/claim-lint-2026-11-07.json`
+(5 seeds, 150 mutated runs, 155 executions, seed 20261107, verdict clean);
+`executions_digest` is the SHA-256 of the ordered input hashes, and
+`make fuzz-claim-lint` replays the run and compares it. The adapter is not
+coverage-guided, and a clean verdict is scoped to that oracle and budget, not a
+statement that the target is free of bugs.
 
 The `unroutable` share is measurable through an escape hatch (`taxonomy_class`
 or `failure_mode` = `other`, with a mandatory `routing_note`) and

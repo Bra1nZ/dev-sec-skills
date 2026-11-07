@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-24; английская версия —
+  утверждений C-01…C-25; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -251,7 +251,7 @@ evals, а не истинность свойств и не чистоту produc
 ## Статус
 
 Это версия `0.1`: три скила, crosswalk, шаблоны evidence, три набора evals для
-скилов, три набора для линтеров и каталог `spec/` с концептом конвейера.
+скилов, четыре набора для линтеров и каталог `spec/` с концептом конвейера.
 Результаты — в [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
@@ -282,6 +282,16 @@ evidence, трассировка, таксономия, гейт эскалац�
 `oracle` и `violation_response`) и шаблон `ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 40/40,
 тоже с негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
+
+Фаззинг-адаптер `tools/fuzz_run.py` (V2-17) запускает цель по seed-корпусу и
+случайным мутациям с фиксированным seed, проверяет каждый запуск по явным
+oracle-правилам и пишет запись по `schemas/fuzz-run.schema.json`. Записанный
+прогон — [`spec/fuzz/runs/claim-lint-2026-11-07.json`](spec/fuzz/runs/claim-lint-2026-11-07.json):
+5 seed-леджеров, 150 мутаций, 155 исполнений, seed 20261107, verdict `clean`;
+`make fuzz-claim-lint` повторяет прогон и сверяет `executions_digest`.
+Кейсы адаптера — [`evals/fuzz/`](evals/fuzz/): 5/5. Мутатор случайный, без
+coverage guidance: `clean` означает «этот oracle ничего не увидел в этом
+бюджете», а не отсутствие багов в цели.
 
 Пилотный реестр на реальном репозитории — [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md):
 29 ячеек, 26 non-open, 3 open, 0 ошибок CL1/CL3/CL4 при прогоне с claim-леджером.

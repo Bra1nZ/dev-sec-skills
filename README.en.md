@@ -80,7 +80,7 @@ taint, a cell taxonomy instead of an accumulating pile of lessons, a verdict
 registry, and an explicit promise boundary for L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — the concept with
-  claims C-01…C-24 (Russian source of truth); English derivative:
+  claims C-01…C-25 (Russian source of truth); English derivative:
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — the machine-readable cell.
@@ -240,7 +240,7 @@ known gap is recorded in `evals/status-diff` (re-dating).
 ## Status
 
 This is an early `0.1`: three skills, a crosswalk, evidence templates, skill
-evals, three linter suites, and the `spec/` directory with the conveyor concept.
+evals, four linter suites, and the `spec/` directory with the conveyor concept.
 Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-2/RESULTS.md`](evals/iteration-2/RESULTS.md),
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md), and
@@ -264,6 +264,17 @@ claim with no output, a model-checked claim with no bound). The historical
 12-case run is `evals/iteration-3/RESULTS.md`. The cell-lint cases are in
 [`evals/cell-lint/`](evals/cell-lint/): 40/40, with a runner negative control.
 These are synthetic fixtures, not proof that any production registry is clean.
+
+The fuzz adapter `tools/fuzz_run.py` (V2-17) runs a target over a seed corpus
+and random mutations with a fixed seed, checks every execution against explicit
+oracle rules, and writes a record shaped by `schemas/fuzz-run.schema.json`. The
+committed run is
+[`spec/fuzz/runs/claim-lint-2026-11-07.json`](spec/fuzz/runs/claim-lint-2026-11-07.json):
+5 seed ledgers, 150 mutations, 155 executions, seed 20261107, verdict `clean`;
+`make fuzz-claim-lint` replays it and compares `executions_digest`. The adapter
+cases are in [`evals/fuzz/`](evals/fuzz/): 5/5. The mutator is random, without
+coverage guidance: `clean` means this oracle saw nothing in this budget, not
+that the target is free of bugs.
 
 The pilot registry on a real repository is
 [`spec/pilots/rbac_pg/`](spec/pilots/rbac_pg/README.md): 29 cells, 26 non-open,

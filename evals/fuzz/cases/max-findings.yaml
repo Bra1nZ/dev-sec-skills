@@ -1,0 +1,37 @@
+# Synthetic fixture — not evidence about any real project.
+name: max-findings
+files:
+  target.py: 'import sys
+
+    open(sys.argv[1], "rb").read()
+
+    sys.exit(5)
+
+    '
+  corpus/seed.txt: 'x
+
+    '
+target: python3 target.py @INPUT@
+args:
+- --runs
+- '5'
+- --seed
+- '3'
+- --max-findings
+- '2'
+- --oracle
+- exit-not-in:0
+expect:
+  verdict: findings
+  findings: 2
+  stopped_early: true
+exit: 1
+description: 'Every execution violates the oracle. The budget allows five mutations, but
+
+  max_findings=2 must stop the run and say so in the record; otherwise a target
+
+  that fails on every input fills the disk and the reviewer never learns that the
+
+  budget was exhausted early.
+
+  '

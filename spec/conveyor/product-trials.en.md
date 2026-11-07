@@ -36,7 +36,7 @@ it is not "met by default".
 | 4 | Mutation coverage of security detectors | `run_mutations.py` + registry (§2.1) | ≥ N = 87.5 % | fixed 2026-11-07: 21/24 = 87.5 %; artifact — `spec/pilots/*/cells.yaml` and `spec/pilots/*/mutations/README.md` at the measurement commit, recorded before the first product run |
 | 5 | Every `tested` security detector has either a mutation fixture or a documented `mutation_exemption` | fixture or exemption | 100 % accounted for; exemptions are listed and count as debt | measured 2026-11-06: `rbac_pg` 24 fixtures + 3 exemptions; `craft-i18n` 1 fixture, 0 exemptions |
 | 6 | `unroutable` share in the taxonomy | V2-25 | ≤ U = 0.0 % | fixed 2026-11-07: 0/43; the escape hatch (`taxonomy_class`/`failure_mode` = `other` + `routing_note`) exists and is measured by `tools/unroutable.py --max-share 0`; before the hatch, 0 was structural, see §2.1 |
-| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-07: `claim_lint` 0 error (1 L5 and 6 L2 warnings on `rbac_pg` — the ledger has no run_record; 0 warnings on `craft-i18n`), `cell-lint` 40/40 and 14/14 cases, `linter` 35/35, `status-diff` 13 + 1 known GAP: `status_diff` alone cannot see re-dating, and a run_record catches it only when present; without an external anchor (C-13) a consistent forgery passes |
+| 7 | `claim_lint`, `status_diff`, evals | `make verify` | 0 error | run 2026-11-07: `claim_lint` 0 error (1 L5 and 6 L2 warnings on `rbac_pg` — the ledger has no run_record; 0 warnings on `craft-i18n`), `cell-lint` 40/40 and 14/14 cases, `linter` 35/35, `fuzz` 5/5 (replay of the recorded run is `make fuzz-claim-lint`, outside `make verify`: about a minute), `status-diff` 13 + 1 known GAP: `status_diff` alone cannot see re-dating, and a run_record catches it only when present; without an external anchor (C-13) a consistent forgery passes |
 
 Fixing rule: N or U enters the table only with a reference to the measurement
 artifact. The artifact must be recorded **before** the first product run. If the
@@ -169,8 +169,8 @@ sprint opens.
   (`spec/pilots/craft-i18n/runs/`): log and artifact hashes, exit code and
   executed IDs are checked on every run.
 - N = 87.5 % (21/24) and U = 0.0 % (0/43) are fixed in §2.1 with artifacts from
-  2026-11-07. `make verify` — exit 0, including evals 40/40 + 35/35 + 13 with
-  one known GAP.
+  2026-11-07. `make verify` — exit 0, including evals 40/40 + 35/35 + 5/5 + 13 with one
+  known GAP.
 
 Consequence: **the boundary is filled, but product trials are not open yet.**
 The thresholds are fixed before the first product run; opening requires §5

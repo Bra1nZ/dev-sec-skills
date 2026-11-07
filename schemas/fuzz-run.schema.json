@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/fuzz-run.schema.json",
+  "title": "Fuzz run record",
+  "description": "A machine-checkable record of one fuzz run (V2-17): the oracle, the seed corpus manifest, the budget, the fixed seed, and every failing input with its captured output. It makes a run replayable (same corpus and seed give the same executions_digest) and reviewable (each finding names the rule it violates). It does not prove the target is free of bugs: a random mutator without coverage guidance explores a tiny fraction of the input space, and a clean run only means this oracle saw nothing in this budget.",
+  "type": "object",
+  "required": ["tool", "version", "target", "seed", "oracle", "corpus",
+               "budget", "started_at", "finished_at", "executions_digest",
+               "findings", "verdict"],
+  "additionalProperties": false,
+  "properties": {
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Adapter that produced the record, e.g. 'fuzz_run.py'."
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Adapter version; the record means little without it."
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Command template that was executed, with @INPUT@ for the input path."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory the target ran in."
+    },
+    "commit": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{7,64}$",
+      "description": "Commit under test, or null when the run was not inside a git work tree."
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Fixed RNG seed. With the same corpus it must reproduce executions_digest."
+    },
+    "oracle": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Rules that decide a finding: exit:N, exit-not-in:N,M, stdout-contains:TEXT, stderr-contains:TEXT, timeout. A run is a finding when any rule matches."
+    },
+    "corpus": {
+      "type": "object",
+      "required": ["path", "manifest"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Seed corpus directory."
+        },
+        "manifest": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "sha256", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "size": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "description": "Every seed file with its SHA-256, in sorted path order. Reading a different corpus changes the digest."
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["runs", "executions", "timeout_seconds", "max_findings", "stopped_early"],
+      "additionalProperties": false,
+      "properties": {
+        "runs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Requested mutated executions after the seed files."
+        },
+        "executions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Executions actually performed, seeds included."
+        },
+        "timeout_seconds": { "type": "number", "exclusiveMinimum": 0 },
+        "max_findings": { "type": "integer", "minimum": 1 },
+        "stopped_early": {
+          "type": "boolean",
+          "description": "True when max_findings stopped the run before the budget was spent."
+        }
+      }
+    },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "executions_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 over the ordered input hashes. Same corpus and seed must reproduce it; a mismatch means the run is not the one recorded."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["input", "input_sha256", "input_size", "log", "log_sha256",
+                     "oracle", "exit_code", "timed_out", "seed_input"],
+        "additionalProperties": false,
+        "properties": {
+          "input": { "type": "string", "minLength": 1 },
+          "input_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "input_size": { "type": "integer", "minimum": 0 },
+          "log": { "type": "string", "minLength": 1 },
+          "log_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "oracle": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "exit_code": { "type": ["integer", "null"] },
+          "timed_out": { "type": "boolean" },
+          "seed_input": {
+            "type": ["string", "null"],
+            "description": "Corpus path this input was mutated from, or null for an unmutated seed."
+          }
+        }
+      }
+    },
+    "verdict": {
+      "enum": ["clean", "findings"],
+      "description": "clean: no oracle matched within the budget. findings: at least one input is recorded."
+    }
+  }
+}

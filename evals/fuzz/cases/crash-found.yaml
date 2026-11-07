@@ -1,0 +1,35 @@
+# Synthetic fixture — not evidence about any real project.
+name: crash-found
+files:
+  target.py: 'import sys
+
+    data = open(sys.argv[1], "rb").read()
+
+    sys.exit(3 if b"BOOM" in data else 0)
+
+    '
+  corpus/seed.txt: 'BOOM
+
+    '
+target: python3 target.py @INPUT@
+args:
+- --runs
+- '0'
+- --seed
+- '1'
+- --oracle
+- exit-not-in:0
+expect:
+  verdict: findings
+  findings: 1
+  seed_input: seed.txt
+exit: 1
+description: 'The seed itself violates the oracle: the target exits 3 on the BOOM marker
+
+  and the rule allows only 0. The adapter must record one finding, keep the
+
+  failing input and its log, and name the seed it came from. A fuzz run that
+
+  silently drops a failing seed is worse than no run.
+
+  '

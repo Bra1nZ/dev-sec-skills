@@ -1,0 +1,38 @@
+# Synthetic fixture — not evidence about any real project.
+name: clean-deterministic
+files:
+  target.py: 'import sys
+
+    open(sys.argv[1], "rb").read()
+
+    sys.exit(0)
+
+    '
+  corpus/one.txt: 'alpha
+
+    '
+  corpus/two.txt: 'beta
+
+    '
+target: python3 target.py @INPUT@
+args:
+- --runs
+- '10'
+- --seed
+- '7'
+- --oracle
+- exit:0
+expect:
+  verdict: clean
+  findings: 0
+  digests_equal: true
+exit: 0
+description: 'Control — a target that always exits 0. Two identical runs with the same
+
+  corpus and seed must produce the same executions_digest; that is the whole
+
+  determinism claim. A clean verdict is scoped to this oracle and budget, not a
+
+  statement that the target is bug-free.
+
+  '
