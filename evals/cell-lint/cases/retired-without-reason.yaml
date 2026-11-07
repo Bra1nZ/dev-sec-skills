@@ -1,0 +1,37 @@
+# Synthetic fixture — not evidence about any real project.
+name: retired-without-reason
+description: "A tombstone with an empty reason and no base registry. CL1 must error on the\n      shape\
+  \ alone: an unexplained retirement is the silent removal V2-05 forbids,\n      and it must not depend\
+  \ on having a base to compare against.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - id: CELL-001
+    title: A role-less session cannot write tenant data.
+    taxonomy_class: security
+    failure_class: synthetic
+    entry_points:
+    - http
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+  retired:
+  - id: CELL-002
+    reason: ' '
+    date: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: error
+exit: 1

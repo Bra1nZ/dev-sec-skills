@@ -1,0 +1,28 @@
+# Synthetic fixture — not evidence about any real project.
+name: retired-live-claim
+description: "A tombstone that names a claim still present in the ledger. The record claims\n      the\
+  \ claim is gone and alive at the same time; one removal, one retirement, so\n      L1 must error instead\
+  \ of letting the ambiguity stand.\n"
+files:
+  docs/README.md: 'The checker validates every row.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: The checker rejects an empty source string.
+    mechanism: read_catalog returns a problem for an empty value.
+    evidence: []
+    scope: Single module, synthetic fixture.
+    status: open
+    limitations: No test yet.
+  retired:
+  - id: C-01
+    reason: Removed twice by mistake.
+    date: '2026-11-01'
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: error
+exit: 1

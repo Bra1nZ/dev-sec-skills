@@ -221,7 +221,47 @@ def check_structure(doc, findings):
                 findings.append(Finding("CL1", "error",
                                         "claim_ids[%d] %r does not match ^C-[0-9]{2,}$"
                                         % (j, claim_id), who))
+
+    check_retired(doc, seen, findings)
     return valid
+
+
+def check_retired(doc, active_ids, findings):
+    """Validate the tombstone list (V2-05).
+
+    A cell may leave the registry only through `retired:`, which carries a
+    reason. Shape checks live in CL1; the removal check (a base cell gone
+    without a tombstone) lives in CL6, which has the base registry.
+    """
+    retired = doc.get("retired")
+    if retired is None:
+        return
+    if not isinstance(retired, list):
+        findings.append(Finding("CL1", "error", "retired is not a list"))
+        return
+    seen = set()
+    for i, entry in enumerate(retired):
+        if not isinstance(entry, dict):
+            findings.append(Finding("CL1", "error", "retired[%d] is not an object" % i))
+            continue
+        rid = entry.get("id")
+        who = rid if isinstance(rid, str) and rid else "#retired[%d]" % i
+        if not isinstance(rid, str) or not CELL_ID_RE.match(rid):
+            findings.append(Finding("CL1", "error",
+                                    "retired ID %r does not match ^CELL-[0-9]{3,}$" % rid, who))
+        if rid in seen:
+            findings.append(Finding("CL1", "error", "duplicate retired ID", who))
+        seen.add(rid)
+        if rid in active_ids:
+            findings.append(Finding("CL1", "error",
+                                    "cell is both active and retired; retire it once", who))
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            findings.append(Finding("CL1", "error", "retired entry requires a non-empty reason", who))
+        when = entry.get("date")
+        if when is not None and not DATE_RE.match(str(when)):
+            findings.append(Finding("CL1", "error",
+                                    "retired date %r is not YYYY-MM-DD" % when, who))
 
 
 # ------------------------------------------------------------- CL2 coverage
@@ -436,7 +476,27 @@ def detector_evidence(det):
     )
 
 
-def check_escalation(target_cells, base_path, findings):
+def retired_map(doc):
+    """id -> tombstone entry from the top-level `retired:` list (V2-05)."""
+    out, dupes = {}, []
+    if isinstance(doc, dict) and isinstance(doc.get("retired"), list):
+        for entry in doc["retired"]:
+            if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+                continue
+            rid = entry["id"]
+            if rid in out:
+                dupes.append(rid)
+                continue
+            out[rid] = entry
+    return out, dupes
+
+
+def tombstone_reason(entry):
+    reason = entry.get("reason") if isinstance(entry, dict) else None
+    return reason.strip() if isinstance(reason, str) and reason.strip() else None
+
+
+def check_escalation(doc, target_cells, base_path, findings):
     try:
         base_doc = load_doc(base_path)
     except (OSError, ValueError) as e:
@@ -447,6 +507,23 @@ def check_escalation(target_cells, base_path, findings):
         for c in base_doc.get("cells") or []:
             if isinstance(c, dict) and c.get("id"):
                 base_cells[c["id"]] = c
+
+    # Shape (reason, duplicate, live ID) is CL1's job; CL6 only asks what the
+    # base registry knew and what the target no longer records.
+    target_retired, dupes = retired_map(doc)
+    base_retired, _ = retired_map(base_doc)
+    for rid in sorted(dupes):
+        findings.append(Finding("CL6", "error",
+                                "retired cell appears more than once", rid))
+    for rid in sorted(target_retired):
+        if rid not in base_cells and rid not in {c.get("id") for c in target_cells}:
+            findings.append(Finding("CL6", "warning",
+                                    "retired cell was not in the base registry", rid))
+    dropped = set(base_retired) - set(target_retired) - set(base_cells)
+    dropped -= {c.get("id") for c in target_cells}
+    for rid in sorted(dropped):
+        findings.append(Finding("CL6", "error",
+                                "retired cell: tombstone dropped since base", rid))
     target_ids = set()
     for cell in target_cells:
         cid = cell.get("id")
@@ -482,7 +559,13 @@ def check_escalation(target_cells, base_path, findings):
                                        cell.get("coverage_status")), cid))
     for cid in base_cells:
         if cid not in target_ids:
-            findings.append(Finding("CL6", "warning", "cell removed since base", cid))
+            reason = tombstone_reason(target_retired.get(cid))
+            if reason:
+                findings.append(Finding("CL6", "info", "cell retired: %s" % reason, cid))
+            else:
+                findings.append(Finding("CL6", "error",
+                                        "cell removed without a retired entry with a reason "
+                                        "(V2-05)", cid))
 
 
 # --------------------------------------------------------------------- main
@@ -526,7 +609,7 @@ def main():
         check_traceability(cells, args.ledger, findings)
         check_taxonomy(doc, cells, findings)
         if args.base:
-            check_escalation(cells, args.base, findings)
+            check_escalation(doc, cells, args.base, findings)
 
     checks = [("CL1", "structure"), ("CL2", "coverage"), ("CL3", "evidence"),
               ("CL4", "traceability"), ("CL5", "taxonomy")]

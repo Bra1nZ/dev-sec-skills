@@ -6,7 +6,8 @@ schemas/claim-ledger.schema.json):
 
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
-                     status=open requires limitations, run_record shape
+                     status=open requires limitations, run_record shape,
+                     retired tombstones (reason present, never also active)
   L2  evidence:      artifact paths exist, commits resolvable, the artifact
                      matches its blob at the cited commit, dates within the
                      freshness window, run_record log and artifact hashes
@@ -224,6 +225,48 @@ def check_schema(ledger, findings):
 
 
 # ------------------------------------------------ run records (V2-01/V2-02)
+
+def check_retired(ledger, claims, findings):
+    """Validate the tombstone list (V2-05).
+
+    A claim may leave the ledger only through `retired:`, which carries a
+    reason. The shape checks live in L1 because they need no base ledger; the
+    removal check (a base claim gone without a tombstone) lives in
+    tools/status_diff.py, which has the base.
+    """
+    if not isinstance(ledger, dict):
+        return
+    retired = ledger.get("retired")
+    if retired is None:
+        return
+    if not isinstance(retired, list):
+        findings.append(Finding("L1", "error", "retired is not a list"))
+        return
+    active = {c.get("id") for c in claims if isinstance(c, dict)}
+    seen = set()
+    for i, entry in enumerate(retired):
+        if not isinstance(entry, dict):
+            findings.append(Finding("L1", "error", "retired[%d] is not an object" % i))
+            continue
+        rid = entry.get("id")
+        who = rid if isinstance(rid, str) and rid else "#retired[%d]" % i
+        if not isinstance(rid, str) or not ID_RE.match(rid):
+            findings.append(Finding("L1", "error",
+                                    "retired ID %r does not match ^C-[0-9]{2,}$" % rid, who))
+        if rid in seen:
+            findings.append(Finding("L1", "error", "duplicate retired ID", who))
+        seen.add(rid)
+        if rid in active:
+            findings.append(Finding("L1", "error",
+                                    "claim is both active and retired; retire it once", who))
+        reason = entry.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            findings.append(Finding("L1", "error", "retired entry requires a non-empty reason", who))
+        when = entry.get("date")
+        if when is not None and not DATE_RE.match(str(when)):
+            findings.append(Finding("L1", "error",
+                                    "retired date %r is not YYYY-MM-DD" % when, who))
+
 
 def _sha256_file(path):
     h = hashlib.sha256()
@@ -687,6 +730,7 @@ def main():
 
     findings = []
     claims = check_schema(ledger or {}, findings)
+    check_retired(ledger or {}, claims, findings)
     if claims:
         check_run_records_schema(claims, findings)
         run_log_root = args.run_log_root or root

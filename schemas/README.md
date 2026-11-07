@@ -25,6 +25,13 @@ A ledger is a JSON or YAML document with a `claims` array. Each claim:
 | `limitations` | open only | known limits, next to the claim |
 | `last_verified` | recommended | last rerun date |
 
+A ledger may also carry a top-level `retired` list of `{id, reason, date}`
+tombstones (V2-05). A claim leaves the ledger only through a tombstone with a
+non-empty reason: `tools/status_diff.py` errors when a base claim disappears
+without one, and the tombstone is append-only, so dropping it later is an error
+too. `claim_lint` L1 rejects a tombstone with no reason, a duplicate, and one
+that names a claim still present in `claims`.
+
 ### Run record
 
 A `kind=test` evidence item may carry a `run_record` (V2-01/V2-02): `runner`,
@@ -58,7 +65,7 @@ re-dating and unexecuted citations, not determined fraud.
 
 | Check | What it enforces |
 | --- | --- |
-| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously) |
+| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously), `retired` tombstones with reasons and no live IDs |
 | L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
 | L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning |

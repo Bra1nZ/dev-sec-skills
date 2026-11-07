@@ -14,7 +14,10 @@ with no prior release; the escalation gate is then skipped explicitly.
 Transitions:
   escalation  (rank up, e.g. open -> tested): error without new evidence
   downgrade   (rank down, e.g. tested -> open): warning, allowed but noted
-  removed     (claim absent from the target): warning
+  removed     (claim absent from the target): error unless a `retired:` entry
+              with a reason names it
+  retired     (claim replaced by a tombstone): info; the tombstone is
+              append-only, so dropping one later is an error
   added       (new claim in the target): info
 
 Exit codes: 0 no violations (warnings allowed), 1 violations found,
@@ -81,6 +84,30 @@ def load_ledger_ref(repo, ref, rel):
 def claims_of(ledger):
     claims = ledger.get("claims") if isinstance(ledger, dict) else None
     return {c["id"]: c for c in (claims or []) if isinstance(c, dict) and c.get("id")}
+
+
+def retired_of(ledger, duplicates):
+    """id -> tombstone entry from the top-level `retired:` list (V2-05)."""
+    if not isinstance(ledger, dict):
+        return {}
+    entries = ledger.get("retired")
+    if not isinstance(entries, list):
+        return {}
+    out = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            continue
+        rid = entry["id"]
+        if rid in out:
+            duplicates.append(rid)
+            continue
+        out[rid] = entry
+    return out
+
+
+def tombstone_reason(entry):
+    reason = entry.get("reason") if isinstance(entry, dict) else None
+    return reason.strip() if isinstance(reason, str) and reason.strip() else None
 
 
 def evidence_keys(claim):
@@ -150,6 +177,9 @@ def main():
 
     base_claims = claims_of(base)
     target_claims = claims_of(target)
+    duplicate_retired = []
+    base_retired = retired_of(base, duplicate_retired)
+    target_retired = retired_of(target, duplicate_retired)
     if not base_claims:
         if args.first_release:
             print("status diff: base ledger has no claims; first release, gate skipped (%s)"
@@ -160,10 +190,27 @@ def main():
         return 1
 
     errors, warnings, infos = [], [], []
+    for rid in sorted(set(duplicate_retired)):
+        errors.append("retired claim %s appears more than once" % rid)
+    for rid, entry in sorted(target_retired.items()):
+        if tombstone_reason(entry) is None:
+            errors.append("retired claim %s has no reason" % rid)
+        if rid in target_claims:
+            errors.append("claim %s is both active and retired" % rid)
+        elif rid not in base_claims:
+            warnings.append("retired claim %s was not in the base ledger" % rid)
+    for rid in sorted(set(base_retired) - set(target_retired) - set(target_claims)):
+        errors.append("retired claim %s: tombstone dropped since the base" % rid)
+
     for cid in sorted(set(base_claims) | set(target_claims)):
         b, t = base_claims.get(cid), target_claims.get(cid)
         if b and not t:
-            warnings.append("claim %s removed from the ledger" % cid)
+            reason = tombstone_reason(target_retired.get(cid))
+            if reason:
+                infos.append("claim %s retired: %s" % (cid, reason))
+            else:
+                errors.append("claim %s removed without a retired entry with a reason (V2-05)"
+                              % cid)
             continue
         if t and not b:
             infos.append("claim %s added (status=%s)" % (cid, t.get("status")))

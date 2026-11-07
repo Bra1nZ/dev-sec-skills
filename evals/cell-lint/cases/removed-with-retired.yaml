@@ -1,0 +1,61 @@
+# Synthetic fixture — not evidence about any real project.
+name: removed-with-retired
+description: "CELL-002 is gone from the target but a tombstone with a reason names it. CL6\n      reports\
+  \ the retirement as info and the run stays green: the removal is\n      recorded, not hidden.\n"
+registry:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - &id001
+    id: CELL-001
+    title: A role-less session cannot write tenant data.
+    taxonomy_class: security
+    failure_class: synthetic
+    entry_points:
+    - http
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'
+  retired:
+  - id: CELL-002
+    reason: The failure class was merged into CELL-001; the old detector was deleted.
+    date: '2026-11-05'
+args:
+- --max-age-days
+- '3650'
+expect:
+  CL1: none
+  CL6: info
+exit: 0
+base:
+  project: synthetic/cell-eval
+  generated: '2026-11-05'
+  taxonomy:
+    name: invariant-first-code
+    version: '1'
+    classes:
+    - security
+  cells:
+  - *id001
+  - id: CELL-002
+    title: A retired failure class stays retired on purpose.
+    taxonomy_class: security
+    failure_class: synthetic
+    entry_points:
+    - http
+    failure_mode: detect
+    coverage_status: open
+    detectors: []
+    residual_risk: Synthetic fixture.
+    limitations: No detector has exercised this cell yet.
+    owner: unassigned
+    last_seen: '2026-11-05'

@@ -82,6 +82,13 @@ def run(status_diff, td, extra=()):
     return r
 
 
+def tombstone(cid, reason="Superseded by the surviving claim.", date="2026-11-06"):
+    return ('retired:\n'
+            '  - id: %s\n'
+            '    reason: "%s"\n'
+            '    date: "%s"\n' % (cid, reason, date))
+
+
 def scenarios():
     """Return (name, base_text, target_text, args, expected_exit, known_gap)."""
     e1 = EVIDENCE.format(date="2026-10-30")
@@ -106,6 +113,17 @@ def scenarios():
         ("redating-known-gap", open_e1,
          ledger("tested", EVIDENCE.format(date="2026-11-06")),
          ["--git-ref", "HEAD"], 0, True),
+        # V2-05: removal needs a tombstone with a reason, and the tombstone is
+        # append-only.
+        ("removed-without-retired", open_e1, empty, ["--git-ref", "HEAD"], 1, False),
+        ("removed-with-retired", open_e1,
+         empty + tombstone("C-01"), ["--git-ref", "HEAD"], 0, False),
+        ("retired-without-reason", open_e1,
+         empty + tombstone("C-01", reason=" "), ["--git-ref", "HEAD"], 1, False),
+        ("retired-live-claim", open_e1,
+         open_e1 + tombstone("C-01"), ["--git-ref", "HEAD"], 1, False),
+        ("tombstone-dropped", open_e1 + tombstone("C-02"), open_e1,
+         ["--git-ref", "HEAD"], 1, False),
     ]
 
 

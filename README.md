@@ -80,7 +80,7 @@ CWE/SARIF, SLSA, SPDX/CycloneDX, RFC 2119/8174 и Diátaxis.
 ячеек вместо накопления уроков, реестр вердиктов и явная граница обещания L2.
 
 - [`spec/conveyor/CONCEPT.md`](spec/conveyor/CONCEPT.md) — концепт с реестром
-  утверждений C-01…C-21; английская версия —
+  утверждений C-01…C-22; английская версия —
   [`CONCEPT.en.md`](spec/conveyor/CONCEPT.en.md).
 - [`spec/conveyor/cell-registry.schema.json`](spec/conveyor/cell-registry.schema.json)
   — машиночитаемая ячейка.
@@ -264,7 +264,7 @@ evals, а не истинность свойств и не чистоту produc
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
-Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 25/25
+Адверсариальные кейсы линтера — [`evals/linter/`](evals/linter/): 28/28
 проходят, включая негативный контроль самого runner'а, кейсы для Rust
 `#[test] fn`, 8 кейсов run-record (валидный, хэш артефакта, хэш лога,
 неисполненный ID, ненулевой exit, отсутствие записи, несовпадение даты,
@@ -275,7 +275,7 @@ evals, а не истинность свойств и не чистоту produc
 
 Для реестра ячеек есть `tools/cell_lint.py` (CL1–CL6: структура, покрытие,
 evidence, трассировка, таксономия, гейт эскалации статуса) и шаблон
-`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 30/30,
+`ci/cell-lint.yml`. Его кейсы — [`evals/cell-lint/`](evals/cell-lint/): 34/34,
 тоже с негативным контролем runner'а. Это синтетические fixtures, а не
 доказательство чистоты production-реестра.
 

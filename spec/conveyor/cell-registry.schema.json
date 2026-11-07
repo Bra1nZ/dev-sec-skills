@@ -40,6 +40,20 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/definitions/cell" }
+    },
+    "retired": {
+      "type": "array",
+      "description": "Tombstones for cells removed from `cells` (V2-05). CL6 errors when a base cell disappears without one; CL1 rejects a tombstone with no reason and one that names an active cell. Append-only: dropping a tombstone later is an error.",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^CELL-[0-9]{3,}$" },
+          "reason": { "type": "string", "minLength": 1 },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
     }
   },
   "definitions": {

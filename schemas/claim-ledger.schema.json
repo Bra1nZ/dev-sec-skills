@@ -19,6 +19,20 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/definitions/claim" }
+    },
+    "retired": {
+      "type": "array",
+      "description": "Tombstones for claims removed from `claims` (V2-05). tools/status_diff.py errors when a base claim disappears without one; tools/claim_lint.py rejects a tombstone with no reason and one that names an active claim. Append-only: dropping a tombstone later is an error in the diff.",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^C-[0-9]{2,}$" },
+          "reason": { "type": "string", "minLength": 1 },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
     }
   },
   "definitions": {

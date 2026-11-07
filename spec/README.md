@@ -73,6 +73,13 @@ U = 0.0 % (0/43) are fixed with artifacts dated 2026-11-07 in
 are still not open: §5 (baseline plus the V2-33 checklist) runs at the first
 product sprint, and no product run counts as improvement statistics before it.
 
+Removal is not silent (V2-05): a claim or cell leaves a ledger only through a
+top-level `retired: [{id, reason, date}]` tombstone. `status_diff` and CL6 error
+when a base ID disappears without one, error when a tombstone names a live ID,
+and error when an earlier tombstone is dropped. `claim_lint` L1 and `cell_lint`
+CL1 reject a tombstone with no reason, a duplicate, and a live ID, so the shape
+is checked even without a base.
+
 ## Reading order
 
 1. `CONCEPT.md` — thesis, trust policy, layers, taxonomy, verdicts, ceiling.

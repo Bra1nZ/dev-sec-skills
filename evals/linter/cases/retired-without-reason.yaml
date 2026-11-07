@@ -1,0 +1,27 @@
+# Synthetic fixture — not evidence about any real project.
+name: retired-without-reason
+description: "A tombstone with an empty reason. Deleting a claim silently is exactly what\n      V2-05\
+  \ forbids, so a reason-less tombstone must be an L1 error rather than an\n      accepted removal.\n"
+files:
+  docs/README.md: 'The checker validates every row.
+
+    '
+ledger:
+  claims:
+  - id: C-01
+    claim: The checker rejects an empty source string.
+    mechanism: read_catalog returns a problem for an empty value.
+    evidence: []
+    scope: Single module, synthetic fixture.
+    status: open
+    limitations: No test yet.
+  retired:
+  - id: C-99
+    reason: '  '
+    date: '2026-11-01'
+args:
+- --max-age-days
+- '3650'
+expect:
+  L1: error
+exit: 1
