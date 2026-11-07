@@ -65,6 +65,10 @@ spec/
   proofs/
     README.md                     # what a re-run trigger is, how freshness is decided, limits
     manifest.yaml                 # empty: no claim is `proven` or `model-checked`
+  red-team/
+    README.md                     # 12 attacks on the real pilot artifacts, 2 recorded gaps
+    run_drills.py                 # one mutation per drill, real tool, expected message
+    2026-11-07-drills.json        # recorded result: 10 blocked, 2 allowed
 ```
 
 Changed-cell selection (V2-11) lives in `tools/mutation_plan.py`, not under
@@ -174,6 +178,19 @@ prints the plan. The planner is covered by 36 synthetic git cases in
 not in `verify`). It does not verify the record hash (`claim_lint` does), does
 not check that the model matches the code, and decides freshness from
 timestamps, so a record produced from a stale checkout still looks fresh.
+
+Gate strength is measured against the real artifacts, not only fixtures (C-35):
+`spec/red-team/run_drills.py` takes the committed craft-i18n ledger, its cargo
+log and the cell registry, applies one attack per drill, and requires the exit
+code and the expected message. Ten of twelve attacks are blocked; the record is
+`spec/red-team/2026-11-07-drills.json`. Two stay green and are recorded as gaps:
+re-dating a run (identity includes the date, so a shifted date is "new
+evidence", the C-13 hole) and borrowing another claim's real tests (L3 checks
+that a test ID exists in the suite, not that it tests the claim; tracked as
+V2-34). An `allowed` drill fails the harness if a future gate starts blocking
+it, so the recorded gap cannot become stale silently. The drills need the
+craft-i18n checkout and are not in `make verify`; they run `claim_lint
+--no-vale`, so L5 is not exercised there.
 
 Every finding must become a cell, a detector and a fixture (V2-18):
 `tools/fuzz_triage.py` checks one entry per finding, resolves the cell and

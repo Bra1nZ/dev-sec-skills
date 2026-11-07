@@ -104,13 +104,18 @@ PROOF_MANIFEST ?= spec/proofs/manifest.yaml
 PROOF_BASE ?= origin/main
 PROOF_HEAD ?= HEAD
 
+# Red-team drills. Synthetic evals check known violations; the drills attack the
+# real craft-i18n ledger, its committed cargo log and the cell registry. They
+# need that checkout and are a point-in-time audit, so they are not in `verify`.
+RED_TEAM_RECORD ?= spec/red-team/2026-11-07-drills.json
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 evals lint-seed \
         lint-pilot lint-pilot2 claims-pilot claims-pilot2 status-pilot \
         status-pilot2 unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-all check-fuzz-triage fuzz-claim-lint \
-        proof-plan proof-plan-selftest help
+        proof-plan proof-plan-selftest red-team red-team-record help
 
 verify: verify-repo verify-pilot verify-pilot2 unroutable coverage invariants
 
@@ -413,6 +418,13 @@ proof-plan-selftest:
 	@echo "== proof plan: mutate the planner, require the suite to fail (V2-29) =="
 	$(PYTHON) evals/proof-plan/mutation_selftest.py
 
+red-team:
+	@echo "== red team: attacks on the real pilot artifacts =="
+	$(PYTHON) spec/red-team/run_drills.py
+
+red-team-record:
+	$(PYTHON) spec/red-team/run_drills.py --record "$(RED_TEAM_RECORD)"
+
 mutations-all: mutations mutations-i18n
 
 help:
@@ -446,3 +458,5 @@ help:
 	@echo "  mutations-all   both mutation batches"
 	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
 	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
+	@echo "  red-team      attack the real pilot ledger/log/registry; 10 blocked, 2 recorded gaps"
+	@echo "  red-team-record  rewrite spec/red-team/2026-11-07-drills.json"

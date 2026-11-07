@@ -1,0 +1,97 @@
+# Red-Team Drills
+
+`evals/` proves that a gate rejects a violation its author already thought of.
+These drills do the opposite: they attack the committed pilot artifacts — the
+craft-i18n ledger, its committed cargo log and the cell registry — and record
+what happened. Ten attacks are blocked by the check named for them; two pass
+with every gate green, and those two are the point of the exercise.
+
+A drill is not a demo. Each one copies a real artifact into a temp directory,
+applies exactly one mutation, runs the real tool, and passes only when the exit
+code AND the expected message match. A crash, an unrelated error, or "exit 1
+for some other reason" is a failed drill. The target repository is read, never
+modified.
+
+## Files
+
+```text
+spec/red-team/
+  README.md                    # this file
+  run_drills.py                # the 12 attacks, one mutation each
+  2026-11-07-drills.json       # recorded result: 10 blocked, 2 allowed
+```
+
+- `make red-team` — run the drills against the current tree.
+- `make red-team-record` — rewrite the recorded result.
+- Not in `make verify`: the drills need the craft-i18n checkout at the recorded
+  commit, and this is a point-in-time audit of gate strength, not a merge gate.
+
+## Results, 2026-11-07
+
+| Drill | Attack | Result |
+| --- | --- | --- |
+| `escalate-tested-to-proven` | C-01 `tested` → `proven`, same run record | blocked by L4 and by `status_diff` |
+| `cite-a-test-that-never-ran` | add a test ID the committed log does not contain | blocked by L2 and L3 |
+| `artifact-bytes-tampered` | change `artifact_sha256` | blocked by L2 |
+| `log-bytes-tampered` | change `log_sha256` | blocked by L2 |
+| `counts-inflated` | claim 99/99 when the log says 26/26 | blocked by L2 |
+| `remove-claim-without-tombstone` | drop C-01 from the ledger | blocked by `status_diff` |
+| `tombstone-a-live-claim` | retire C-01 while it is active | blocked by L1 and `status_diff` |
+| `cell-detector-artifact-missing` | point the runtime detector at a missing path | blocked by CL3 |
+| `cell-runtime-without-response` | drop `violation_response` | blocked by CL1 (V2-15) |
+| `stale-proof-passes-gate` | declare a proof whose record predates a change to its dependency | blocked by `--require-fresh` (V2-29) |
+| `redate-the-same-run` | shift the run date one day, escalate `reviewed` → `tested` | **allowed** |
+| `borrow-another-claims-evidence` | give open C-08 C-01's real tests, call it `tested` | **allowed** |
+
+## The two silent paths
+
+### Re-dating
+
+Evidence identity is `(kind, commit, artifact, command, tests, date)`. Shifting
+the date makes the evidence "new", so `status_diff` accepts the escalation, and
+`claim_lint` accepts it because `finished_at` is compared with the evidence date
+and not with anything external. The same log, the same artifacts, one day
+later, and a `reviewed` claim becomes `tested`.
+
+This is the known C-13 gap: without an external anchor, a consistent forgery is
+indistinguishable from a real re-run. The drill makes it concrete on a real
+ledger rather than in a fixture.
+
+### Borrowed evidence
+
+L3 resolves a cited test ID against the suite: it proves the test exists.
+Nothing proves the test exercises *this* claim. In the drill, C-08 — the open
+claim about invisible Unicode Cf characters — takes C-01's real tests about
+catalog provenance headers, changes its status to `tested`, and every check
+passes: L1 shape, L2 hashes, L3 traceability, L4 consistency, L5 prose, and
+`status_diff` reports a legitimate `open -> tested` escalation with new evidence.
+
+This is worse than re-dating in one respect: no forgery is involved. Every byte
+is real; only the link between the test and the claim is missing. A recorded gap
+can be closed with another claim's passing tests.
+
+## What this does and does not show
+
+- The 10 blocked drills show that those specific checks fire on real artifacts,
+  not only on fixtures. They do not show that no other bypass exists.
+- The 2 allowed drills are recorded as `allowed` in the harness. If a later gate
+  starts blocking one of them, the drill fails and the gap entry must be
+  updated, so this document cannot quietly become stale.
+- The drills run `claim_lint --no-vale`: L5 prose scanning is not exercised here
+  (L5 is covered by the linter evals and `make verify`).
+- Only the craft-i18n ledger is attacked. It is one pilot with eight claims; the
+  rbac_pg ledger is external and has no run records, so the same attack there
+  would test less.
+- The attacks are static edits to committed artifacts. A compromised tool, a
+  rewritten CI job, or a forged GitHub artifact are outside this scope.
+
+## Reproduce
+
+```bash
+python3 spec/red-team/run_drills.py
+python3 spec/red-team/run_drills.py --only borrow-another-claims-evidence
+make red-team-record
+```
+
+Exit codes: 0 every drill matched, 1 a drill diverged, 2 the craft-i18n
+checkout, the ledger, the registry or the committed log is unavailable.

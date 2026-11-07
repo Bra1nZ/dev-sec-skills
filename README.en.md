@@ -245,6 +245,10 @@ spec/
   proofs/
     README.md
     manifest.yaml
+  red-team/
+    README.md
+    run_drills.py
+    2026-11-07-drills.json
   pilots/
     rbac_pg/
       cells.yaml
@@ -406,6 +410,18 @@ ways and requires a named case to fail each time. The planner does not verify
 the record hash (`claim_lint` does) and does not prove that the model matches the
 code; freshness is a timestamp comparison, so a record taken from a stale
 checkout still looks fresh.
+
+Gate strength was measured on the real artifacts (C-35):
+[`spec/red-team/run_drills.py`](spec/red-team/run_drills.py) takes the craft-i18n
+ledger, its recorded cargo log and the cell registry, applies one attack per
+drill, and requires the expected exit code and message. 10 of 12 attacks are
+blocked; two stay green and are recorded as gaps: re-dating a run (C-13) and
+borrowing another claim's real tests (V2-34) — the open C-08 became `tested` on
+C-01's tests with L1–L5 and `status_diff` all green. A drill that expects
+`allowed` fails if a gate starts blocking, so the record cannot go stale
+silently. The result is
+[`spec/red-team/2026-11-07-drills.json`](spec/red-team/2026-11-07-drills.json);
+the drills need the craft-i18n checkout and are not in `make verify`.
 
 The coverage report `tools/coverage_report.py` (V2-20) proves that a cited
 symbol exists (CV1, always an error) and measures suite symbols that no

@@ -1,0 +1,76 @@
+{
+  "format": "dev-sec-skills/red-team/v1",
+  "date": "2026-11-07",
+  "ledger": "spec/pilots/craft-i18n/claims.yaml",
+  "registry": "spec/pilots/craft-i18n/cells.yaml",
+  "drills": [
+    {
+      "name": "escalate-tested-to-proven",
+      "verdict": "blocked",
+      "attack": "raise C-01 tested -> proven with the same run record"
+    },
+    {
+      "name": "cite-a-test-that-never-ran",
+      "verdict": "blocked",
+      "attack": "add a test ID to C-01 that the committed log does not contain"
+    },
+    {
+      "name": "artifact-bytes-tampered",
+      "verdict": "blocked",
+      "attack": "change C-01's artifact_sha256"
+    },
+    {
+      "name": "log-bytes-tampered",
+      "verdict": "blocked",
+      "attack": "change C-01's log_sha256"
+    },
+    {
+      "name": "counts-inflated",
+      "verdict": "blocked",
+      "attack": "claim 99/99 tests when the log says 26/26"
+    },
+    {
+      "name": "remove-claim-without-tombstone",
+      "verdict": "blocked",
+      "attack": "drop C-01 from the ledger"
+    },
+    {
+      "name": "tombstone-a-live-claim",
+      "verdict": "blocked",
+      "attack": "retire C-01 while it is still active"
+    },
+    {
+      "name": "cell-detector-artifact-missing",
+      "verdict": "blocked",
+      "attack": "point the runtime detector at a path that does not exist"
+    },
+    {
+      "name": "cell-runtime-without-response",
+      "verdict": "blocked",
+      "attack": "drop violation_response from the runtime-enforcement cell"
+    },
+    {
+      "name": "stale-proof-passes-gate",
+      "verdict": "blocked",
+      "attack": "declare a proof whose record predates a change to its dependency"
+    },
+    {
+      "name": "redate-the-same-run",
+      "verdict": "allowed",
+      "attack": "shift the run date by one day and escalate reviewed -> tested",
+      "gap": "the evidence identity includes the date, so a shifted date is new evidence"
+    },
+    {
+      "name": "borrow-another-claims-evidence",
+      "verdict": "allowed",
+      "attack": "give the open C-08 claim C-01's real tests and call it tested",
+      "gap": "L3 checks that a test ID exists in the suite, not that it tests this claim"
+    }
+  ],
+  "summary": {
+    "drills": 12,
+    "blocked": 10,
+    "allowed": 2,
+    "failed": 0
+  }
+}
