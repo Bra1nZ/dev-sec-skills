@@ -215,9 +215,11 @@ All runners need PyYAML. A passing run means the contract holds on synthetic
 adversarial fixtures, not that a production ledger or registry is clean.
 `status-diff` prints `GAP` for the re-dating scenario while that hole remains
 open: the tool compares evidence identities and cannot tell a genuinely new run
-from a re-dated one. A `run_record` lets `claim_lint` L2 catch re-dating in the
-ledger, but without an external anchor (C-13) a consistent forgery of the record
-and the log still passes.
+from a re-dated one. A `run_record` lets `claim_lint` L2 catch a date that
+disagrees with the evidence date, and the record's anchor catches a
+`started_at`/`finished_at` edit that was not re-signed; the remaining hole is an
+actor who holds the signing key or can replace `allowed_signers` (C-13), which
+the `redate-and-resign` drill measures.
 
 The fuzz cases exercise the adapter, not a real target: a passing run says the
 oracle, budget and determinism rules hold, not that any program is bug-free.
