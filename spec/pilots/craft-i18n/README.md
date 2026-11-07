@@ -54,7 +54,11 @@ of the artifact, and the executed/passed counts. The captured log is
 `claim_lint` hashes the log and the source file it cites, checks that
 `finished_at` belongs to the evidence date, and requires every cited test ID to
 appear on a log line with a status. Re-dating the ledger or citing a test that
-did not run now fails L2 without touching the target.
+did not run now fails L2 without touching the target. L2 also compares each
+cited artifact with its blob at `5c5c554`: a commit that resolves but predates
+the bytes on disk fails as an unrelated commit, so moving the ledger's commit
+field to an older point in the history does not make stale evidence look
+verified.
 
 The record is not proof of the run. The log and the record are both local, so a
 forger can rewrite them together; only an external anchor (C-13) would close

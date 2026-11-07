@@ -1,9 +1,23 @@
 # Synthetic fixture — not evidence about any real project.
 name: valid-clean
 description: "Control — well-formed ledger, resolvable test ID, existing\n        artifact, fresh date,\
-  \ clean prose, and a run_record whose log and artifact\n        hashes match. Must produce no findings\
-  \ and exit 0. A wide --max-age-days\n        keeps the fixture evergreen; freshness itself is covered\
-  \ by\n        stale-evidence and future-date."
+  \ clean prose, and a run_record whose log and artifact\n        hashes match. The cited commit is real\
+  \ and holds the same artifact bytes, so\n        the artifact-at-commit check passes rather than being\
+  \ skipped. Must produce no\n        findings and exit 0. A wide --max-age-days keeps the fixture\
+  \ evergreen;\n        freshness itself is covered by stale-evidence and future-date."
+git:
+  commits:
+  - message: the recorded run
+    files:
+      setup/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n"
+      reports/run.txt: 'running 1 test
+
+        test F1 auth gate rejects anonymous ... ok
+
+
+        test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+        '
 files:
   setup/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n"
   reports/run.txt: 'running 1 test
@@ -32,7 +46,7 @@ ledger:
       run_record:
         runner: python3 setup/test_suite.py
         command: python3 setup/test_suite.py
-        commit: 0123456789abcdef0123456789abcdef01234567
+        commit: '{{COMMIT_0}}'
         exit_code: 0
         started_at: '2026-11-01T10:00:00+03:00'
         finished_at: '2026-11-01T10:00:01+03:00'

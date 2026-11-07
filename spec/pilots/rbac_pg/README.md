@@ -285,9 +285,11 @@ same class of overclaim the `evidence-first-docs` skill exists to remove.
 
 Since V2-02 (2026-11-07) the same ledger also reports 7 L2 warnings: its
 `kind=test` evidence carries no `run_record`, so the log and the cited test
-execution are not verifiable. The ledger lives in the target repository and this
-pilot does not modify it; the warnings are visible migration debt, not a
-regression. `craft-i18n` is the pilot that adopts the record.
+execution are not verifiable. The claimed commits do resolve and each cited
+artifact matches its blob at its commit, so the debt is the missing run record,
+not a stale commit. The ledger lives in the target repository and this pilot does
+not modify it; the warnings are visible migration debt, not a regression.
+`craft-i18n` is the pilot that adopts the record.
 
 ## Decisions recorded 2026-11-06
 

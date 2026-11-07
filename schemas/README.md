@@ -43,6 +43,13 @@ With a record, L2 verifies:
 - every cited test ID appears on a log line that carries a status. The runner
   must name each test: cargo does by default, pytest needs `-v` or `-rA`.
 
+Independently of the run record, L2 also anchors the artifact: when the root is
+inside a git work tree, the artifact must exist at the cited commit (the run
+record's `commit` if the evidence item has none) and its bytes must equal the
+working tree's. A commit that resolves but predates the artifact, or a file
+edited after the commit, is an error — that is the unrelated-commit control.
+A synthetic fixture without `.git` skips the check instead of failing it.
+
 The record does not prove the run happened: without an external anchor (C-13)
 a forger can rewrite the record and the log together. It removes silent
 re-dating and unexecuted citations, not determined fraud.
@@ -51,8 +58,8 @@ re-dating and unexecuted citations, not determined fraud.
 
 | Check | What it enforces |
 | --- | --- |
-| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` shape and commit/command agreement |
-| L2 | evidence health: artifact exists, commit resolvable, dates within `--max-age-days` (default 90), run-record hashes and counts, cited tests appeared in the log |
+| L1 | schema: required fields, ID format, unique IDs, enums, `kind=test` needs `tests`, `status=open` needs `limitations`, `run_record` shape and commit/command agreement, a non-empty `claims` array (an empty ledger cannot pass vacuously) |
+| L2 | evidence health: artifact exists, commit resolvable, artifact matches its blob at the cited commit, dates within `--max-age-days` (default 90), run-record hashes and counts, cited tests appeared in the log |
 | L3 | traceability: every test ID in `kind=test` evidence exists in the suite (`report("F8a ...")`, `def test_*`, or Rust `#[test] fn`) |
 | L4 | consistency: status matches the strongest evidence channel; stronger evidence than status is a warning |
 | L5 | prose: unqualified absolutes in docs. Engine order: Vale (`styles/RussianAbsolutes` package) if the `vale` binary is available, fallback to the built-in line scanner |

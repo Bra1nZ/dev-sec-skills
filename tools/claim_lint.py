@@ -7,8 +7,9 @@ schemas/claim-ledger.schema.json):
   L1  schema:        required fields, stable IDs, unique IDs, status and
                      evidence-kind enums, kind=test requires tests,
                      status=open requires limitations, run_record shape
-  L2  evidence:      artifact paths exist, commits resolvable, dates within
-                     the freshness window, run_record log and artifact hashes
+  L2  evidence:      artifact paths exist, commits resolvable, the artifact
+                     matches its blob at the cited commit, dates within the
+                     freshness window, run_record log and artifact hashes
                      match, the run exited 0 for a non-open claim, every cited
                      test appears in the captured log with a status
   L3  traceability:  every test ID in kind=test evidence exists in the suite
@@ -24,6 +25,13 @@ ran stay invisible. With one, L2 hashes the log and the artifact and checks
 that the cited test IDs appear in the log. This detects re-dating and edited
 logs only if the forger does not also rewrite the record; without an external
 anchor (C-13) a consistent forgery passes.
+
+Commits are anchored too, not just resolved: when the root is a git work tree,
+the artifact must exist at the cited commit (the run record's commit when the
+evidence item has none) and its bytes must equal the working tree's. A commit
+that resolves but is unrelated to the artifact — it predates the file or the
+file was edited after it — is an error. Synthetic fixtures without .git skip
+the check, so they cannot demonstrate it; the git-backed eval case does.
 
 Exit codes: 0 clean (warnings allowed), 1 errors found, 2 tool/usage error.
 
@@ -399,6 +407,32 @@ def _check_run_record(ev, rr, claim, root, run_log_root, log_cache, findings):
                                         % (rc, failed), cid))
 
 
+def _git(root, *args):
+    return subprocess.run(["git"] + list(args), cwd=root, capture_output=True, text=True)
+
+
+def _artifact_at_commit(root, commit, artifact):
+    """Compare the working-tree artifact with its blob at the cited commit.
+
+    Returns "ok", "missing" (the commit does not contain the path), "differs"
+    (the bytes changed after the commit), or None when the root is not inside a
+    git work tree, which is the case for the synthetic eval fixtures.
+    """
+    inside = _git(root, "rev-parse", "--is-inside-work-tree")
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        return None
+    prefix = _git(root, "rev-parse", "--show-prefix").stdout.strip()
+    path = prefix + artifact
+    if _git(root, "cat-file", "-e", "%s:%s" % (commit, path)).returncode != 0:
+        return "missing"
+    diff = _git(root, "diff", "--quiet", commit, "--", path)
+    if diff.returncode == 1:
+        return "differs"
+    if diff.returncode != 0:
+        return None
+    return "ok"
+
+
 def check_evidence(claims, root, max_age_days, findings, run_log_root=None):
     run_log_root = run_log_root or root
     today = date.today()
@@ -412,13 +446,25 @@ def check_evidence(claims, root, max_age_days, findings, run_log_root=None):
                 p = os.path.join(root, artifact)
                 if not os.path.exists(p):
                     findings.append(Finding("L2", "error", "artifact not found: %s" % artifact, c["id"]))
-            commit = ev.get("commit")
+            rr = ev.get("run_record") if isinstance(ev.get("run_record"), dict) else {}
+            commit = ev.get("commit") or rr.get("commit")
             if commit:
                 r = subprocess.run(
                     ["git", "cat-file", "-e", "%s^{commit}" % commit],
                     cwd=root, capture_output=True)
                 if r.returncode != 0:
                     findings.append(Finding("L2", "error", "commit not resolvable: %s" % commit, c["id"]))
+                elif artifact and not re.match(r"^[a-z]+://", artifact):
+                    state = _artifact_at_commit(root, commit, artifact)
+                    if state == "missing":
+                        findings.append(Finding("L2", "error",
+                                                "artifact %s does not exist at the cited commit %s"
+                                                % (artifact, str(commit)[:12]), c["id"]))
+                    elif state == "differs":
+                        findings.append(Finding("L2", "error",
+                                                "artifact %s changed after the cited commit %s; the "
+                                                "evidence describes different bytes"
+                                                % (artifact, str(commit)[:12]), c["id"]))
             when = ev.get("date") or c.get("last_verified")
             if when:
                 if not DATE_RE.match(str(when)):

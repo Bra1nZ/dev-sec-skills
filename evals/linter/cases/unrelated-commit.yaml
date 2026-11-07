@@ -1,0 +1,56 @@
+# Synthetic fixture — not evidence about any real project.
+name: unrelated-commit
+description: >
+  The evidence cites a commit that resolves in the repository, but the artifact
+  changed after it: the cited commit is not the one that produced the bytes the
+  claim is about. Resolvability alone accepts this; L2 must compare the
+  artifact at the cited commit with the working tree and error. The suite still
+  contains F9, so L3 has nothing to complain about.
+git:
+  commits:
+    - message: the run the claim was written against
+      files:
+        setup/test_suite.py: |
+          def test_auth():
+              report("F1 auth gate rejects anonymous")
+
+          def test_legacy():
+              report("F9 legacy check")
+    - message: unrelated change to the same suite
+      files:
+        setup/test_suite.py: |
+          def test_auth():
+              report("F1 auth gate rejects anonymous")
+
+          def test_legacy():
+              report("F9 legacy check")
+
+
+          def test_added_later():
+              report("F10 added after the cited run")
+files:
+  "reports/run.txt": "PASS\n"
+  "docs/README.md": "The checker validates every request before dispatch.\n"
+ledger:
+  claims:
+    - id: C-01
+      claim: "The legacy check still rejects anonymous requests."
+      mechanism: "Session check before handler dispatch."
+      evidence:
+        - kind: test
+          command: "python3 setup/test_suite.py"
+          artifact: "setup/test_suite.py"
+          tests: ["F9"]
+          commit: "{{COMMIT_0}}"
+          date: "2026-11-01"
+      scope: "Single module, synthetic fixture."
+      status: tested
+args: ["--max-age-days", "3650"]
+suite_glob: "**/*.py"
+expect:
+  L1: none
+  L2: error
+  L3: none
+  L4: none
+  L5: none
+exit: 1

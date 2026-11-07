@@ -71,17 +71,24 @@ whether a claim ledger is honest or whether a test can actually fail.
 
 Iteration 3 covers `tools/claim_lint.py`; iteration 4 covers
 `tools/cell_lint.py`. The live suites have grown beyond those iterations:
-`evals/linter/` runs 23 cases, including 8 `run-record-*` cases (valid record,
+`evals/linter/` runs 25 cases, including 8 `run-record-*` cases (valid record,
 artifact hash, log hash, unexecuted test, non-zero exit, missing record, date
-mismatch, count mismatch); `evals/cell-lint/` runs 30 cases, including the
-`other` + `routing_note` escape hatch. The status-diff evals cover fail-closed
-base handling. Reproduce all three:
+mismatch, count mismatch) and two V2-09 controls — `unrelated-commit` and
+`empty-claims`; `evals/cell-lint/` runs 30 cases, including the `other` +
+`routing_note` escape hatch. The status-diff evals cover fail-closed base
+handling. Reproduce all three:
 
 ```bash
 python3 evals/linter/run_evals.py
 python3 evals/cell-lint/run_evals.py
 python3 evals/status-diff/run_evals.py
 ```
+
+A case may declare `git.commits`; the runner commits them in order and
+substitutes each resulting SHA as `{{COMMIT_<n>}}` into later commit files, the
+fixture files and the ledger. That is how `unrelated-commit` cites a commit that
+resolves while the artifact's bytes have moved on — a plain fixture without
+`.git` cannot express the failure.
 
 All runners need PyYAML. A passing run means the contract holds on synthetic
 adversarial fixtures, not that a production ledger or registry is clean.

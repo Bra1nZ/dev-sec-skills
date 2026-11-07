@@ -1,0 +1,20 @@
+# Synthetic fixture — not evidence about any real project.
+name: empty-claims
+description: >
+  A ledger with an empty claims array. Nothing can fail because nothing is
+  asserted, so a vacuous pass would be the wrong answer: an empty model must
+  error, not report a clean run. L2-L5 have nothing to scan and stay silent.
+files:
+  "docs/README.md": "The checker validates every request before dispatch.\n"
+ledger:
+  project: synthetic/empty
+  generated: "2026-11-01"
+  claims: []
+args: ["--max-age-days", "3650"]
+expect:
+  L1: error
+  L2: none
+  L3: none
+  L4: none
+  L5: none
+exit: 1

@@ -2,8 +2,28 @@
 name: run-record-valid
 description: "Control — a kind=test claim with a complete run_record whose log and\n      artifact hashes\
   \ match, whose counts agree with the log summary, and whose\n      cited tests appear in the log with\
-  \ a status. No findings, exit 0. The\n      commit lives only in the run_record because this fixture\
-  \ has no .git;\n      bad-commit covers resolvability.\n"
+  \ a status. The commit is real and holds the same\n      artifact bytes, so the artifact-at-commit check\
+  \ passes rather than being skipped.\n      No findings, exit 0.\n"
+git:
+  commits:
+  - message: the recorded run
+    files:
+      tests/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n\n\ndef test_audit():\n\
+        \    report(\"F2 audit log records the denial\")\n\n\ndef test_other():\n    report(\"F3 unrelated\
+        \ check\")\n"
+      reports/run.txt: '=============================== test session starts ===============================
+
+        collected 2 items
+
+
+        test_auth ... ok
+
+        test_audit ... ok
+
+
+        =============================== 2 passed in 0.12s ===============================
+
+        '
 files:
   tests/test_suite.py: "def test_auth():\n    report(\"F1 auth gate rejects anonymous\")\n\n\ndef test_audit():\n\
     \    report(\"F2 audit log records the denial\")\n\n\ndef test_other():\n    report(\"F3 unrelated\
@@ -39,7 +59,7 @@ ledger:
       run_record:
         runner: pytest
         command: python3 -m pytest -v
-        commit: 0123456789abcdef0123456789abcdef01234567
+        commit: '{{COMMIT_0}}'
         exit_code: 0
         started_at: '2026-11-01T10:00:00+03:00'
         finished_at: '2026-11-01T10:00:05+03:00'
