@@ -16,6 +16,13 @@ PILOT_REGISTRY ?= spec/pilots/rbac_pg/cells.yaml
 PILOT_LEDGER ?= docs/claims.yaml
 PILOT_SUITE_GLOB ?= setup/*.py
 
+# Static-analysis triage ledger for the rbac_pg pilot (V2-36, C-40). Unlike the
+# product claims, this ledger is authored here, together with both engine
+# outputs, so --tool-output-root is the repository. --root stays the pilot: the
+# record's target_commit has to resolve there, and every triage note cites
+# path:line at that commit.
+STATIC_ANALYSIS_LEDGER ?= spec/pilots/rbac_pg/analysis-claims.yaml
+
 # Second pilot: a Rust crate, no database. Its claim ledger lives here, not in
 # the target, so the target stays unmodified.
 PILOT2_ROOT ?= ../astraoffice/craft-i18n
@@ -127,7 +134,7 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
 
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 verify-self evals lint-seed \
         lint-pilot lint-pilot2 lint-self claims-pilot claims-pilot2 claims-self status-pilot \
-        status-pilot2 unroutable coverage coverage-record diff-coverage \
+        status-pilot2 claims-static-rbac unroutable coverage coverage-record diff-coverage \
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
@@ -139,7 +146,7 @@ verify-all: verify mutations-all
 
 verify-repo: evals lint-seed check-fuzz-triage
 
-verify-pilot: lint-pilot claims-pilot status-pilot
+verify-pilot: lint-pilot claims-pilot claims-static-rbac status-pilot
 
 verify-pilot2: lint-pilot2 claims-pilot2 status-pilot2
 
@@ -191,6 +198,17 @@ claims-pilot:
 	  --suite-glob "$(PILOT_SUITE_GLOB)" \
 	  $(CLAIM_LINT_ARGS) \
 	  "$(PILOT_ROOT)/$(PILOT_LEDGER)"
+
+claims-static-rbac:
+	@echo "== L1-L6: rbac_pg static-analysis triage ledger =="
+	$(PYTHON) tools/claim_lint.py \
+	  --root "$(PILOT_ROOT)" \
+	  --suite-glob "$(PILOT_SUITE_GLOB)" \
+	  --docs-glob no-such-docs/*.md \
+	  --run-log-root . \
+	  --tool-output-root . \
+	  $(CLAIM_LINT_ARGS) \
+	  "$(STATIC_ANALYSIS_LEDGER)"
 
 status-pilot:
 	@echo "== status diff: pilot ledger against $(PILOT_LEDGER_BASE_REF) =="
@@ -492,6 +510,7 @@ help:
 	@echo "  claims-pilot  L1-L6 over the rbac_pg claim ledger"
 	@echo "  claims-pilot2 L1-L6 over the craft-i18n claim ledger"
 	@echo "  claims-self   L1-L6 over the dev-sec-skills self-pilot claim ledger"
+	@echo "  claims-static-rbac  L1-L6 over the rbac_pg static-analysis triage ledger"
 	@echo "  detectors-self  D-PINNED-ACTIONS over this repository's workflows"
 	@echo "  mutations-self  MUT-001: prove D-PINNED-ACTIONS fails on a mutable ref"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"

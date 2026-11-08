@@ -80,10 +80,22 @@ code.
 
 It proves that the signed bytes have not changed since the signature was made,
 by an identity listed in `allowed_signers` at verification time. It does not
-prove that the run happened when the record says: 10 of the committed anchors
-were created on 2026-11-08 over records dated 2026-11-07, so the signature
-proves immutability after signing, not the run date. It also does not stop the
-key holder, or anyone who can replace `allowed_signers` with their own key and
-re-sign: the `redate-and-resign` red-team drill does exactly that and every gate
-stays green. There is no transparency log, timestamping authority or revocation
-list (C-13 remains open).
+prove that the run happened when the record says: 10 of the 15 committed
+anchors were created on 2026-11-08 over records dated 2026-11-07, so the
+signature proves immutability after signing, not the run date. It also does not
+stop the key holder, or anyone who can replace `allowed_signers` with their own
+key and re-sign: the `redate-and-resign` red-team drill does exactly that and
+every gate stays green. There is no transparency log, timestamping authority or
+revocation list (C-13 remains open).
+
+## Recorded key loss
+
+The 2026-11-07 signer's private key lived at
+`/tmp/opencode/dev-sec-skills-anchor/key` and was cleared with that directory.
+Its public line stays in `allowed_signers`, so every anchor it made still
+verifies. The two `rbac-pg-*-2026-11-08` anchors are signed by a second
+identity, `dev-sec-skills-anchor-2026-11-08`
+(`SHA256:cYwKmirE4uQiSRaM9qCrRnQ7mn0wjnSN4k0wRgRnyUk`), tracked in the same way.
+The loss has two consequences: records signed by the lost key can never be
+re-signed, and the new key's signature says nothing about when the record was
+written.

@@ -1,0 +1,27 @@
+# Bandit selector manifest for the rbac_pg static-analysis record.
+#
+# Bandit 1.9.4 ships its rules as Python plugins, not as a rule file, so there
+# are no rule bytes whose hash decides what the engine could find. What can be
+# committed and hashed is the selector that was passed to `-t`: this manifest
+# names the engine version and the three rule IDs. The analysis record's
+# `rules.sha256` covers these bytes, not bandit's source or the SARIF formatter.
+#
+# Consequence, stated in the claim's limitations: the hash pins the selector,
+# not the engine build. A different bandit build that interprets the same three
+# IDs would hash-match this manifest and could report a different set of sites.
+name: bandit-builtin-2026-11-08
+engine: bandit
+version: 1.9.4
+selector: "B608,B105,B602"
+formatter: bandit-sarif-formatter 1.1.1
+rules:
+  - id: B608
+    name: hardcoded-sql-expression
+  - id: B105
+    name: hardcoded-password-string
+  - id: B602
+    name: subprocess-popen-with-shell-equals-true
+note: >-
+  B602 is part of the selector but produced no findings on this target; the
+  selector is recorded as run, not trimmed to the rules that fired. The SARIF
+  formatter is a separate package: bandit 1.9.4 without it rejects `-f sarif`.

@@ -22,6 +22,16 @@ a separate commit, and the post-fix run returns zero findings. That is the
 first real exercise of `new`; before it, only synthetic linter cases used the
 disposition.
 
+The third use of the channel is a triage ledger for the first pilot:
+`spec/pilots/rbac_pg/analysis-claims.yaml` (claim `C-40`) holds two records —
+Bandit 1.9.4 and Semgrep 1.184.0 over `rbac_pg/setup` at `d978609` — with 63
+and 186 findings. All 249 are `not-a-bug`, and none is routed, because the
+pilot registry owns no cell for `invalid-or-injected-input` or
+`exposed-secret-or-weak-crypto`. That ledger is the reason the two-engine
+measurement now has decided findings instead of an undecided queue; the
+coverage question C-08 asks is still unanswered, because zero findings reached
+a cell.
+
 ## Files
 
 - `rules/ci-supply-chain-2026-11-07.yml` — three rules authored in this
@@ -32,6 +42,16 @@ disposition.
   cell: `rbac_pg/CELL-010` is `input-validation`, the engines' class is
   `invalid-or-injected-input`. Both findings keep `cell: null`; the two-engine
   report records `cell_mapped: 0`.
+- `rules/bandit-builtin-2026-11-08.yaml` — the Bandit selector manifest for the
+  triage record: engine version, `-t B608,B105,B602`, formatter version and the
+  three rule IDs. Bandit ships rules as plugins, so this selector is the only
+  rule bytes there are to hash; the hash therefore pins the selector, not the
+  engine build.
+- `runs/rbac-pg-{bandit,semgrep}-2026-11-08.{sarif,report.json}` — the two
+  per-engine records behind `spec/pilots/rbac_pg/analysis-claims.yaml`: 63 and
+  186 findings, 0 unmapped, 0 fixtures. The Semgrep SARIF is byte-identical to
+  its 2026-11-07 predecessor; the Bandit SARIF differs in one `endTimeUtc`
+  line and has the same normalized finding set.
 - `runs/ci-craft-i18n-2026-11-07.sarif` — raw Semgrep SARIF at
   `tool.driver.name = "Semgrep OSS"`.
 - `runs/ci-craft-i18n-2026-11-07.report.json` — normalized report from
@@ -41,12 +61,13 @@ disposition.
 - `runs/ci-dev-sec-skills-postfix-2026-11-07.{sarif,report.json}` — the
   control run at `67d0aec`, zero findings.
 - `spec/anchor/` (shared with the other evidence channels) — the committed
-  `allowed_signers`, the three static-analysis subjects
-  (`ci-dev-sec-skills-{prefix,postfix}-2026-11-07`, `ci-craft-i18n-2026-11-07`)
-  and their detached signatures, plus nine run-record and one sanitizer pairs.
-  The private key is not in the repository. The directory moved out of
-  `spec/static-analysis/` because it no longer belongs to one channel; the
-  signed bytes carry no path, so the signatures stayed valid.
+  `allowed_signers`, the five static-analysis subjects
+  (`ci-dev-sec-skills-{prefix,postfix}-2026-11-07`, `ci-craft-i18n-2026-11-07`,
+  `rbac-pg-{bandit,semgrep}-2026-11-08`) and their detached signatures, plus
+  nine run-record and one sanitizer pairs. The private key is not in the
+  repository. The directory moved out of `spec/static-analysis/` because it no
+  longer belongs to one channel; the signed bytes carry no path, so the
+  signatures stayed valid.
 
 The claim that cites this run is C-09 in
 `spec/pilots/craft-i18n/claims.yaml`. Its triage is embedded in the record, as
@@ -172,8 +193,13 @@ fix would have shown the rule set was blind, not that the fix worked.
 Semgrep 1.184.0 over `rbac_pg/setup` at `d978609`, normalized together with
 `--require-engines 2 --max-unmapped 0`. The three commands took 10.018 s in
 total; the report has 249 findings, both engines present, 0 unmapped, 0
-duplicates and 0 fixture inputs. The findings are not triaged, so the
-measurement says nothing about coverage; C-08 stays `open`.
+duplicates and 0 fixture inputs. The same document records the 2026-11-08
+per-engine re-run whose findings are triaged in
+`spec/pilots/rbac_pg/analysis-claims.yaml`. All 249 are `not-a-bug` and none
+reaches a cell, so the measurement says nothing about coverage; C-08 stays
+`open`. One correction came out of the re-run: Bandit 1.9.4 needs the separate
+`bandit-sarif-formatter` package for `-f sarif`, and the earlier claim that it
+did not was wrong.
 
 ## Triage: five findings, five decisions
 
@@ -235,15 +261,23 @@ signs and verifies; L2 recomputes the bytes, checks the namespace belongs to the
 channel and calls `ssh-keygen -Y verify` against `spec/anchor/allowed_signers`.
 The anchor is checked before the output or log paths, so a URL output cannot
 bypass it. The anchor directory is shared: `spec/anchor/` holds the committed
-`allowed_signers` and 13 subject/signature pairs (3 static-analysis, 9
+`allowed_signers` and 15 subject/signature pairs (5 static-analysis, 9
 run_record, 1 sanitizer). The subject carries no path, so moving the directory
 did not invalidate any signature. Adding, retiring, rotating and losing a key
 are covered in [`spec/anchor/README.md`](../anchor/README.md); a signature from
 an identity that is not in `allowed_signers` fails L2 even when the bytes are
 genuine (the `static-analysis-anchor-unknown-signer` eval case).
 
-The private key lives at `/tmp/opencode/dev-sec-skills-anchor/key`, outside
-the repository, and is never committed. That is what makes an edit after
+The private key of the 2026-11-07 signer lived at
+`/tmp/opencode/dev-sec-skills-anchor/key` and was lost when that directory was
+cleared; the 2026-11-08 triage records are signed by a second identity,
+`dev-sec-skills-anchor-2026-11-08`, whose key is at
+`/tmp/opencode/dev-sec-skills-anchor-2026-11-08/key`. Both identities are in
+`allowed_signers`, so the old anchors still verify. The lost key means the old
+records can no longer be re-signed, and the new signatures prove immutability
+after signing, not the run date.
+
+The private key living outside the repository is what makes an edit after
 signing detectable: changing a disposition, a hash, a runner name or a
 timestamp changes the canonical bytes, and a forger without the key cannot
 produce a matching signature. Two red-team drills cover it:
@@ -251,9 +285,12 @@ produce a matching signature. Two red-team drills cover it:
 `forge-anchored-test-record` renames a signed runner; both are blocked with
 `anchor subject does not describe this record`.
 
-Ten of the 13 anchors are a backfill: the records date from 2026-11-07 and were
-signed on 2026-11-08, so the signature proves the record has not changed since
-signing, not that the run happened on the day it claims.
+Ten of the 15 anchors are a backfill: those records date from 2026-11-07 and
+were signed on 2026-11-08, so the signature proves the record has not changed
+since signing, not that the run happened on the day it claims. The two
+`rbac-pg-*-2026-11-08` anchors were made the same day as their records, but the
+key that signed them is one day old and unreviewed; neither fact is evidence
+about the run time.
 
 The gap C-13 records is narrower, not closed. The key holder can re-sign any
 edit, and anyone who can replace `allowed_signers` and re-sign can do the
@@ -278,6 +315,9 @@ python3 tools/claim_lint.py \
     --run-log-root "$PWD" --tool-output-root "$PWD" \
     spec/pilots/craft-i18n/claims.yaml
 
+# the rbac_pg triage ledger (two per-engine records, 249 dispositions)
+make claims-static-rbac
+
 # the linter cases for this channel
 python3 evals/linter/run_evals.py
 
@@ -291,6 +331,10 @@ python3 tools/anchor_run.py verify \
     --ledger spec/pilots/dev-sec-skills/claims.yaml --claim C-01 --run 1
 python3 tools/anchor_run.py verify \
     --ledger spec/pilots/craft-i18n/claims.yaml --claim C-09 --run 0
+python3 tools/anchor_run.py verify --channel static-analysis \
+    --ledger spec/pilots/rbac_pg/analysis-claims.yaml --claim C-40 --run 0
+python3 tools/anchor_run.py verify --channel static-analysis \
+    --ledger spec/pilots/rbac_pg/analysis-claims.yaml --claim C-40 --run 1
 python3 tools/anchor_run.py verify --channel run-record \
     --ledger spec/pilots/craft-i18n/claims.yaml --claim C-01 --run 0
 python3 tools/anchor_run.py verify --channel sanitizer \

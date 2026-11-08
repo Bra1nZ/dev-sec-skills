@@ -1,0 +1,2103 @@
+# Static-analysis triage ledger for the rbac_pg pilot (V2-36, C-40).
+#
+# This ledger is authored here, not in the target repository: rbac_pg stays
+# read-only, and its docs/claims.yaml keeps only the product claims C-01..C-07.
+# Claim IDs are local to the file; `C-40` mirrors the CONCEPT row of the same
+# name (a static-analysis finding does not disappear) and is not the same
+# object as the craft-i18n instantiation.
+#
+# The 249 entries are a triage of a review queue, not a proof of safety. Both
+# engines report interpolated SQL text in operator-run test harnesses; every
+# reason below names the mechanism that keeps the interpolated value a
+# constant, a literal-bound parameter, a loop over literal names, a catalog
+# identifier or a script-generated token. No entry is routed to a cell: the
+# pilot registry has no cell whose failure_class is invalid-or-injected-input
+# or exposed-secret-or-weak-crypto, so the honest disposition is not-a-bug,
+# not covered.
+#
+# Regenerate the triage lists with:
+#   python3 spec/pilots/rbac_pg/triage_2026-11-08.py \
+#     --bandit spec/static-analysis/runs/rbac-pg-bandit-2026-11-08.report.json \
+#     --semgrep spec/static-analysis/runs/rbac-pg-semgrep-2026-11-08.report.json \
+#     --out /tmp/triage.yaml
+# and re-run tools/anchor_run.py create for both runs if the entries change.
+
+project: rbac_pg
+generated: '2026-11-08'
+claims:
+- id: C-40
+  claim: Every finding that Bandit 1.9.4 and Semgrep 1.184.0 raise over rbac_pg/setup at d978609 carries
+    exactly one recorded disposition, and each disposition names the source line and the mechanism that
+    keeps the interpolated value a constant, a literal-bound parameter, a loop over literal names, a catalog
+    identifier or a script-generated token rather than external data
+  mechanism: Bandit 1.9.4 runs the built-in B608,B105,B602 selector recorded in spec/static-analysis/rules/bandit-builtin-2026-11-08.yaml
+    with --exit-zero; Semgrep OSS 1.184.0 runs the authored rule set spec/static-analysis/rules/python-audit-2026-11-07.yml;
+    tools/sarif_evidence.py normalizes each SARIF into a one-engine report, so each record's triage is
+    a bijection with that report's findings; every finding has one not-a-bug entry whose reason names
+    the interpolation's origin and whose note cites path:line at the target commit; nothing routes to
+    a cell because the pilot registry (spec/pilots/rbac_pg/cells.yaml) owns no cell for the engines' failure
+    classes; both records carry an SSH anchor in the static-analysis channel (C-41)
+  status: static-refinement
+  scope:
+    platforms: Bandit 1.9.4 with its built-in selector B608,B105,B602 and bandit-sarif-formatter 1.1.1;
+      Semgrep OSS 1.184.0 with python-audit-2026-11-07.yml (SHA-256 26b192da...); /home/admini/projects/rbac_pg/setup
+      at d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f; 23 files, 63 Bandit and 186 Semgrep findings
+    actors_excluded:
+    - 'Request handling and the runtime behaviour of the rbac extension: no HTTP or client input path
+      is exercised here.'
+    - 'The engines'' internal soundness: the record says what the configured rules reported, not that
+      those rules find every injection.'
+    - 'Production deployment of the setup scripts: the target is read-only and nothing was fixed.'
+  limitations: 'The triage reads 249 review-queue entries at one commit. not-a-bug says that no external
+    data reaches the cited statement in this harness, not that the statement would stay safe if the harness
+    took request data. Bandit''s B608 is pattern-based, without data flow; the Semgrep rule is one authored
+    text rule, not a benchmark. No finding is routed: the pilot registry has no cell whose failure_class
+    is invalid-or-injected-input or exposed-secret-or-weak-crypto, so a real injection class would be
+    out-of-scope, not covered. The Bandit rule hash covers the selector manifest, not the engine build.
+    The SEMGREP rule set is dated 2026-11-07 and interpreted by one engine version. This record is anchored
+    with a key created after the 2026-11-07 key was lost with /tmp/opencode: old anchors still verify,
+    and a new key cannot show when this ledger was written (C-13).'
+  evidence:
+  - kind: static-analysis
+    commit: d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f
+    date: '2026-11-08'
+    static_analysis_runs:
+    - tool: bandit
+      version: 1.9.4
+      command: cd /home/admini/projects/rbac_pg && PYTHONPATH=/tmp/opencode/bandit-site python3 -m bandit
+        -t B608,B105,B602 -f sarif -r setup -q --exit-zero -o /home/admini/projects/dev-sec-skills/spec/static-analysis/runs/rbac-pg-bandit-2026-11-08.sarif
+      rules:
+        name: bandit-builtin-2026-11-08
+        source: spec/static-analysis/rules/bandit-builtin-2026-11-08.yaml
+        sha256: d9201513dcca8178653003e4b35a11a7f0bf8c34c0738dd2aae9835686b5923e
+      target_commit: d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f
+      output: spec/static-analysis/runs/rbac-pg-bandit-2026-11-08.sarif
+      output_sha256: e59fa28061cebfabb15cbc0d38513300387247ad954ac35c8e51abb6d9be8d34
+      report: spec/static-analysis/runs/rbac-pg-bandit-2026-11-08.report.json
+      report_sha256: 8185cf353e4555ae0224ec70164fc2f5d6213ce740555d29fa96a5cf1d001552
+      exit_code: 0
+      started_at: '2026-11-08T14:06:53+03:00'
+      finished_at: '2026-11-08T14:06:59+03:00'
+      status: completed
+      triage:
+      - finding: F-001
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:71 (B608); source: cur.execute(f"INSERT INTO c_customers
+          (tenant_id, name) SELECT (random()*4+1)::int, ''Customer '' || id FROM generate_series(1, {ROWS})
+          id;")'
+      - finding: F-002
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:72 (B608); source: cur.execute(f"INSERT INTO c_orders
+          (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-003
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:73 (B608); source: cur.execute(f"INSERT INTO c_items
+          (tenant_id, order_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-004
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:84 (B608); source: cur.execute(f"INSERT INTO c_customers
+          (tenant_id, name) SELECT (random()*4+1)::int, ''Customer '' || id FROM generate_series(1, {ROWS})
+          id;")'
+      - finding: F-005
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement has no interpolation: the f-string contains no replacement field, so the
+          whole statement is a constant and there is nothing to inject into.'
+        note: 'Observed at setup/chaos_enginiring_v2.py:85 (B608); source: cur.execute(f"INSERT INTO c_customers
+          (tenant_id, name) VALUES (2, ''HACK_TARGET'');") # Цель для взлома'
+      - finding: F-006
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:86 (B608); source: cur.execute(f"INSERT INTO c_products
+          (tenant_id, title, price) SELECT (random()*4+1)::int, ''Prod '' || id, random()*100 FROM generate_series(1,
+          {ROWS}) id;")'
+      - finding: F-007
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:87 (B608); source: cur.execute(f"INSERT INTO c_orders
+          (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-008
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:88 (B608); source: cur.execute(f"INSERT INTO c_items
+          (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int,
+          (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_se...'
+      - finding: F-009
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:89 (B608); source: cur.execute(f"INSERT INTO c_invoices
+          (tenant_id, order_id, amount) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, random()*1000
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-010
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:90 (B608); source: cur.execute(f"INSERT INTO c_payments
+          (tenant_id, invoice_id, status) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, ''PAID''
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-011
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:91 (B608); source: cur.execute(f"INSERT INTO c_shipments
+          (tenant_id, order_id, address) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, ''Address
+          '' || id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-012
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:92 (B608); source: cur.execute(f"INSERT INTO c_reviews
+          (tenant_id, product_id, rating) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, (random()*4+1)::int
+          FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-013
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:93 (B608); source: cur.execute(f"INSERT INTO c_tickets
+          (tenant_id, customer_id, issue) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int, ''Issue
+          '' || id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-014
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:94 (B608); source: cur.execute(f"INSERT INTO c_logs
+          (tenant_id, action) SELECT (random()*4+1)::int, ''Log '' || id FROM generate_series(1, {ROWS})
+          id;")'
+      - finding: F-015
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The string is the name of the environment variable that carries the secret (RBAC_APP_SECRET),
+          read with os.getenv() at line 38; it is not a secret value.
+        note: 'Observed at setup/rbac_token.py:26 (B105); source: RBAC_APP_SECRET_ENV = "RBAC_APP_SECRET"'
+      - finding: F-016
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_fstek.py:75 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-017
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with login, the loop variable over the literal LOGINS list
+          (line 78); no request, argument or database value is involved.
+        note: 'Observed at setup/test_fstek.py:165-168 (B608); source: cur.execute("SELECT d.datname FROM
+          pg_shdepend s " (+3 lines)'
+      - finding: F-018
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable tbl over a literal tuple of seven rbac.*
+          names (line 250). The loop walks a literal tuple of names declared in the same function or module,
+          so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:253 (B608); source: ok, d = expect_fail(acur, f"SELECT
+          count(*) FROM {tbl}", ''42501'')'
+      - finding: F-019
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only admin_role, the role_id returned by the rbac.roles query
+          at lines 450-452. The value is read from the test stand's own catalog over the same admin connection;
+          changing it requires control of the stand's database, which is outside this claim's scope.
+        note: 'Observed at setup/test_fstek.py:455-456 (B608); source: ok, d = expect_fail(cur, f"INSERT
+          INTO rbac.role_mappings (group_id, role_id) " (+1 lines)'
+      - finding: F-020
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only POOL_USER and POOL_PASSWORD, read from RBAC_TEST_POOL_USER/RBAC_TEST_POOL_PASSWORD
+          with literal defaults (lines 41-42). It is an operator-supplied name or credential that defaults
+          to a literal; no request data reaches it.
+        note: 'Observed at setup/test_negative.py:72-79 (B608); source: cur.execute(f""" (+7 lines)'
+      - finding: F-021
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_perf_envelope.py:59 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-022
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_perf_envelope.py:233-237 (B608); source: dcur.execute(f"""INSERT
+          INTO t_vanilla(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-023
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_perf_envelope.py:238-242 (B608); source: dcur.execute(f"""INSERT
+          INTO t_guarded(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-024
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with ROWS = 100_000 (line 60); no request, argument or database
+          value is involved.
+        note: 'Observed at setup/test_perf_envelope.py:262 (B608); source: "SELECT payload INTO v FROM
+          t_vanilla"'
+      - finding: F-025
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with ROWS = 100_000 (line 60); no request, argument or database
+          value is involved.
+        note: 'Observed at setup/test_perf_envelope.py:265 (B608); source: "SELECT payload INTO v FROM
+          t_guarded"'
+      - finding: F-026
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_plan_contract.py:34 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-027
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vpc_app' (line 32). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:93-96 (B608); source: mkc.execute("SELECT d.datname
+          FROM pg_shdepend s " (+3 lines)'
+      - finding: F-028
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only half (line 149) and rows (the literal default 50, line
+          116). It is a constant defined in this file, not a value from a request, an argument or a database,
+          so no attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:150-153 (B608); source: cur.execute(f"""INSERT
+          INTO docs(id, tenant_id, owner_id, mac_level, payload) (+3 lines)'
+      - finding: F-029
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_plan_index_cond.py:35 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-030
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_plan_index_cond.py:104-108 (B608); source: cur.execute(f"""INSERT
+          INTO docs(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-031
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_side_channels.py:37 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-032
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vsc_app' (line 35). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:120-123 (B608); source: mkc.execute("SELECT d.datname
+          FROM pg_shdepend s " (+3 lines)'
+      - finding: F-033
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_v12_security.py:26 (B105); source: APP_SECRET = "v12-suite-app-secret-0123456789abcdef"'
+      - finding: F-034
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:135 (B608); source: cur.execute(f"DELETE FROM public.{TABLE};")'
+      - finding: F-035
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:136-141 (B608); source: cur.execute(f""" (+5 lines)'
+      - finding: F-036
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:152 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-037
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:162 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-038
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:169 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-039
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:176 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-040
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:185 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-041
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:198 (B608); source: cur.execute(f"SELECT COUNT(*)
+          FROM public.{TABLE};")'
+      - finding: F-042
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:213 (B608); source: cur.execute(f"UPDATE public.{TABLE}
+          SET label=''HACKED'' WHERE id = 2;")'
+      - finding: F-043
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:218 (B608); source: cur.execute(f"DELETE FROM public.{TABLE}
+          WHERE id = 2;")'
+      - finding: F-044
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:223 (B608); source: cur.execute(f"UPDATE public.{TABLE}
+          SET label=''ok'' WHERE id = 1;")'
+      - finding: F-045
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:305 (B608); source: cur.execute(f"SELECT id, label
+          FROM public.{TABLE} ORDER BY id;")'
+      - finding: F-046
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal tuple ('users', '_app_secret',
+          'audit_log', 'permissions') (line 247). The loop walks a literal tuple of names declared in
+          the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:249 (B608); source: q.execute(f"SELECT * FROM rbac.{t}
+          LIMIT 1")'
+      - finding: F-047
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The value is the password of a LOGIN role that this script creates on the local stand
+          and drops again; it is a test fixture, not a deployed credential.
+        note: 'Observed at setup/test_v14_security.py:117 (B105); source: pwd = ''rbac_test_app'''
+      - finding: F-048
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:431 (B608); source: app.execute(f"SELECT * FROM
+          rbac.{t} LIMIT 1")'
+      - finding: F-049
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:439 (B608); source: ctrl.execute(f"SELECT * FROM
+          rbac.{t} LIMIT 1")'
+      - finding: F-050
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:447 (B608); source: ctrl.execute(f"SELECT count(*)
+          FROM rbac.{t}")'
+      - finding: F-051
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The value is the password of a LOGIN role that this script creates on the local stand
+          and drops again; it is a test fixture, not a deployed credential.
+        note: 'Observed at setup/test_v15_ceiling_trigger.py:125 (B105); source: pwd = ''rbac_cov_app'''
+      - finding: F-052
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal tuple ('users', '_app_secret',
+          'audit_log', 'permissions') (line 386). The loop walks a literal tuple of names declared in
+          the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:388 (B608); source: q.execute(f"SELECT * FROM rbac.{t}
+          LIMIT 1")'
+      - finding: F-053
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The value is the password of a LOGIN role that this script creates on the local stand
+          and drops again; it is a test fixture, not a deployed credential.
+        note: 'Observed at setup/test_v15_perf.py:130 (B105); source: pwd = ''rbac_perf_app'''
+      - finding: F-054
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable per_tenant over the literal tuple (10,
+          100, 1000, 10000) (line 271). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v15_perf.py:272-273 (B608); source: sql = (f"SELECT count(*) FROM
+          public.docs " (+1 lines)'
+      - finding: F-055
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The value is the password of a LOGIN role that this script creates on the local stand
+          and drops again; it is a test fixture, not a deployed credential.
+        note: 'Observed at setup/test_v15_security.py:94 (B105); source: pwd = ''rbac_v15_app'''
+      - finding: F-056
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_v16_guards.py:64 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-057
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with APP_ROLE = 'rbac_v16_app' (line 63); no request, argument
+          or database value is involved.
+        note: 'Observed at setup/test_v16_guards.py:142-145 (B608); source: mkc.execute("SELECT d.datname
+          FROM pg_shdepend s " (+3 lines)'
+      - finding: F-058
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 166; calls at 253). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v16_guards.py:210-211 (B608); source: cur.execute(f"""INSERT INTO
+          {table}(tenant_id, owner_id, mac_level, payload) (+1 lines)'
+      - finding: F-059
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_v17_events.py:69 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-060
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with APP_ROLE = 'rbac_v17_app' (line 68); no request, argument
+          or database value is involved.
+        note: 'Observed at setup/test_v17_events.py:145-148 (B608); source: mkc.execute("SELECT d.datname
+          FROM pg_shdepend s " (+3 lines)'
+      - finding: F-061
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 169; calls at 229, 448). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/test_v17_events.py:203-204 (B608); source: cur.execute(f"""INSERT INTO
+          {table}(tenant_id, owner_id, mac_level, payload) (+1 lines)'
+      - finding: F-062
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The value is the shared HMAC secret of the throwaway test stand: the suite passes it
+          to rbac.set_app_secret() on the database it creates and drops, and it is not a deployed credential.'
+        note: 'Observed at setup/test_v191_fixes.py:64 (B105); source: SECRET = ''citadel-test-secret-32-chars-minimum!!'''
+      - finding: F-063
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with role, the loop variable over three module constants
+          (line 124); no request, argument or database value is involved.
+        note: 'Observed at setup/test_v191_fixes.py:127-130 (B608); source: mkc.execute("SELECT d.datname
+          FROM pg_shdepend s " (+3 lines)'
+      anchor:
+        type: ssh-ed25519
+        signer: dev-sec-skills-anchor-2026-11-08
+        namespace: dev-sec-skills-static-analysis
+        subject: spec/anchor/rbac-pg-bandit-2026-11-08.json
+        subject_sha256: f10e23c8776806871ec68307db8600b0a07263706a017646a90dd4b64e81b2c4
+        signature: spec/anchor/rbac-pg-bandit-2026-11-08.json.sig
+        signature_sha256: 634d4de6b76599a978c77392890d584e612b0f687932035f4259ce90171d9ae6
+        allowed_signers: spec/anchor/allowed_signers
+        date: '2026-11-08'
+    - tool: semgrep
+      version: 1.184.0
+      command: cd /home/admini/projects/dev-sec-skills/spec/static-analysis/rules && PATH=/tmp/opencode/semgrep-site/bin:$PATH
+        PYTHONPATH=/tmp/opencode/semgrep-site SEMGREP_SEND_METRICS=off timeout 600 semgrep scan --config
+        python-audit-2026-11-07.yml --sarif --output /home/admini/projects/dev-sec-skills/spec/static-analysis/runs/rbac-pg-semgrep-2026-11-08.sarif
+        --quiet --disable-version-check --metrics off /home/admini/projects/rbac_pg/setup
+      rules:
+        name: dev-sec-skills-python-audit
+        source: spec/static-analysis/rules/python-audit-2026-11-07.yml
+        sha256: 26b192da07ca79599816a00c1d543487d7fd91b2f876afa3f3e786783e3aab85
+      target_commit: d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f
+      output: spec/static-analysis/runs/rbac-pg-semgrep-2026-11-08.sarif
+      output_sha256: a850a7500db0fc2b25a3fa575e3f3811d4f633e6787bda92f467e6d6421082e8
+      report: spec/static-analysis/runs/rbac-pg-semgrep-2026-11-08.report.json
+      report_sha256: 036733d725653a3c8bc6648c213c3d140af717c9763d402ba8c5d58be40e5284
+      exit_code: 0
+      started_at: '2026-11-08T14:07:06+03:00'
+      finished_at: '2026-11-08T14:07:24+03:00'
+      status: completed
+      triage:
+      - finding: F-001
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:71 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"INSERT
+          INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, ''Customer '' || id FROM generate_series(1,
+          {ROWS}) id;")'
+      - finding: F-002
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:72 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"INSERT
+          INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int,
+          random()*1000 FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-003
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 500000 (line 70). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:73 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"INSERT
+          INTO c_items (tenant_id, order_id, qty) SELECT (random()*4+1)::int, (random()*({ROWS}-1)+1)::int,
+          (random()*5+1)::int FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-004
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over TABLES = c_customers, c_orders,
+          c_items (line 49). The loop walks a literal tuple of names declared in the same function or
+          module, so no external text reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring.py:82 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          ALL ON {t} TO rbac_readwrite;")'
+      - finding: F-005
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:84 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_customers (tenant_id, name) SELECT (random()*4+1)::int, ''Customer
+          '' || id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-006
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement has no interpolation: the f-string contains no replacement field, so the
+          whole statement is a constant and there is nothing to inject into.'
+        note: 'Observed at setup/chaos_enginiring_v2.py:85 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_customers (tenant_id, name) VALUES (2, ''HACK_TARGET'');") # Цель
+          для взлома'
+      - finding: F-007
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:86 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_products (tenant_id, title, price) SELECT (random()*4+1)::int, ''Prod
+          '' || id, random()*100 FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-008
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:87 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_orders (tenant_id, customer_id, total) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-009
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:88 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_items (tenant_id, order_id, product_id, qty) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, (random()*({ROWS}-1)+1)::int, (random()*5+1)::int FROM generate_se...'
+      - finding: F-010
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:89 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_invoices (tenant_id, order_id, amount) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, random()*1000 FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-011
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:90 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_payments (tenant_id, invoice_id, status) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, ''PAID'' FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-012
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:91 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_shipments (tenant_id, order_id, address) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, ''Address '' || id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-013
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:92 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_reviews (tenant_id, product_id, rating) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, (random()*4+1)::int FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-014
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:93 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_tickets (tenant_id, customer_id, issue) SELECT (random()*4+1)::int,
+          (random()*({ROWS}-1)+1)::int, ''Issue '' || id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-015
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ROWS = 200000 (line 83). It is a constant defined in this
+          file, not a value from a request, an argument or a database, so no attacker-controlled text
+          reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:94 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"INSERT INTO c_logs (tenant_id, action) SELECT (random()*4+1)::int, ''Log '' ||
+          id FROM generate_series(1, {ROWS}) id;")'
+      - finding: F-016
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal TABLES list (line
+          49). The loop walks a literal tuple of names declared in the same function or module, so no
+          external text reaches the SQL.
+        note: 'Observed at setup/chaos_enginiring_v2.py:98 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT ALL ON {t} TO rbac_readwrite;")'
+      - finding: F-017
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter name of begin_sp(), release_sp() and rollback_sp(),
+          called only with the literal "install_sp" (lines 97, 107, 114, 119). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/rbac_install.py:63 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SAVEPOINT
+          {name};" if in_txn else "SELECT 1;")'
+      - finding: F-018
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter name of begin_sp(), release_sp() and rollback_sp(),
+          called only with the literal "install_sp" (lines 97, 107, 114, 119). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/rbac_install.py:67 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"RELEASE
+          SAVEPOINT {name};")'
+      - finding: F-019
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter name of begin_sp(), release_sp() and rollback_sp(),
+          called only with the literal "install_sp" (lines 97, 107, 114, 119). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/rbac_install.py:71 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"ROLLBACK
+          TO SAVEPOINT {name};")'
+      - finding: F-020
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable tbl over a literal tuple of seven table
+          names (line 91). The loop walks a literal tuple of names declared in the same function or module,
+          so no external text reaches the SQL.
+        note: 'Observed at setup/rbac_install.py:93 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          TABLE IF EXISTS public.{tbl} CASCADE;")'
+      - finding: F-021
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TEST_DB_NAME = "rbac_test" (line 20). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/setup_rbac_test.py:256 (dev-sec-skills.py.formatted-sql); source: cursor.execute(f"DROP
+          DATABASE IF EXISTS {TEST_DB_NAME};")'
+      - finding: F-022
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TEST_DB_NAME = "rbac_test" (line 20). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/setup_rbac_test.py:257 (dev-sec-skills.py.formatted-sql); source: cursor.execute(f"CREATE
+          DATABASE {TEST_DB_NAME};")'
+      - finding: F-023
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only db, the datname returned by the pg_shdepend/pg_database
+          query at lines 165-169. The value is read from the test stand's own catalog over the same admin
+          connection; changing it requires control of the stand's database, which is outside this claim's
+          scope.
+        note: 'Observed at setup/test_fstek.py:170 (dev-sec-skills.py.formatted-sql); source: cur.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-024
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable login over LOGINS, a literal list of
+          four fstek_* names (line 78). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:171 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          OWNED BY {login} CASCADE")'
+      - finding: F-025
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable login over LOGINS, a literal list of
+          four fstek_* names (line 78). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:172 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          ROLE {login}")'
+      - finding: F-026
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable login over LOGINS, a literal list of
+          four fstek_* names (line 78). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:173 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          ROLE {login} LOGIN")'
+      - finding: F-027
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with DB_FRESH (line 76); no request, argument or database
+          value is involved.
+        note: 'Observed at setup/test_fstek.py:174 (dev-sec-skills.py.formatted-sql); source: cur.execute("DROP
+          DATABASE IF EXISTS %s" % DB_FRESH)'
+      - finding: F-028
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The %s placeholder is filled with DB_MIGR (line 77); no request, argument or database
+          value is involved.
+        note: 'Observed at setup/test_fstek.py:175 (dev-sec-skills.py.formatted-sql); source: cur.execute("DROP
+          DATABASE IF EXISTS %s" % DB_MIGR)'
+      - finding: F-029
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_FRESH = 'rbac_fstek_fresh' (line 76). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:176 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          DATABASE {DB_FRESH}")'
+      - finding: F-030
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_MIGR = 'rbac_fstek_migr' (line 77). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:177 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          DATABASE {DB_MIGR}")'
+      - finding: F-031
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_FRESH = 'rbac_fstek_fresh' (line 76). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:610 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          DATABASE IF EXISTS {DB_FRESH}")'
+      - finding: F-032
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_MIGR = 'rbac_fstek_migr' (line 77). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:611 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          DATABASE IF EXISTS {DB_MIGR}")'
+      - finding: F-033
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable login over LOGINS, a literal list of
+          four fstek_* names (line 78). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:613 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          OWNED BY {login} CASCADE")'
+      - finding: F-034
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable login over LOGINS, a literal list of
+          four fstek_* names (line 78). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_fstek.py:614 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          ROLE {login}")'
+      - finding: F-035
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only POOL_USER and POOL_PASSWORD, read from RBAC_TEST_POOL_USER/RBAC_TEST_POOL_PASSWORD
+          with literal defaults (lines 41-42). It is an operator-supplied name or credential that defaults
+          to a literal; no request data reaches it.
+        note: 'Observed at setup/test_negative.py:72-79 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"""
+          (+7 lines)'
+      - finding: F-036
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          DB_NAME (line 184) and updb (line 313). The parameter never carries external data on any call
+          site in this file.
+        note: 'Observed at setup/test_perf_envelope.py:118 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP DATABASE IF EXISTS {dbname}")'
+      - finding: F-037
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          DB_NAME (line 184) and updb (line 313). The parameter never carries external data on any call
+          site in this file.
+        note: 'Observed at setup/test_perf_envelope.py:119 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"CREATE DATABASE {dbname}")'
+      - finding: F-038
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter body of measure_us(); every call site passes
+          a literal SQL fragment. The parameter never carries external data on any call site in this file.
+        note: 'Observed at setup/test_perf_envelope.py:158-164 (dev-sec-skills.py.formatted-sql); source:
+          acur.execute(f"""CREATE OR REPLACE FUNCTION pg_temp._perf_probe(n int, base int) (+6 lines)'
+      - finding: F-039
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter n of measure_us() (default 300); it is only
+          the loop bound inside the generated function, never text. The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_perf_envelope.py:171 (dev-sec-skills.py.formatted-sql); source:
+          acur.execute(f"SELECT pg_temp._perf_probe({n}, %s)", (b,))'
+      - finding: F-040
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:191 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-041
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:194 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"GRANT rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-042
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:195 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"GRANT USAGE ON SCHEMA rbac TO {APP_ROLE}")'
+      - finding: F-043
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:205 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"GRANT rbac_admin TO {APP_ROLE}")'
+      - finding: F-044
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only shape, a literal column list (lines 228-230). It is a
+          constant defined in this file, not a value from a request, an argument or a database, so no
+          attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:231 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"CREATE TABLE t_vanilla({shape})")'
+      - finding: F-045
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only shape, a literal column list (lines 228-230). It is a
+          constant defined in this file, not a value from a request, an argument or a database, so no
+          attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:232 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"CREATE TABLE t_guarded({shape})")'
+      - finding: F-046
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_perf_envelope.py:233-237 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"""INSERT INTO t_vanilla(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-047
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_perf_envelope.py:238-242 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"""INSERT INTO t_guarded(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-048
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:253 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"GRANT SELECT, INSERT ON t_vanilla, t_guarded TO {APP_ROLE}")'
+      - finding: F-049
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:298 (dev-sec-skills.py.formatted-sql); source:
+          dcur.execute(f"REVOKE rbac_admin FROM {APP_ROLE}")'
+      - finding: F-050
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only updb = 'rbac_perf_upg' (line 312). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:373 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP DATABASE {updb}")'
+      - finding: F-051
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:413 (dev-sec-skills.py.formatted-sql); source:
+          ocur.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-052
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          DB_NAME (line 184) and updb (line 313). The parameter never carries external data on any call
+          site in this file.
+        note: 'Observed at setup/test_perf_envelope.py:417 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f''DROP DATABASE IF EXISTS "{dbname}"'')'
+      - finding: F-053
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:418 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-054
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:419 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-055
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_perf_test' (line 57). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:430 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")'
+      - finding: F-056
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:431 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-057
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_perf_app' (line 58). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_perf_envelope.py:432 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-058
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_vpc_test' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:90 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {DB_NAME}")'
+      - finding: F-059
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only db, the datname returned by the pg_shdepend/pg_database
+          query at lines 93-97. The value is read from the test stand's own catalog over the same admin
+          connection; changing it requires control of the stand's database, which is outside this claim's
+          scope.
+        note: 'Observed at setup/test_plan_contract.py:98 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-060
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vpc_app' (line 32). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:99 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-061
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vpc_app' (line 32). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:100 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-062
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_vpc_test' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:101 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE DATABASE {DB_NAME}")'
+      - finding: F-063
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vpc_app' (line 32). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:102 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-064
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only half (line 149) and rows (the literal default 50, line
+          116). It is a constant defined in this file, not a value from a request, an argument or a database,
+          so no attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_plan_contract.py:150-153 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""INSERT INTO docs(id, tenant_id, owner_id, mac_level, payload) (+3 lines)'
+      - finding: F-065
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_xcond_test' (line 34). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:82 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")'
+      - finding: F-066
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:85 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-067
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:86 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-068
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_xcond_test' (line 34). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:87 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"CREATE DATABASE {DB_NAME}")'
+      - finding: F-069
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:88 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-070
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only shape, a literal column list (line 100). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:103 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"CREATE TABLE docs({shape})")'
+      - finding: F-071
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The only braces are escaped literal array initialisers (two braces); the single substitution
+          is a %s placeholder sent through the DB-API parameter tuple, not text spliced into the statement.
+        note: 'Observed at setup/test_plan_index_cond.py:104-108 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""INSERT INTO docs(id, tenant_id, owner_id, mac_level, (+4 lines)'
+      - finding: F-072
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:132 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT SELECT, INSERT ON docs TO {APP_ROLE}")'
+      - finding: F-073
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:133 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-074
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter sql of plan(), called only with the literal
+          statements at lines 145 and 152. The parameter never carries external data on any call site
+          in this file.
+        note: 'Observed at setup/test_plan_index_cond.py:141 (dev-sec-skills.py.formatted-sql); source:
+          acur.execute(f"EXPLAIN (COSTS OFF) {sql}")'
+      - finding: F-075
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_xcond_test' (line 34). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:173 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP DATABASE {DB_NAME}")'
+      - finding: F-076
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:174 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-077
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_xcond_app' (line 33). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_plan_index_cond.py:175 (dev-sec-skills.py.formatted-sql); source:
+          acur_admin.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-078
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_vsc_test' (line 36). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:117 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")'
+      - finding: F-079
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only db, the datname returned by the pg_shdepend/pg_database
+          query at lines 120-124. The value is read from the test stand's own catalog over the same admin
+          connection; changing it requires control of the stand's database, which is outside this claim's
+          scope.
+        note: 'Observed at setup/test_side_channels.py:125 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f''DROP DATABASE IF EXISTS "{db}"'')'
+      - finding: F-080
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vsc_app' (line 35). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:126 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-081
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vsc_app' (line 35). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:127 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-082
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB_NAME = 'rbac_vsc_test' (line 36). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:128 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE DATABASE {DB_NAME}")'
+      - finding: F-083
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_vsc_app' (line 35). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:129 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-084
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement interpolates several values, each a constant or a literal-bound parameter:
+          the parameter table of create_and_secure()/grant_app(), called with the literals oracle_t, oracle_ok,
+          fk_parent and fk_child (lines 193-194, 214-215) and COLS, a literal column list (line 42) and
+          the parameter extra of create_and_secure(), called with the literals ", PRIMARY KEY (id)" and
+          ", UNIQUE (tenant_id, id)" (lines 193-194) or the default "". None of them is request, argument
+          or database data.'
+        note: 'Observed at setup/test_side_channels.py:144 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"CREATE TABLE {table}({COLS}{extra})")'
+      - finding: F-085
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement interpolates several values, each a constant or a literal-bound parameter:
+          the parameter table of create_and_secure(), called only with the literals oracle_t and oracle_ok
+          (lines 193-194) and LABEL_COLS, a literal label-column list (line 45). None of them is request,
+          argument or database data.'
+        note: 'Observed at setup/test_side_channels.py:145 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"SELECT rbac.secure_table(''public'', {table!r}, {LABEL_COLS})")'
+      - finding: F-086
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement interpolates several values, each a constant or a literal-bound parameter:
+          the parameter table of create_and_secure()/grant_app(), called with the literals oracle_t, oracle_ok,
+          fk_parent and fk_child (lines 193-194, 214-215) and APP_ROLE = ''rbac_vsc_app'' (line 35). None
+          of them is request, argument or database data.'
+        note: 'Observed at setup/test_side_channels.py:177 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT SELECT, INSERT ON {table} TO {APP_ROLE}")'
+      - finding: F-087
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only COLS, a literal column list (line 42). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:195 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"CREATE TABLE fk_parent({COLS}, PRIMARY KEY (id))")'
+      - finding: F-088
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only COLS, a literal column list (line 42). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:196-197 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"CREATE TABLE fk_child({COLS}," (+1 lines)'
+      - finding: F-089
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only LABEL_COLS, a literal label-column list (line 45). It
+          is a constant defined in this file, not a value from a request, an argument or a database, so
+          no attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:209 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"SELECT rbac.secure_table(''public'', ''fk_parent'', {LABEL_COLS})")'
+      - finding: F-090
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only LABEL_COLS, a literal label-column list (line 45). It
+          is a constant defined in this file, not a value from a request, an argument or a database, so
+          no attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_side_channels.py:210 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"SELECT rbac.secure_table(''public'', ''fk_child'', {LABEL_COLS})")'
+      - finding: F-091
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:88 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          TABLE IF EXISTS public.{TABLE} CASCADE;")'
+      - finding: F-092
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46), plus the escaped {{}}
+          array initialisers. It is a constant defined in this file, not a value from a request, an argument
+          or a database, so no attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:89-100 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f""" (+11 lines)'
+      - finding: F-093
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:101 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          ALL ON public.{TABLE} TO rbac_readwrite;")'
+      - finding: F-094
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement has no interpolation: the f-string contains no replacement field, so the
+          whole statement is a constant and there is nothing to inject into.'
+        note: 'Observed at setup/test_v12_security.py:102 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO rbac_readwrite;")'
+      - finding: F-095
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:135 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DELETE
+          FROM public.{TABLE};")'
+      - finding: F-096
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:136-141 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f""" (+5 lines)'
+      - finding: F-097
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:152 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-098
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:162 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-099
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:169 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-100
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:176 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-101
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:185 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-102
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:198 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          COUNT(*) FROM public.{TABLE};")'
+      - finding: F-103
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:213 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"UPDATE
+          public.{TABLE} SET label=''HACKED'' WHERE id = 2;")'
+      - finding: F-104
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:218 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DELETE
+          FROM public.{TABLE} WHERE id = 2;")'
+      - finding: F-105
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:223 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"UPDATE
+          public.{TABLE} SET label=''ok'' WHERE id = 1;")'
+      - finding: F-106
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only TABLE = "sec_orders" (line 46). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v12_security.py:305 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"SELECT
+          id, label FROM public.{TABLE} ORDER BY id;")'
+      - finding: F-107
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB = 'rbac_v14_migr' (line 43). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:98 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {DB}")'
+      - finding: F-108
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB = 'rbac_v14_migr' (line 43). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:99 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {DB}")'
+      - finding: F-109
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:102 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-110
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:103 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-111
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:104 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''postgres''")'
+      - finding: F-112
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:142 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-113
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:143 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT USAGE ON SCHEMA public, rbac TO {APP_ROLE}")'
+      - finding: F-114
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:144 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON public.orders TO {APP_ROLE}")'
+      - finding: F-115
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v14_migr_app' (line 44). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:145 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT USAGE, SELECT ON SEQUENCE public.orders_id_seq TO {APP_ROLE}")'
+      - finding: F-116
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal tuple ('users', '_app_secret',
+          'audit_log', 'permissions') (line 247). The loop walks a literal tuple of names declared in
+          the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_migration.py:249 (dev-sec-skills.py.formatted-sql); source:
+          q.execute(f"SELECT * FROM rbac.{t} LIMIT 1")'
+      - finding: F-117
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v14_test' (line 116). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:126 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"DROP
+          DATABASE IF EXISTS {dbname}")'
+      - finding: F-118
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only pwd = 'rbac_test_app' (line 117). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:132 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          ROLE rbac_test_app LOGIN PASSWORD ''{pwd}''")'
+      - finding: F-119
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v14_test' (line 116). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:134 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-120
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only pwd = 'rbac_test_app' (line 117). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:389 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"CREATE
+          ROLE rbac_test_ctrl LOGIN PASSWORD ''{pwd}''")'
+      - finding: F-121
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:431 (dev-sec-skills.py.formatted-sql); source: app.execute(f"SELECT
+          * FROM rbac.{t} LIMIT 1")'
+      - finding: F-122
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:439 (dev-sec-skills.py.formatted-sql); source: ctrl.execute(f"SELECT
+          * FROM rbac.{t} LIMIT 1")'
+      - finding: F-123
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal table-name lists
+          at lines 429, 437 and 445. The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v14_security.py:447 (dev-sec-skills.py.formatted-sql); source: ctrl.execute(f"SELECT
+          count(*) FROM rbac.{t}")'
+      - finding: F-124
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v151_fresh',
+          'rbac_v151_migr') (line 127). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v151_ranges.py:128 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {db}")'
+      - finding: F-125
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v151_fresh',
+          'rbac_v151_migr') (line 127). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v151_ranges.py:139 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-126
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          'rbac_v151_fresh' (line 150) and 'rbac_v151_migr' (line 311). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v151_ranges.py:142 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-127
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_ceilt' (line 124). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_ceiling_trigger.py:130 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP DATABASE IF EXISTS {dbname}")'
+      - finding: F-128
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_ceilt' (line 124). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_ceiling_trigger.py:131 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE DATABASE {dbname}")'
+      - finding: F-129
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only pwd = 'rbac_cov_app' (line 125). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_ceiling_trigger.py:136 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE ROLE rbac_cov_app LOGIN PASSWORD ''{pwd}''")'
+      - finding: F-130
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_idem' (line 88). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_idempotency.py:92 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP DATABASE IF EXISTS {dbname}")'
+      - finding: F-131
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_idem' (line 88). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_idempotency.py:93 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE DATABASE {dbname}")'
+      - finding: F-132
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB = 'rbac_v15_migr' (line 53). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:142 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP DATABASE IF EXISTS {DB}")'
+      - finding: F-133
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only DB = 'rbac_v15_migr' (line 53). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:143 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE DATABASE {DB}")'
+      - finding: F-134
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:146 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-135
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:147 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"DROP ROLE {APP_ROLE}")'
+      - finding: F-136
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:148 (dev-sec-skills.py.formatted-sql); source:
+          mkc.execute(f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD ''postgres''")'
+      - finding: F-137
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:189 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-138
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:190 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT USAGE ON SCHEMA public, rbac TO {APP_ROLE}")'
+      - finding: F-139
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:191 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON public.orders TO {APP_ROLE}")'
+      - finding: F-140
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v15_migr_app' (line 54). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:192 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT USAGE, SELECT ON SEQUENCE public.orders_id_seq TO {APP_ROLE}")'
+      - finding: F-141
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable t over the literal tuple ('users', '_app_secret',
+          'audit_log', 'permissions') (line 386). The loop walks a literal tuple of names declared in
+          the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v15_migration.py:388 (dev-sec-skills.py.formatted-sql); source:
+          q.execute(f"SELECT * FROM rbac.{t} LIMIT 1")'
+      - finding: F-142
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname, read with os.getenv('PERF_DB', 'rbac_v15_perf')
+          (line 129). It is an operator-supplied name or credential that defaults to a literal; no request
+          data reaches it.
+        note: 'Observed at setup/test_v15_perf.py:135 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {dbname}")'
+      - finding: F-143
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname, read with os.getenv('PERF_DB', 'rbac_v15_perf')
+          (line 129). It is an operator-supplied name or credential that defaults to a literal; no request
+          data reaches it.
+        note: 'Observed at setup/test_v15_perf.py:136 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-144
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only pwd = 'rbac_perf_app' (line 130). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_perf.py:141 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE rbac_perf_app LOGIN PASSWORD ''{pwd}''")'
+      - finding: F-145
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only tok_alice = token('alice', 'tenant', 1) (line 311), an
+          HMAC token built from the test secret. The token is generated by the script from its own test
+          secret, not supplied by a caller.
+        note: 'Observed at setup/test_v15_perf.py:314 (dev-sec-skills.py.formatted-sql); source: a.execute(f"SELECT
+          rbac.init_session(''{tok_alice}'')")'
+      - finding: F-146
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only tok_alice = token('alice', 'tenant', 1) (line 311), an
+          HMAC token built from the test secret. The token is generated by the script from its own test
+          secret, not supplied by a caller.
+        note: 'Observed at setup/test_v15_perf.py:318 (dev-sec-skills.py.formatted-sql); source: a.execute(f"SELECT
+          rbac.init_session(''{tok_alice}'', true)")'
+      - finding: F-147
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only tok_alice = token('alice', 'tenant', 1) (line 311), an
+          HMAC token built from the test secret. The token is generated by the script from its own test
+          secret, not supplied by a caller.
+        note: 'Observed at setup/test_v15_perf.py:321 (dev-sec-skills.py.formatted-sql); source: a.execute(f"SELECT
+          rbac.init_session(''{tok_alice}'')")'
+      - finding: F-148
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only tok_alice = token('alice', 'tenant', 1) (line 311), an
+          HMAC token built from the test secret. The token is generated by the script from its own test
+          secret, not supplied by a caller.
+        note: 'Observed at setup/test_v15_perf.py:323 (dev-sec-skills.py.formatted-sql); source: a.execute(f"SELECT
+          rbac.init_session(''{tok_alice}'', true)")'
+      - finding: F-149
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_test' (line 93). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_security.py:99 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {dbname}")'
+      - finding: F-150
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only dbname = 'rbac_v15_test' (line 93). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_security.py:100 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-151
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only pwd = 'rbac_v15_app' (line 94). It is a constant defined
+          in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v15_security.py:105 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE rbac_v15_app LOGIN PASSWORD ''{pwd}''")'
+      - finding: F-152
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable guc over the literal pairs ('citadel.mac_ceiling',
+          '32767') and ('citadel.mic_ceiling', '32767') (lines 204-205). The loop walks a literal tuple
+          of names declared in the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v15_security.py:206 (dev-sec-skills.py.formatted-sql); source: a.execute(f"SELECT
+          set_config(''{guc}'', %s, false)", (value,))'
+      - finding: F-153
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v16_fresh',
+          'rbac_v16_migr') (line 137). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:138 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {db}")'
+      - finding: F-154
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v16_fresh',
+          'rbac_v16_migr') (line 137). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:147 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-155
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v16_app' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:148 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-156
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v16_app' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:149 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          ROLE {APP_ROLE}")'
+      - finding: F-157
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          'rbac_v16_fresh' (line 248) and 'rbac_v16_migr' (line 509). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v16_guards.py:150 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-158
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v16_app' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:151 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-159
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 166; calls at 253). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v16_guards.py:172-180 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""CREATE TABLE {table}( (+8 lines)'
+      - finding: F-160
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement interpolates several values, each a constant or a literal-bound parameter:
+          the parameter table of seed_policy_and_table(), called only with its literal default ''docs''
+          (line 166; calls at 253) and APP_ROLE = ''rbac_v16_app'' (line 63). None of them is request,
+          argument or database data.'
+        note: 'Observed at setup/test_v16_guards.py:204-205 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON {table} " (+1 lines)'
+      - finding: F-161
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v16_app' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:207 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-162
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v16_app' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v16_guards.py:208 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          USAGE ON SCHEMA rbac TO {APP_ROLE}")'
+      - finding: F-163
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 166; calls at 253). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v16_guards.py:210-211 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""INSERT INTO {table}(tenant_id, owner_id, mac_level, payload) (+1 lines)'
+      - finding: F-164
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 166; calls at 253). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v16_guards.py:241-242 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"SELECT rbac._internal_on(); TRUNCATE {table}; " (+1 lines)'
+      - finding: F-165
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v17_fresh',
+          'rbac_v17_migr') (line 140). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:141 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {db}")'
+      - finding: F-166
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over the literal tuple ('rbac_v17_fresh',
+          'rbac_v17_migr') (line 140). The loop walks a literal tuple of names declared in the same function
+          or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:150 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-167
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v17_app' (line 68). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:151 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          OWNED BY {APP_ROLE} CASCADE")'
+      - finding: F-168
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v17_app' (line 68). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:152 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          ROLE {APP_ROLE}")'
+      - finding: F-169
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          'rbac_v17_fresh' (line 224) and 'rbac_v17_migr' (line 442). The parameter never carries external
+          data on any call site in this file.
+        note: 'Observed at setup/test_v17_events.py:153 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-170
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v17_app' (line 68). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:154 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-171
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 169; calls at 229, 448). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/test_v17_events.py:171-179 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""CREATE TABLE {table}( (+8 lines)'
+      - finding: F-172
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: 'The statement interpolates several values, each a constant or a literal-bound parameter:
+          the parameter table of seed_policy_and_table(), called only with its literal default ''docs''
+          (line 169; calls at 229, 448) and APP_ROLE = ''rbac_v17_app'' (line 68). None of them is request,
+          argument or database data.'
+        note: 'Observed at setup/test_v17_events.py:199 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          SELECT, INSERT, UPDATE, DELETE ON {table} TO {APP_ROLE}")'
+      - finding: F-173
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v17_app' (line 68). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:200 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-174
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v17_app' (line 68). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v17_events.py:201 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          USAGE ON SCHEMA rbac TO {APP_ROLE}")'
+      - finding: F-175
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter table of seed_policy_and_table(), called
+          only with its literal default 'docs' (line 169; calls at 229, 448). The parameter never carries
+          external data on any call site in this file.
+        note: 'Observed at setup/test_v17_events.py:203-204 (dev-sec-skills.py.formatted-sql); source:
+          cur.execute(f"""INSERT INTO {table}(tenant_id, owner_id, mac_level, payload) (+1 lines)'
+      - finding: F-176
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only db, the datname returned by the pg_shdepend/pg_database
+          query at lines 127-131. The value is read from the test stand's own catalog over the same admin
+          connection; changing it requires control of the stand's database, which is outside this claim's
+          scope.
+        note: 'Observed at setup/test_v191_fixes.py:132 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f''DROP
+          DATABASE IF EXISTS "{db}"'')'
+      - finding: F-177
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable role over (APP_ROLE, ADMIN_TRAP_ROLE,
+          LABEL_ROLE), three module constants (line 124). The loop walks a literal tuple of names declared
+          in the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:133 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          OWNED BY {role} CASCADE")'
+      - finding: F-178
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable role over (APP_ROLE, ADMIN_TRAP_ROLE,
+          LABEL_ROLE), three module constants (line 124). The loop walks a literal tuple of names declared
+          in the same function or module, so no external text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:134 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          ROLE {role}")'
+      - finding: F-179
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v191_app' (line 61). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:135 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE {APP_ROLE} LOGIN PASSWORD ''{APP_ROLE}''")'
+      - finding: F-180
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only ADMIN_TRAP_ROLE = 'rbac_v191_dbadm' (line 62). It is a
+          constant defined in this file, not a value from a request, an argument or a database, so no
+          attacker-controlled text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:139 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE {ADMIN_TRAP_ROLE} LOGIN PASSWORD ''{ADMIN_TRAP_ROLE}'' IN ROLE rbac_admin")'
+      - finding: F-181
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only LABEL_ROLE = 'rbac_v191_lbladm' (line 63). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:140 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          ROLE {LABEL_ROLE} LOGIN PASSWORD ''{LABEL_ROLE}'' IN ROLE rbac_label_admin")'
+      - finding: F-182
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the loop variable db over (DB_FRESH, DB_MIGR) (line 147).
+          The loop walks a literal tuple of names declared in the same function or module, so no external
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:148 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"DROP
+          DATABASE IF EXISTS {db}")'
+      - finding: F-183
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only the parameter dbname of make_db(), called with the literals
+          DB_FRESH (line 219) and DB_MIGR (line 397). The parameter never carries external data on any
+          call site in this file.
+        note: 'Observed at setup/test_v191_fixes.py:150 (dev-sec-skills.py.formatted-sql); source: mkc.execute(f"CREATE
+          DATABASE {dbname}")'
+      - finding: F-184
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v191_app' (line 61). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:178 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          SELECT, INSERT, UPDATE, DELETE ON docs TO {APP_ROLE}")'
+      - finding: F-185
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v191_app' (line 61). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:179 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          rbac_readwrite TO {APP_ROLE}")'
+      - finding: F-186
+        disposition: not-a-bug
+        date: '2026-11-08'
+        reason: The statement interpolates only APP_ROLE = 'rbac_v191_app' (line 61). It is a constant
+          defined in this file, not a value from a request, an argument or a database, so no attacker-controlled
+          text reaches the SQL.
+        note: 'Observed at setup/test_v191_fixes.py:180 (dev-sec-skills.py.formatted-sql); source: cur.execute(f"GRANT
+          USAGE ON SCHEMA rbac TO {APP_ROLE}")'
+      anchor:
+        type: ssh-ed25519
+        signer: dev-sec-skills-anchor-2026-11-08
+        namespace: dev-sec-skills-static-analysis
+        subject: spec/anchor/rbac-pg-semgrep-2026-11-08.json
+        subject_sha256: 27f01a4e82239a8dd83fdee697bebe084edbf61134999135a75864498b1301e8
+        signature: spec/anchor/rbac-pg-semgrep-2026-11-08.json.sig
+        signature_sha256: 47e3bdec429edc9d23893159b708d38d79aa556beb69e118550e3d82437ae4ae
+        allowed_signers: spec/anchor/allowed_signers
+        date: '2026-11-08'

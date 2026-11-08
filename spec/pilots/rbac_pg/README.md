@@ -267,8 +267,9 @@ The concept's "~200" (C-11) is a design estimate for a platform with several
 repositories and layers. One PostgreSQL extension repository with a mature
 security test suite produced 29 cells, 24 of them covered. That is consistent
 with a few hundred cells for a multi-component product, but it does not confirm
-the number. The unroutable share is still unmeasured: no external finding was
-routed through the taxonomy in this pilot.
+the number. The unroutable share is still unmeasured: 249 external findings
+were triaged on 2026-11-08 (see the section above) and none of them reached a
+cell, so the taxonomy was not exercised on engine output.
 
 The distribution is also skewed: 25 of 29 cells are security. That is what the
 repository's detectors actually cover, not a taxonomy failure. Correctness,
@@ -315,6 +316,48 @@ not modify it; the warnings are visible migration debt, not a regression.
   `secure_table()`; that is a design change, not a test fix.
 - **CELL-029.** Stays `tested` as a configuration control. Re-run C4 whenever
   catalog privileges change; the cell must not be read as a code guard.
+
+## Static-analysis triage (2026-11-08)
+
+The registry and the product ledger answer "what does the project claim" and
+"what has a detector". A third question is separate: what do external engines
+report on this repository, and what happened to each report. Two engines ran
+over `setup/` at `d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f`, the model commit
+directly after the registry's `492f23c`; `setup/` is unchanged between them:
+
+| Record | Engine | Findings | `cell` |
+| --- | --- | --- | --- |
+| `analysis-claims.yaml` C-40 run 0 | Bandit 1.9.4, selector `B608,B105,B602` | 63 (49 B608, 14 B105) | 0 |
+| `analysis-claims.yaml` C-40 run 1 | Semgrep OSS 1.184.0, `python-audit-2026-11-07.yml` | 186 | 0 |
+
+All 249 findings are `not-a-bug`, with a reason that names the origin of every
+interpolated value: a module constant, a literal-bound parameter, a loop over a
+literal name list, a catalog identifier read over the stand's own admin
+connection, a token generated from the test secret, or an operator-supplied
+name with a literal default. `not-a-bug` is the disposition the evidence
+supports; it is not a judgement that the statement would stay safe under
+request data.
+
+Nothing routes to a cell, and that is a property of the registry, not of the
+findings. No cell owns `invalid-or-injected-input` or
+`exposed-secret-or-weak-crypto`; the closest cell, CELL-010, is
+`input-validation`, and mapping B608 onto it would claim a class the cell does
+not own (the adapter now rejects that, exit 2). A real injection into the
+extension's SQL would therefore be `out-of-scope`, and the honest answer to
+"did the taxonomy absorb these findings" is no — by boundary, not by silence.
+
+The ledger is authored in `dev-sec-skills`, so `rbac_pg` stays unmodified. The
+triage reasons are regenerated deterministically by
+[`triage_2026-11-08.py`](triage_2026-11-08.py) from the two committed reports
+and the source at `d978609`; `make claims-static-rbac` (part of
+`make verify`) proves the bijection, the hashes and both anchors. The
+identifier `C-40` is local to this ledger and mirrors the CONCEPT row of the
+same name; it is not the craft-i18n `C-09` record.
+
+This does not measure the unroutable share of the taxonomy: the 249 findings
+never reached a cell, so they say nothing about whether the cells' classes
+cover real engine output. It also does not raise any cell: an engine finding
+that is `not-a-bug` is not detector evidence.
 
 ## What this proves
 
@@ -367,6 +410,10 @@ python3 tools/cell_lint.py \
 # installed
 cd /home/admini/projects/rbac_pg
 python3 tools/claim_lint.py --no-vale --root . --suite-glob "setup/*.py" docs/claims.yaml
+
+# static-analysis triage ledger: bijection, hashes, both anchors
+cd /home/admini/projects/dev-sec-skills
+make claims-static-rbac
 
 # the test suites themselves need a stand:
 cd /home/admini/projects/rbac_pg
