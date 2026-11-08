@@ -46,6 +46,10 @@ except ImportError:  # pragma: no cover
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
+if os.path.join(REPO, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(REPO, "tools"))
+import anchor_subject  # noqa: E402
+import verdict_journal  # noqa: E402
 PILOT2_ROOT = os.path.normpath(os.path.join(REPO, "..", "astraoffice",
                                             "craft-i18n"))
 LEDGER = os.path.join(REPO, "spec", "pilots", "craft-i18n", "claims.yaml")
@@ -55,6 +59,16 @@ PY = sys.executable
 
 # A real commit where tools/claim_lint.py changed, for the planner drill.
 PLAN_BASE, PLAN_HEAD = "d311c47~1", "d311c47"
+
+# Verdict journal (C-13, V2-39). The drills build a throw-away repository from
+# the committed craft-i18n ledger, so the attack runs against the real claim
+# text and evidence, not a fixture.
+JOURNAL_TOOL = os.path.join(REPO, "tools", "verdict_journal.py")
+JOURNAL_FILE = "spec/journal/verdicts.jsonl"
+JOURNAL_HEAD = "spec/journal/head.json"
+JOURNAL_NAMESPACE = anchor_subject.VERDICT_JOURNAL_NAMESPACE
+JOURNAL_LEDGER = "ledgers/craft-i18n.yaml"
+JOURNAL_DATE = "2026-11-08"
 
 
 def load(path):
@@ -432,6 +446,113 @@ def _borrowed_evidence_declared(td):
     ]
 
 
+def _journal_stand(td):
+    """A git repository with the craft-i18n ledger, a signed journal and one
+    commit. Returns (repo, key) with the key outside the repository."""
+    repo = os.path.join(td, "repo")
+    os.makedirs(repo)
+    os.makedirs(os.path.join(repo, "ledgers"))
+    shutil.copyfile(LEDGER, os.path.join(repo, JOURNAL_LEDGER))
+    for cmd in (["git", "init", "-q", "-b", "main"],
+                ["git", "config", "user.email", "drill@example.invalid"],
+                ["git", "config", "user.name", "red team"]):
+        subprocess.run(cmd, cwd=repo, check=True, capture_output=True)
+    key = os.path.join(td, "drill-key")
+    subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "drill",
+                    "-f", key], check=True, capture_output=True)
+    pub = open(key + ".pub", encoding="utf-8").read().split()
+    with open(os.path.join(repo, "allowed_signers"), "w", encoding="utf-8") as handle:
+        handle.write("drill %s %s\n" % (pub[0], pub[1]))
+    code, out = run([PY, JOURNAL_TOOL, "append", "--repo", repo,
+                     "--journal", JOURNAL_FILE, "--head", JOURNAL_HEAD,
+                     "--ledger", JOURNAL_LEDGER,
+                     "--allowed-signers", "allowed_signers",
+                     "--key", key, "--signer", "drill",
+                     "--date", JOURNAL_DATE])
+    if code != 0:
+        raise RuntimeError("journal append failed in the drill stand:\n%s" % out)
+    subprocess.run(["git", "add", "ledgers", "spec", "allowed_signers"],
+                   cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "-m", "journal"],
+                   cwd=repo, check=True, capture_output=True)
+    return repo, key
+
+
+def _journal_verify(repo):
+    return [PY, JOURNAL_TOOL, "verify", "--repo", repo,
+            "--journal", JOURNAL_FILE, "--head", JOURNAL_HEAD,
+            "--ledger", JOURNAL_LEDGER,
+            "--allowed-signers", "allowed_signers",
+            "--git-ref", "HEAD"]
+
+
+def _journal_dropped_entry(td):
+    repo, _ = _journal_stand(td)
+    path = os.path.join(repo, JOURNAL_FILE)
+    with open(path, encoding="utf-8") as handle:
+        lines = handle.readlines()
+    if len(lines) < 2:
+        raise RuntimeError("the journal stand wrote %d entries; need two" % len(lines))
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.writelines(lines[:-1])
+    return [{"gate": "verdict_journal", "argv": _journal_verify(repo),
+             "exit": 1,
+             "contains": ["not append-only against HEAD",
+                          "does not name the last entry"]}]
+
+
+def _journal_rewritten_and_resigned(td):
+    """Re-date a recorded verdict, rebuild the whole chain, replace
+    allowed_signers with a fresh key, re-sign the head and amend the commit."""
+    repo, _ = _journal_stand(td)
+    journal = os.path.join(repo, JOURNAL_FILE)
+    with open(journal, encoding="utf-8") as handle:
+        entries = [json.loads(line) for line in handle if line.strip()]
+    entries[0]["date"] = "2026-11-07"
+    prev = verdict_journal.GENESIS
+    lines = []
+    for number, entry in enumerate(entries, 1):
+        entry.pop("hash", None)
+        entry["seq"] = number
+        entry["prev"] = prev
+        entry["hash"] = verdict_journal.entry_hash(entry)
+        prev = entry["hash"]
+        lines.append(json.dumps(entry, sort_keys=True, separators=(",", ":")) + "\n")
+    with open(journal, "w", encoding="utf-8") as handle:
+        handle.writelines(lines)
+
+    attacker = os.path.join(td, "attacker-key")
+    subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "attacker",
+                    "-f", attacker], check=True, capture_output=True)
+    pub = open(attacker + ".pub", encoding="utf-8").read().split()
+    with open(os.path.join(repo, "allowed_signers"), "w", encoding="utf-8") as handle:
+        handle.write("drill %s %s\n" % (pub[0], pub[1]))
+
+    head_path = os.path.join(repo, JOURNAL_HEAD)
+    with open(head_path, encoding="utf-8") as handle:
+        head = json.load(handle)
+    head.update({"seq": len(entries), "head": prev,
+                 "journal_sha256": verdict_journal.sha256_file(journal),
+                 "generated": JOURNAL_DATE, "signer": "drill",
+                 "ledgers": [{"path": JOURNAL_LEDGER,
+                              "sha256": verdict_journal.sha256_file(
+                                  os.path.join(repo, JOURNAL_LEDGER))}]})
+    with open(head_path, "wb") as handle:
+        handle.write(anchor_subject.verdict_journal_subject_bytes(head))
+    signature = head_path + ".sig"
+    if os.path.exists(signature):
+        os.remove(signature)
+    subprocess.run(["ssh-keygen", "-Y", "sign", "-f", attacker,
+                    "-n", JOURNAL_NAMESPACE, head_path],
+                   check=True, capture_output=True)
+    subprocess.run(["git", "add", "ledgers", "spec", "allowed_signers"],
+                   cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "--amend", "--no-edit"],
+                   cwd=repo, check=True, capture_output=True)
+    return [{"gate": "verdict_journal", "argv": _journal_verify(repo),
+             "exit": 0, "contains": ["total: 0 error(s)"]}]
+
+
 DRILLS = [
     {"name": "escalate-tested-to-proven", "build": _escalate_proven,
      "attack": "raise C-01 tested -> proven with the same run record",
@@ -489,6 +610,15 @@ DRILLS = [
      "build": _forge_anchored_test_record,
      "attack": "rename the runner of a signed test run record",
      "verdict": "blocked"},
+    {"name": "drop-a-journal-entry", "build": _journal_dropped_entry,
+     "attack": "delete the last verdict from the committed journal",
+     "verdict": "blocked"},
+    {"name": "rewrite-journal-and-resign", "build": _journal_rewritten_and_resigned,
+     "attack": "re-date a verdict, rebuild the chain, replace allowed_signers, "
+               "re-sign the head and amend the commit",
+     "verdict": "allowed",
+     "gap": "the journal binds entries to a key and to commits; whoever can "
+            "replace allowed_signers and rewrite history can re-sign any past"},
 ]
 
 
@@ -503,6 +633,10 @@ def check_stand():
                        "cargo-test-2026-11-07.log")
     if not os.path.isfile(log):
         return "the committed run log is missing: %s" % log
+    if shutil.which("ssh-keygen") is None:
+        return "ssh-keygen not found; the journal drills need it to sign"
+    if not os.path.isfile(os.path.join(REPO, "tools", "verdict_journal.py")):
+        return "the verdict journal tool is missing"
     return None
 
 

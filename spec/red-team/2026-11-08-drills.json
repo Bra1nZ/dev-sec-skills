@@ -94,12 +94,23 @@
       "name": "forge-anchored-test-record",
       "verdict": "blocked",
       "attack": "rename the runner of a signed test run record"
+    },
+    {
+      "name": "drop-a-journal-entry",
+      "verdict": "blocked",
+      "attack": "delete the last verdict from the committed journal"
+    },
+    {
+      "name": "rewrite-journal-and-resign",
+      "verdict": "allowed",
+      "attack": "re-date a verdict, rebuild the chain, replace allowed_signers, re-sign the head and amend the commit",
+      "gap": "the journal binds entries to a key and to commits; whoever can replace allowed_signers and rewrite history can re-sign any past"
     }
   ],
   "summary": {
-    "drills": 18,
-    "blocked": 17,
-    "allowed": 1,
+    "drills": 20,
+    "blocked": 18,
+    "allowed": 2,
     "failed": 0
   }
 }

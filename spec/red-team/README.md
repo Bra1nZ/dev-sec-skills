@@ -3,8 +3,8 @@
 `evals/` proves that a gate rejects a violation its author already thought of.
 These drills do the opposite: they attack the committed pilot artifacts — the
 craft-i18n ledger, its committed cargo log and the cell registry — and record
-what happened. Seventeen attacks are blocked by the check named for them; one
-passes with every gate green, and that one is the point of the exercise.
+what happened. Eighteen attacks are blocked by the check named for them; two
+pass with every gate green, and those two are the point of the exercise.
 
 A drill is not a demo. Each one copies a real artifact into a temp directory,
 applies exactly one mutation, runs the real tool, and passes only when the exit
@@ -17,8 +17,8 @@ modified.
 ```text
 spec/red-team/
   README.md                    # this file
-  run_drills.py                # the 18 attacks, one mutation each
-  2026-11-08-drills.json       # recorded result: 17 blocked, 1 allowed
+  run_drills.py                # the 20 attacks, one mutation each
+  2026-11-08-drills.json       # recorded result: 18 blocked, 2 allowed
 ```
 
 - `make red-team` — run the drills against the current tree.
@@ -47,9 +47,11 @@ spec/red-team/
 | `static-findings-hidden` | drop the triage entry for a real static-analysis finding (F-005) | blocked by L2 (V2-36) |
 | `forge-anchored-record` | rewrite a finding's disposition after the anchor was signed | blocked by L2 anchor verification (C-41) |
 | `forge-anchored-test-record` | rename the runner of a signed test run record | blocked by L2 anchor verification (C-41) |
+| `drop-a-journal-entry` | delete the last verdict from the committed journal | blocked by J3 and J4 (V2-39) |
 | `redate-and-resign` | re-date the run, replace `allowed_signers`, re-sign with a fresh key | **allowed** — the recorded C-13 gap |
+| `rewrite-journal-and-resign` | re-date a journaled verdict, rebuild the chain, replace `allowed_signers`, re-sign the head, amend the commit | **allowed** — the recorded C-13 gap |
 
-## The one silent path
+## The recorded silent paths
 
 ### Re-dating and re-signing
 
@@ -71,6 +73,23 @@ key, writes its public half into a replacement `allowed_signers`, signs the new
 bytes with `anchor_run.py create` and points the record at them. Every gate is
 green. This is the measured C-13 gap: the anchor binds a record to a key, not to
 a timestamping authority, a transparency log or a revocation list.
+
+### Rewriting the verdict journal and re-signing
+
+The journal (V2-39) makes a verdict's past visible: a chain over every entry
+plus a signed head that names the last entry, the journal hash and the exact
+bytes of each covered ledger. `drop-a-journal-entry` deletes the last line of a
+journal built from the real craft-i18n ledger; J3 sees that the committed file
+is no longer a prefix, J1 sees `seq`/`prev` break, and J4 sees a head that
+names an entry which no longer exists.
+
+`rewrite-journal-and-resign` does what an adversary with write access to the
+repository and its CI can do: re-date the first journaled verdict, recompute the
+whole hash chain, point the head at the new last entry and file hash, replace
+`allowed_signers` with a fresh key, sign the new head and amend the commit so
+J3 compares against the rewritten history. `make journal` exits 0. The journal
+binds entries to a key and to commits; it is not a transparency log, so there is
+no third party who would notice that a different journal was published.
 
 ## Forging an anchored record, now blocked
 
@@ -110,16 +129,20 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
 
 ## What this does and does not show
 
-- The 17 blocked drills show that those specific checks fire on real artifacts,
+- The 18 blocked drills show that those specific checks fire on real artifacts,
   not only on fixtures. They do not show that no other bypass exists.
-- The 1 allowed drill is recorded as `allowed` in the harness. If a later gate
-  starts blocking it, the drill fails and the gap entry must be updated, so this
+- The 2 allowed drills are recorded as `allowed` in the harness. If a later gate
+  starts blocking one, the drill fails and the gap entry must be updated, so this
   document cannot quietly become stale.
 - The drills run `claim_lint --no-vale`: L5 prose scanning is not exercised here
   (L5 is covered by the linter evals and `make verify`).
 - Only the craft-i18n ledger is attacked. It is one pilot with nine claims; the
   rbac_pg ledger is external and has no run records, so the same attack there
   would test less.
+- The journal drills build a fresh journal from that ledger in a throw-away git
+  repository. They exercise the gate against real claim text, not the
+  repository's committed journal; J1–J4 on the committed journal run in
+  `make verify` through the `journal` target.
 - The attacks are static edits to committed artifacts. A compromised tool, a
   rewritten CI job, or a forged GitHub artifact are outside this scope.
 
@@ -132,4 +155,5 @@ make red-team-record
 ```
 
 Exit codes: 0 every drill matched, 1 a drill diverged, 2 the craft-i18n
-checkout, the ledger, the registry or the committed log is unavailable.
+checkout, the ledger, the registry, the committed log or `ssh-keygen` is
+unavailable.

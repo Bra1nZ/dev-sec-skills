@@ -6,9 +6,15 @@ signs its output and `tools/claim_lint.py` recomputes it during L2. If the two
 drifted, a signature would verify against bytes that no longer describe the
 record, which is the failure the anchor exists to prevent.
 
-Three channels are anchored, each under its own signature namespace:
+Three evidence channels are anchored, each under its own signature namespace:
 `static-analysis` (V2-36), `run-record` (V2-01/V2-02) and `sanitizer`
 (V2-35). A signature made in one namespace does not verify in another.
+
+The verdict journal's head (V2-39) is a fourth signed document, but not an
+anchor on a ledger record: it has its own namespace and canonical form here,
+so a head signature cannot be replayed as an evidence anchor. The journal
+reuses `canonical_bytes` for its entries, which is what lets a hash computed
+by the tool and a signature made over the same dict agree.
 
 The subject is canonical JSON: sorted keys, no insignificant whitespace, one
 trailing newline. It covers the fields a forger would change to move a finding
@@ -53,6 +59,14 @@ NAMESPACES = {
     "run-record": "dev-sec-skills-run-record",
     "sanitizer": "dev-sec-skills-sanitizer",
 }
+
+# Verdict journal head (C-13, V2-39). The journal is not a ledger record, so it
+# has no channel in NAMESPACES: `tools/verdict_journal.py` signs and verifies
+# the head itself. The namespace is separate so a head signature cannot be
+# replayed as an evidence anchor.
+VERDICT_JOURNAL_NAMESPACE = "dev-sec-skills-verdict-journal"
+VERDICT_JOURNAL_FIELDS = ("seq", "head", "journal_sha256", "generated",
+                          "signer", "namespace", "ledgers")
 
 
 def canonical_subject(run):
@@ -112,6 +126,35 @@ def canonical_sanitizer_subject(record):
 
 def sanitizer_subject_bytes(record):
     return _bytes_of(canonical_sanitizer_subject(record))
+
+
+def canonical_bytes(obj):
+    """Canonical bytes of any object: sorted keys, compact, one newline.
+
+    The verdict journal uses the same function for its entries and its head,
+    so a hash computed here and a signature made over the same dict agree.
+    """
+    return _bytes_of(obj)
+
+
+def canonical_verdict_journal_subject(head):
+    """The dict the journal head signs. Every field is required."""
+    if not isinstance(head, dict):
+        head = {}
+    ledgers = []
+    for entry in head.get("ledgers") or []:
+        if not isinstance(entry, dict):
+            continue
+        ledgers.append({key: entry.get(key) for key in ("path", "sha256")
+                        if entry.get(key) is not None})
+    subject = {key: head.get(key) for key in VERDICT_JOURNAL_FIELDS
+               if key != "ledgers" and head.get(key) is not None}
+    subject["ledgers"] = sorted(ledgers, key=lambda item: str(item.get("path")))
+    return subject
+
+
+def verdict_journal_subject_bytes(head):
+    return _bytes_of(canonical_verdict_journal_subject(head))
 
 
 def record_subject_bytes(channel, record):

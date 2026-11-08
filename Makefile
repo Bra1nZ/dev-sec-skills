@@ -38,6 +38,18 @@ SELF_REGISTRY ?= spec/pilots/dev-sec-skills/cells.yaml
 SELF_LEDGER ?= spec/pilots/dev-sec-skills/claims.yaml
 SELF_SUITE_GLOB ?= spec/pilots/dev-sec-skills/detectors/*.py
 
+# Verdict journal (C-13, V2-39). The journal covers the ledgers that live in
+# this repository; a ledger outside it (e.g. the rbac_pg one) is deliberately
+# not included, because a `../` path would tie the journal to one checkout
+# layout. JOURNAL_FIRST_RELEASE=1 is the honest state before the journal lands
+# in a commit: there is no committed base to extend.
+JOURNAL ?= spec/journal/verdicts.jsonl
+JOURNAL_HEAD ?= spec/journal/head.json
+JOURNAL_LEDGERS ?= spec/pilots/dev-sec-skills/claims.yaml spec/pilots/craft-i18n/claims.yaml
+JOURNAL_FIRST_RELEASE ?= 0
+JOURNAL_KEY ?= $(HOME)/.config/dev-sec-skills/anchor/key
+JOURNAL_SIGNER ?= dev-sec-skills-anchor-2026-11-08
+
 # C-02 bounded cross-check: an independent row-grammar model with a path
 # dependency on the second pilot checkout. It needs that checkout and is a
 # bounded model check, not a merge gate, so it is not in `verify`. The target
@@ -138,9 +150,10 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
         diff-coverage-record choke-points choke-points-record invariants \
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
-        proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record detectors-self help
+        proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record \
+        journal journal-append detectors-self help
 
-verify: verify-repo verify-pilot verify-pilot2 verify-self unroutable coverage invariants
+verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable coverage invariants
 
 verify-all: verify mutations-all
 
@@ -168,6 +181,7 @@ evals:
 	$(PYTHON) evals/bounded-check/run_evals.py
 	$(PYTHON) evals/proof-plan/run_evals.py
 	$(PYTHON) evals/bootstrap/run_evals.py
+	$(PYTHON) evals/journal/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -344,6 +358,30 @@ detectors-self:
 	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py
 	@echo "== D-BOOTSTRAP: the bootstrap path, end to end =="
 	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py
+	@echo "== D-JOURNAL: the verdict journal gate, end to end =="
+	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py
+
+journal:
+	@echo "== J1-J4: append-only verdict journal (C-13) =="
+	$(PYTHON) tools/verdict_journal.py verify \
+	  --journal "$(JOURNAL)" \
+	  --head "$(JOURNAL_HEAD)" \
+	  $(foreach l,$(JOURNAL_LEDGERS),--ledger "$(l)") \
+	  --allowed-signers spec/anchor/allowed_signers \
+	  --git-ref "$(BASE_REF)" \
+	  $(if $(filter 1,$(JOURNAL_FIRST_RELEASE)),--first-release)
+
+journal-append:
+	@echo "== journal: append changed verdicts and re-sign the head =="
+	$(PYTHON) tools/verdict_journal.py append \
+	  --journal "$(JOURNAL)" \
+	  --head "$(JOURNAL_HEAD)" \
+	  $(foreach l,$(JOURNAL_LEDGERS),--ledger "$(l)") \
+	  --allowed-signers spec/anchor/allowed_signers \
+	  --git-ref "$(BASE_REF)" \
+	  $(if $(filter 1,$(JOURNAL_FIRST_RELEASE)),--first-release) \
+	  --key "$(JOURNAL_KEY)" \
+	  --signer "$(JOURNAL_SIGNER)"
 
 unroutable:
 	@echo "== U: unroutable share of the pilot taxonomies (V2-25) =="
@@ -505,7 +543,7 @@ help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
 	@echo "  verify-all    verify plus the three mutation batches (PostgreSQL, cargo, hermetic self-pilot)"
-	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage, choke_points"
+	@echo "  evals         adversarial cases for cell_lint, claim_lint, status_diff, fuzz_run, fuzz_triage, coverage_report, diff_coverage, choke_points, verdict_journal"
 	@echo "  lint-seed     CL1-CL6 over spec/conveyor/cells.seed.yaml"
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
@@ -514,7 +552,7 @@ help:
 	@echo "  claims-pilot2 L1-L6 over the craft-i18n claim ledger"
 	@echo "  claims-self   L1-L6 over the dev-sec-skills self-pilot claim ledger"
 	@echo "  claims-static-rbac  L1-L6 over the rbac_pg static-analysis triage ledger"
-	@echo "  detectors-self  D-PINNED-ACTIONS over this repository's workflows"
+	@echo "  detectors-self  D-PINNED-ACTIONS, D-BOOTSTRAP and D-JOURNAL over this repository"
 	@echo "  mutations-self  MUT-001: prove D-PINNED-ACTIONS fails on a mutable ref"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"
 	@echo "  status-pilot2 status-escalation diff for the craft-i18n ledger"
@@ -541,3 +579,5 @@ help:
 	@echo "  crosscheck-c02-mutants  every named model edit must be detected"
 	@echo "  red-team      attack the real pilot ledger/log/registry; 13 blocked, 1 recorded gap"
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-08-drills.json"
+	@echo "  journal       J1-J4: the verdict journal chain, ledger agreement, history and signed head"
+	@echo "  journal-append  append changed verdicts and re-sign the head (needs JOURNAL_KEY outside the repo)"
