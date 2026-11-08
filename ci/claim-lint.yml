@@ -39,7 +39,9 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Lint claim ledger (L1-L5)
-        run: python3 tools/claim_lint.py --root . --suite-glob "$SUITE_GLOB" "$LEDGER"
+        run: |
+          python3 tools/claim_lint.py --root . --suite-glob "$SUITE_GLOB" \
+            --format github "$LEDGER"
 
       - name: Status diff vs previous release
         run: |

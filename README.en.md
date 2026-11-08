@@ -329,6 +329,12 @@ pilot ones; CI runs it on every push. The repository handover (environment,
 keys, change ritual, open holes) is in
 [`docs/handover.en.md`](docs/handover.en.md).
 
+Findings can land as pull-request annotations: `claim_lint --format github`
+prints `::error`/`::warning` with a file and a line (errors only by default;
+`--annotations warning` adds warnings). The `ci/claim-lint.yml` template calls the
+linter in that mode, so a finding sits on the changed claim line instead of only in
+the log.
+
 Diff coverage is separate from `verify` for the same reason mutation runs are:
 the gate needs a base ref, while `verify` compares the working tree against this
 repository's last commit. `make diff-coverage` runs DC1–DC5 over the two fixed

@@ -1835,6 +1835,83 @@ def check_relevance(claims, findings):
                 "needs at least one test of its own (V2-34)", cid))
 
 
+# ------------------------------------------------- github annotations (V2-41)
+
+def claim_lines(path):
+    """Map a claim ID to the 1-based line where its block starts (YAML only).
+
+    Most findings name a claim but carry no file: a schema error is about the
+    block the reviewer has to edit, and the ledger is where that block lives.
+    The text format does not need a line; an annotation does, because an
+    annotation on the ledger's first line is a comment on the wrong line.
+
+    A JSON ledger, or a ledger PyYAML cannot compose, yields an empty map: an
+    annotation without a line is honest, a guessed line is not.
+    """
+    if path.endswith(".json"):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            node = yaml.compose(handle)
+    except (OSError, yaml.YAMLError):
+        return {}
+    lines = {}
+    if not isinstance(node, yaml.MappingNode):
+        return lines
+    for key, value in node.value:
+        if getattr(key, "value", None) != "claims" or not isinstance(value, yaml.SequenceNode):
+            continue
+        for item in value.value:
+            if not isinstance(item, yaml.MappingNode):
+                continue
+            for k, v in item.value:
+                if getattr(k, "value", None) == "id" and isinstance(v, yaml.ScalarNode):
+                    if re.fullmatch(r"C-[0-9]{2,}", v.value or ""):
+                        lines[v.value] = item.start_mark.line + 1
+    return lines
+
+
+def _escape_data(text):
+    """Escape one GitHub workflow command's message body."""
+    return (str(text).replace("%", "%25")
+            .replace("\r", "%0D").replace("\n", "%0A"))
+
+
+def _escape_property(text):
+    """Escape one workflow command property (file, title): data plus , and :."""
+    return _escape_data(text).replace(":", "%3A").replace(",", "%2C")
+
+
+def annotation(finding, root, ledger_rel, claim_line=None):
+    """Render one finding as a GitHub workflow command.
+
+    The location is the finding's own file and line when it has one, else the
+    ledger and the claim's block. The message carries the claim ID, because
+    the title is a fixed badge and the annotation body is what a reviewer
+    reads in the diff.
+    """
+    severity = {"error": "error", "warning": "warning", "info": "notice"}[finding.severity]
+    path, line = finding.file, finding.line
+    if path:
+        if os.path.isabs(path):
+            path = os.path.relpath(path, root)
+        path = path.replace(os.sep, "/")
+        if path.startswith("./"):
+            path = path[2:]
+    else:
+        path, line = ledger_rel, claim_line
+    head = []
+    if path:
+        head.append("file=%s" % _escape_property(path))
+    if line:
+        head.append("line=%d" % int(line))
+    head.append("title=%s" % _escape_property("claim_lint %s" % finding.check))
+    message = finding.message
+    if finding.claim:
+        message = "%s: %s" % (finding.claim, message)
+    return "::%s %s::%s" % (severity, ",".join(head), _escape_data(message))
+
+
 # -------------------------------------------------------------------- main
 
 def main():
@@ -1852,6 +1929,12 @@ def main():
                          "(default: --root)")
     ap.add_argument("--no-vale", action="store_true",
                     help="skip Vale and use the built-in L5 scanner")
+    ap.add_argument("--format", choices=("text", "github"), default="text",
+                    help="output format: text (default) or GitHub workflow "
+                         "annotations, so a finding lands on the changed line")
+    ap.add_argument("--annotations", choices=("error", "warning"), default="error",
+                    help="minimum severity emitted as a GitHub annotation "
+                         "(default: error; the self-pilot has 72 L5 warnings)")
     args = ap.parse_args()
 
     root = args.root or os.path.dirname(os.path.abspath(args.ledger))
@@ -1897,6 +1980,21 @@ def main():
     errors = [f for f in findings if f.severity == "error"]
     warnings = [f for f in findings if f.severity == "warning"]
     infos = [f for f in findings if f.severity == "info"]
+
+    if args.format == "github":
+        levels = ("error",) if args.annotations == "error" else ("error", "warning")
+        ledger_rel = os.path.relpath(os.path.abspath(args.ledger), root).replace(os.sep, "/")
+        lines = claim_lines(args.ledger)
+        emitted = 0
+        for f in findings:
+            if f.severity not in levels:
+                continue
+            print(annotation(f, root, ledger_rel, lines.get(f.claim)))
+            emitted += 1
+        print("claim_lint: %d error(s), %d warning(s), %d info; %d annotation(s) "
+              "(format=github, level=%s; GitHub shows the first ten per step)"
+              % (len(errors), len(warnings), len(infos), emitted, args.annotations))
+        return 1 if errors else 0
 
     print("ledger: %s | claims: %d" % (args.ledger, len(claims)))
     for check in ("L1", "L2", "L3", "L4", "L5", "L6"):

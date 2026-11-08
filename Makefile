@@ -175,6 +175,7 @@ evals:
 	@echo "== evals: adversarial cases for the linters =="
 	$(PYTHON) evals/cell-lint/run_evals.py
 	$(PYTHON) evals/linter/run_evals.py
+	$(PYTHON) evals/claim-format/run_evals.py
 	$(PYTHON) evals/status-diff/run_evals.py
 	$(PYTHON) evals/fuzz/run_evals.py
 	$(PYTHON) evals/fuzz-triage/run_evals.py
