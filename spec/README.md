@@ -324,6 +324,13 @@ and error when an earlier tombstone is dropped. `claim_lint` L1 and `cell_lint`
 CL1 reject a tombstone with no reason, a duplicate, and a live ID, so the shape
 is checked even without a base.
 
+Bootstrap (V2-38) closes the "foreign repository" gap: `tools/bootstrap.py`
+vendors the linters and their data files, writes honest open templates, renders
+the CI gates and creates an external key, while `evals/bootstrap/run_evals.py`
+and the D-BOOTSTRAP detector exercise the path on a throw-away repository
+(C-02). The eval is synthetic, one runner type was exercised, and C-13 stays
+open; `docs/onboarding.md` states the scope.
+
 ## Reading order
 
 1. `CONCEPT.md` — thesis, trust policy, layers, taxonomy, verdicts, ceiling.
@@ -339,6 +346,9 @@ is checked even without a base.
    a small Rust crate, two different shapes).
 8. `../../Makefile` — `make verify`, the single entry point for every static
    gate.
+9. `../../docs/onboarding.md` — how to install the gates in a foreign
+   repository: bootstrap, the open templates, the first anchored record, key
+   handling, vendoring drift, CI rendering and the limits of a green gate.
 
 ## What this is not
 

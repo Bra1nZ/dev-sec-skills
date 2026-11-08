@@ -167,6 +167,7 @@ evals:
 	$(PYTHON) evals/sarif/run_evals.py
 	$(PYTHON) evals/bounded-check/run_evals.py
 	$(PYTHON) evals/proof-plan/run_evals.py
+	$(PYTHON) evals/bootstrap/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -341,6 +342,8 @@ claims-self:
 detectors-self:
 	@echo "== D-PINNED-ACTIONS: this repository's workflows =="
 	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_ci_supply_chain.py
+	@echo "== D-BOOTSTRAP: the bootstrap path, end to end =="
+	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py
 
 unroutable:
 	@echo "== U: unroutable share of the pilot taxonomies (V2-25) =="
