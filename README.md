@@ -365,6 +365,13 @@ Mutation-прогоны вынесены: `make mutations` — `rbac_pg` на ж
 `make mutations-i18n` — фикстуры `craft-i18n`, нужен только cargo;
 `make mutations-all` — оба набора; `make verify-all` — verify плюс оба набора.
 
+Concurrency-оракул вынесен туда же: `make concurrency-rbac` поднимает временную
+БД на стенде `MUTATION_DSN` и выпускает 8 одновременных неудачных входов по
+одной учётке; `make concurrency-rbac-mutants` ломает `register_auth_failure`
+(stale read и снятая блокировка) и требует, чтобы оракул упал — 2/2 мутанта.
+Инвариант: `failed_attempts == 4 + (инкременты, которые продукт сам записал в
+журнал)`, поэтому поздняя сессия не делает проверку флаки.
+
 `make verify` доказывает внутреннюю согласованность реестров, леджеров и
 evals, а не истинность свойств и не чистоту production-реестра. Один известный
 пробел зафиксирован в `evals/status-diff` (пере-датировка).

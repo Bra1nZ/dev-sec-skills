@@ -64,6 +64,8 @@ make verify
 | `make journal-append` | добавляет изменившиеся вердикты и пере-подписывает голову; нужен приватный ключ | нет | нет |
 | `make red-team` | 20 атак на реальные артефакты: 18 blocked, 2 allowed (записанные дыры) | да | нет |
 | `make verify-all` | `verify` + оба mutation-набора (PostgreSQL и cargo) | да | нет |
+| `make concurrency-rbac` | оракул INV-TX-003 на пути lockout: 8 одновременных неудачных входов, тождество `failed_attempts == 4 + записанные инкременты` | стенд `MUTATION_DSN` | нет |
+| `make concurrency-rbac-mutants` | 2 мутанта `register_auth_failure` × 3 раунда; оракул обязан упасть в каждом раунде | стенд `MUTATION_DSN` | нет |
 
 Журнал — отдельный слой: `spec/journal/README.md` описывает модель угроз,
 формат записи и то, что гейт **не** ловит. Прочитайте его до первой правки

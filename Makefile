@@ -3,6 +3,7 @@
 #   make verify        every gate that needs no external service
 #   make verify-all    verify + both mutation batches (PostgreSQL stand and cargo)
 #   make mutations     only the rbac_pg mutation suite (needs a built extension)
+#   make concurrency-rbac  the lockout check-then-act oracle (needs the same stand)
 #   make mutations-i18n  only the craft-i18n mutation fixtures (needs cargo)
 #
 # Nothing here proves a property. A green run means the registries, ledgers,
@@ -36,7 +37,10 @@ PILOT2_MUTATION_TARGET_DIR ?= /tmp/opencode/craft-i18n-target
 # describes the taxonomy; this one describes what this repository enforces).
 SELF_REGISTRY ?= spec/pilots/dev-sec-skills/cells.yaml
 SELF_LEDGER ?= spec/pilots/dev-sec-skills/claims.yaml
-SELF_SUITE_GLOB ?= spec/pilots/dev-sec-skills/detectors/*.py
+# Every suite the self-pilot ledger may cite: the detectors and the
+# DB-backed concurrency oracle (V2-42). The oracle is not run by verify;
+# widening the glob only lets L3 resolve its test IDs.
+SELF_SUITE_GLOB ?= spec/pilots/*/*/test_*.py
 
 # Verdict journal (C-13, V2-39). The journal covers the ledgers that live in
 # this repository; a ledger outside it (e.g. the rbac_pg one) is deliberately
@@ -151,6 +155,7 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
         proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record \
+        concurrency-rbac concurrency-rbac-mutants \
         journal journal-append verify-ci detectors-self help
 
 verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable coverage invariants
@@ -161,7 +166,7 @@ verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable co
 # says so. status-pilot2 only needs this repository's git history.
 verify-ci: verify-repo verify-self status-pilot2 journal unroutable invariants
 
-verify-all: verify mutations-all
+verify-all: verify mutations-all concurrency-rbac concurrency-rbac-mutants
 
 verify-repo: evals lint-seed check-fuzz-triage
 
@@ -546,6 +551,20 @@ red-team-record:
 
 mutations-all: mutations mutations-i18n mutations-self
 
+# The INV-TX-003 oracle on rbac_pg's lockout path (V2-42). Each run creates and
+# drops its own database on the MUTATION_DSN stand, so it needs no sharedir and
+# no built extension. mutation_control.py mutates the same SQL in memory and
+# requires the oracle to fail: the oracle's own sensitivity check.
+concurrency-rbac:
+	@echo "== concurrency oracle: lockout check-then-act on $(MUTATION_DSN) =="
+	$(PYTHON) spec/pilots/rbac_pg/concurrency/test_lockout_race.py \
+	  --target "$(PILOT_ROOT)" --dsn "$(MUTATION_DSN)"
+
+concurrency-rbac-mutants:
+	@echo "== concurrency oracle: mutation control (V2-42) =="
+	$(PYTHON) spec/pilots/rbac_pg/concurrency/mutation_control.py \
+	  --target "$(PILOT_ROOT)" --dsn "$(MUTATION_DSN)"
+
 help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
@@ -580,6 +599,8 @@ help:
 	@echo "  mutation-plan select fixtures for the cells the pilot diffs touched (V2-11)"
 	@echo "  mutations-i18n  craft-i18n mutation fixtures (cargo, no database)"
 	@echo "  mutations-all   both mutation batches"
+	@echo "  concurrency-rbac  INV-TX-003 oracle on the lockout path (MUTATION_DSN stand)"
+	@echo "  concurrency-rbac-mutants  mutate the lockout SQL and require the oracle to fail"
 	@echo "  proof-plan    which proofs a diff must re-run (V2-29); optional gate flags live in the tool"
 	@echo "  proof-plan-selftest  mutate the planner and require the eval suite to fail"
 	@echo "  crosscheck-c02  independent row model vs read_catalog over the declared bounded space"

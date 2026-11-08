@@ -65,6 +65,8 @@ same gates minus the pilot checkouts, and that is what CI runs.
 | `make journal-append` | appends changed verdicts and re-signs the head; needs the private key | no | no |
 | `make red-team` | 20 attacks on the real artifacts: 18 blocked, 2 allowed (recorded holes) | yes | no |
 | `make verify-all` | `verify` plus both mutation batches (PostgreSQL and cargo) | yes | no |
+| `make concurrency-rbac` | the INV-TX-003 oracle on the lockout path: 8 simultaneous failed logins, the identity `failed_attempts == 4 + logged increments` | `MUTATION_DSN` stand | no |
+| `make concurrency-rbac-mutants` | 2 `register_auth_failure` mutants × 3 rounds; the oracle must fail in every round | `MUTATION_DSN` stand | no |
 
 The journal is a separate layer: `spec/journal/README.md` covers its threat
 model, the entry format and what the gate does **not** catch. Read it before

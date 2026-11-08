@@ -348,6 +348,14 @@ Mutation runs are separate: `make mutations` for `rbac_pg` on a live
 PostgreSQL, `make mutations-i18n` for the `craft-i18n` fixtures (cargo only),
 `make mutations-all` for both, and `make verify-all` for verify plus both.
 
+The concurrency oracle is separate in the same way: `make concurrency-rbac`
+creates a throw-away database on the `MUTATION_DSN` stand and fires 8
+simultaneous failed logins at one account; `make concurrency-rbac-mutants`
+breaks `register_auth_failure` (a stale read and a dropped lock) and requires
+the oracle to fail — 2/2 mutants. The invariant is
+`failed_attempts == 4 + (the increments the product logged itself)`, so a late
+session cannot make the check flaky.
+
 `make verify` proves internal consistency of the registries, ledgers, and evals,
 not that any property holds and not that a production registry is clean. One
 known gap is recorded in `evals/status-diff` (re-dating).
