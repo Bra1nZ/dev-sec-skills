@@ -151,9 +151,15 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
         invariants-record sarif sarif-record mutation-plan mutations \
         mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
         proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record \
-        journal journal-append detectors-self help
+        journal journal-append verify-ci detectors-self help
 
 verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable coverage invariants
+
+# The CI subset: every gate that needs no checkout outside this repository.
+# ../rbac_pg has no remote and ../astraoffice/craft-i18n needs a deploy key,
+# so verify-pilot, verify-pilot2 and coverage stay local-only; handover.md
+# says so. status-pilot2 only needs this repository's git history.
+verify-ci: verify-repo verify-self status-pilot2 journal unroutable invariants
 
 verify-all: verify mutations-all
 
@@ -581,3 +587,4 @@ help:
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-08-drills.json"
 	@echo "  journal       J1-J4: the verdict journal chain, ledger agreement, history and signed head"
 	@echo "  journal-append  append changed verdicts and re-sign the head (needs JOURNAL_KEY outside the repo)"
+	@echo "  verify-ci     the CI subset: gates that need no checkout outside this repository"

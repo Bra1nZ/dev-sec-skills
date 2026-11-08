@@ -103,3 +103,9 @@ the same way.
 The loss has two consequences: records signed by the lost key can never be
 re-signed, and the new key's signature says nothing about when the record was
 written.
+
+The 2026-11-08 key's private half lives at
+`~/.config/dev-sec-skills/anchor/key` (outside the repository, mode 600), which
+is also the default `JOURNAL_KEY` in the Makefile. It was moved there from the
+ephemeral `/tmp/opencode/dev-sec-skills-anchor-2026-11-08/` directory so the
+journal can be appended after a reboot. Copy it nowhere near the work tree.

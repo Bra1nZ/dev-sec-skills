@@ -1,0 +1,48 @@
+name: verify
+
+# The CI subset: every gate that needs no checkout outside this repository.
+# ../rbac_pg has no remote and ../astraoffice/craft-i18n needs a deploy key, so
+# verify-pilot, verify-pilot2 and coverage stay local-only; docs/handover.md
+# records that. This is a push gate: a broken eval, ledger, journal or anchor
+# becomes visible before anyone reads the claims.
+#
+# A green run still does not prove a property. It means the registries,
+# ledgers and evals are internally consistent.
+#
+# Vale is not installed, so L5 prose scanning degrades to --no-vale
+# (CLAIM_LINT_ARGS detects that by itself). That is a recorded degradation:
+# the handover doc lists it.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: static gates (CI subset)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Full history: J3 compares the journal at a git ref against the working
+      # file, and L2 resolves the commits named by evidence.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Run the self-sufficient gates
+        run: make verify-ci

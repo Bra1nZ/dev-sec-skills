@@ -162,11 +162,14 @@ C-42 itself, journaled the day it was claimed.
 
 ## Key handling
 
-The private key lives outside the repository
-(`JOURNAL_KEY ?= $(HOME)/.config/dev-sec-skills/anchor/key`). The current key
-is under `/tmp/opencode/dev-sec-skills-anchor-2026-11-08/` and was created for
-this increment; losing it means the head cannot be re-signed and a new identity
-must be added to `allowed_signers`. Old heads keep verifying with the old
-identity line, and the loss says nothing about when they were signed. That is
-the same limitation as the evidence anchors, documented in
-`spec/anchor/README.md`.
+The private key lives outside the repository at
+`~/.config/dev-sec-skills/anchor/key` (mode 600), which is the Makefile default
+`JOURNAL_KEY ?= $(HOME)/.config/dev-sec-skills/anchor/key`. Until the handover
+package it sat in `/tmp/opencode/dev-sec-skills-anchor-2026-11-08/`, one reboot
+away from the same loss as the 2026-11-07 key; copying it into `~/.config` is
+what makes `make journal-append` work after a restart.
+
+Losing it means the head cannot be re-signed and a new identity must be added
+to `allowed_signers`. Old heads keep verifying with the old identity line, and
+the loss says nothing about when they were signed. That is the same limitation
+as the evidence anchors, documented in `spec/anchor/README.md`.

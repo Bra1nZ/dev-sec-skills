@@ -575,6 +575,22 @@ Not commitments and not status: a task closes only with evidence.
    applicability.
 8. **Risk classifier.** Masquerade cases and misroute audit quotas.
 
+9. **A conveyor for ordinary software.** The skeleton (claim → mechanism →
+   evidence → scope → status) is domain-agnostic: the `invariant-first-code`
+   and `evidence-first-docs` skills already address general code correctness,
+   and `cells.seed.yaml` reaches beyond databases and roles. The move is not a
+   second conveyor but three changes: the taxonomy source (a business
+   requirement catalogue — SLAs, calculation correctness, compatibility —
+   instead of the FSTEC matrix), the verdict cost model (deep verification
+   only where the risk justifies it, and every refusal to verify is itself a
+   verdict with evidence), and the definition of a "minimally sufficient"
+   security level as a risk-based decision rather than "what we had time for".
+   The product risk register and threat model need evidence of their own;
+   otherwise "sufficient" is indistinguishable from "not checked". No numbers
+   are recorded: there are no product runs yet (V2-33). Do it after external
+   feedback on the current conveyor, so it is visible which parts of the
+   skeleton are reused.
+
 ## Appendix A. Relation to repository artifacts
 
 | Artifact | Role in the concept |
