@@ -224,3 +224,44 @@ claims:
             date: '2026-11-08'
     residual_risk: "The chain proves that the entries filed under a key were not changed afterwards, not that the verdicts were true when filed: the key holder can journal a verdict that never happened, and whoever can replace allowed_signers and rewrite history can re-sign a different past."
     limitations: "Backfill: the 11 existing verdicts were journaled on 2026-11-08 with that date, so the chain says nothing about when they were first claimed. The journal covers only the two in-repo ledgers; the rbac_pg ledger is outside it. proof and review records are not anchored, so an edit inside them is invisible to J2. There is no transparency log, timestamping authority or key revocation; the red-team drill rewrite-journal-and-resign passes with every gate green. The eval is synthetic (temporary git repositories and a throw-away key); D-JOURNAL exercises the gate, not the committed journal, whose J1-J4 run in make verify. bootstrap does not vendor the journal, so a bootstrapped target starts with an empty one."
+  - id: C-43
+    claim: "claim_lint puts each finding on the line a reviewer has to change: a GitHub annotation carries the finding's own file and line, or the claim's block in the ledger, and the eval pins that geometry"
+    mechanism: "tools/claim_lint.py --format github renders ::error/::warning workflow commands; the location is finding.file/finding.line (only L5 sets them), else claim_lines(ledger) - a yaml.compose walk that maps C-NN to the 1-based start_mark of its block - else the ledger with no line; properties escape %, :, , and line breaks; --annotations error (default) drops warnings; evals/claim-format/run_evals.py pins the location, the escaping, the JSON case, the no-claim case and the unchanged text output; D-CLAIM-FORMAT (spec/pilots/dev-sec-skills/detectors/test_claim_format.py) runs the eval as one test ID"
+    status: tested
+    scope:
+      platforms: "Python 3.11.2 and PyYAML on Linux; synthetic temporary roots with docs/claims.yaml, claims.json and one .md document; the self-pilot ledger was read once by hand, the eval does not target it"
+      actors_excluded:
+        - "GitHub's runner and its annotation renderer: the eval asserts the command text the runner parses, not that the runner draws it, and GitHub shows the first ten annotations per step."
+        - "The Code Scanning UI: the output is a workflow command, not SARIF."
+        - "Editors and IDEs: no extension, no language server, no inline hints."
+    evidence:
+      - kind: test
+        tests: [test_claim_format_eval_cases_pass]
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_claim_format.py"
+        artifact: "spec/pilots/dev-sec-skills/detectors/test_claim_format.py"
+        commit: "994a0505592a05f4840748931dc7c6a5de3b1a18"
+        date: "2026-11-08"
+        run_record:
+          runner: "detector (dependency-free python)"
+          command: "python3 spec/pilots/dev-sec-skills/detectors/test_claim_format.py"
+          commit: "994a0505592a05f4840748931dc7c6a5de3b1a18"
+          exit_code: 0
+          started_at: "2026-11-08T18:10:43+03:00"
+          finished_at: "2026-11-08T18:10:46+03:00"
+          log: "spec/pilots/dev-sec-skills/runs/claim-format-eval-2026-11-08.log"
+          log_sha256: "8335b6707fc1ef6f1a9e6d75a45c9805361acc2af1504fe7d62561d12f9e7683"
+          artifact_sha256: "5866c42b762fa9fbc1bd003073c53a85ba5dd5863fba65a26257c3a88d05bb39"
+          tests_run: 1
+          tests_passed: 1
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c43-2026-11-08.json
+            subject_sha256: 09a8ad4ffbbd2df16a71c561c82bf01b2940ef1c18387b9dbaf7b8c6515968ab
+            signature: spec/anchor/run-record-dev-sec-skills-c43-2026-11-08.json.sig
+            signature_sha256: 48784c2b66ea991bef33bf1026ed7943c30d533745b824733fc060751eff9e18
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+    residual_risk: "An annotation proves where a finding points, not that the finding is right: a lint error can be a false positive, and a green run means the linter's contract held on the synthetic cases, not that a production ledger is clean."
+    limitations: "GitHub shows the first ten annotations per step, so a ledger with more errors shows the rest only in the log. JSON ledgers get no line (PyYAML composes YAML only), so their findings point at the file. L1-L4 and L6 carry no location of their own: they point at the claim's block, not at the field. Warnings are off by default because the self-pilot has 72, so a new warning still needs --annotations warning or the text format to be seen. The eval is synthetic: it asserts the command text, not a rendered annotation in a real pull request. There is no SARIF emitter and no Code Scanning upload."
