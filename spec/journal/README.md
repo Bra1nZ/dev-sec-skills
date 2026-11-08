@@ -54,10 +54,10 @@ prose of a `note` does not.
 duplicate keys, one trailing newline):
 
 ```json
-{"generated":"2026-11-08","head":"7cba…","journal_sha256":"998a…",
- "ledgers":[{"path":"spec/pilots/craft-i18n/claims.yaml","sha256":"e739…"},
-            {"path":"spec/pilots/dev-sec-skills/claims.yaml","sha256":"ded3…"}],
- "namespace":"dev-sec-skills-verdict-journal","seq":11,
+{"generated":"2026-11-08","head":"09721e562461…","journal_sha256":"df53dcd2c62e…",
+ "ledgers":[{"path":"spec/pilots/craft-i18n/claims.yaml","sha256":"e739a8da…"},
+            {"path":"spec/pilots/dev-sec-skills/claims.yaml","sha256":"b12c9225…"}],
+ "namespace":"dev-sec-skills-verdict-journal","seq":12,
  "signer":"dev-sec-skills-anchor-2026-11-08"}
 ```
 
@@ -130,11 +130,12 @@ claim was actually established.
 
 The backfill is 11 entries over 11 claims (2 self-pilot, 9 second-pilot) in
 one `append`, followed by one signed head. Later verdicts are appended one
-change at a time, so the journal grows by exactly what changed.
+change at a time, so the journal grows by exactly what changed: entry 12 is
+C-42 itself, journaled the day it was claimed.
 
 ## Measured state (2026-11-08)
 
-- 11 entries, seq 1..11, head `7cba4106da56`; signer
+- 12 entries, seq 1..12, head `09721e562461`; signer
   `dev-sec-skills-anchor-2026-11-08`
   (`SHA256:cYwKmirE4uQiSRaM9qCrRnQ7mn0wjnSN4k0wRgRnyUk`).
 - `make journal` → J1–J4 OK, 0 errors.

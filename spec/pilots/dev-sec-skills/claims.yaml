@@ -182,3 +182,45 @@ claims:
             date: '2026-11-08'
     residual_risk: A green bootstrap eval shows the generated wiring and the promotion path; it does not show that the target test exercises the claim, that the generated CI file runs on GitHub, or that the key is uncompromised.
     limitations: The target is one temporary git repository and one stdlib runner; the CI templates keep mutable action refs and were not executed; C-13 (the key holder can re-sign, replacing allowed_signers plus a new signature, no transparency log or revocation) stays open; the bootstrap does not check claim-test relevance.
+  - id: C-42
+    claim: "A recorded verdict is journaled in an append-only hash chain, and an edited, dropped or truncated entry, a status change with no entry, a replaced head or a foreign signer is rejected"
+    mechanism: "tools/verdict_journal.py keeps spec/journal/verdicts.jsonl — one canonical JSON line per verdict, each line hashing the line before it — and a signed head in spec/journal/head.json{,.sig}; J1 checks seq/prev/hash and the status vocabulary, J2 checks the last word per claim against both in-repo ledgers (status, evidence set, retired tombstone), J3 checks that the journal at --git-ref is a byte prefix of the working file, J4 checks the canonical head, the journal hash, the exact ledger bytes and the ssh signature; append is atomic and refuses a broken chain or head; D-JOURNAL (spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py) runs evals/journal/run_evals.py as one test ID"
+    status: tested
+    scope:
+      platforms: "Python 3.11.2, PyYAML, OpenSSH ssh-keygen and git on Linux; the two in-repo ledgers (spec/pilots/dev-sec-skills/claims.yaml, spec/pilots/craft-i18n/claims.yaml) at commit 1433bf6; 11 journaled verdicts in one backfilled append plus one signed head"
+      actors_excluded:
+        - "The external rbac_pg ledger (../rbac_pg/docs/claims.yaml): it lives in another checkout, so a ../ path would tie the journal to one directory layout."
+        - "The key holder: whoever holds the private key can re-sign the head. Replacing allowed_signers, rewriting the chain and amending the commit defeats J3 and J4; the rewrite-journal-and-resign drill records that gap."
+        - "Time: there is no timestamping authority, so the entry date is the day the verdict was journaled, not the day it was first claimed."
+        - "Records inside evidence (tool_output, review notes): they are not anchored, so an edit inside one changes no evidence identity and needs no journal entry."
+    evidence:
+      - kind: test
+        tests: [test_verdict_journal_eval_cases_pass]
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py"
+        artifact: "spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py"
+        commit: "1433bf6bcb7f20fc8ec24155c4811757b7fd19ac"
+        date: "2026-11-08"
+        run_record:
+          runner: "detector (dependency-free python)"
+          command: "python3 spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py"
+          commit: "1433bf6bcb7f20fc8ec24155c4811757b7fd19ac"
+          exit_code: 0
+          started_at: "2026-11-08T16:59:24+03:00"
+          finished_at: "2026-11-08T16:59:32+03:00"
+          log: "spec/pilots/dev-sec-skills/runs/verdict-journal-eval-2026-11-08.log"
+          log_sha256: "4810d476108609e5e2e0cbb5839820d5d5d8e5a4e4467543477fe4d417cc1b01"
+          artifact_sha256: "3e8174ee16803dd705c3836e2eb386dbec14c26c7fa1dc8479b250717fc8e052"
+          tests_run: 1
+          tests_passed: 1
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c42-2026-11-08.json
+            subject_sha256: 2e707c817023cc50ac1786c2a71afc1cb62e039a651b8e30410645091d50b397
+            signature: spec/anchor/run-record-dev-sec-skills-c42-2026-11-08.json.sig
+            signature_sha256: 1b1907e9ecd479299c8572d9abd988af0ef745f0ecc1fa5b7fa587aa176a4064
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+    residual_risk: "The chain proves that the entries filed under a key were not changed afterwards, not that the verdicts were true when filed: the key holder can journal a verdict that never happened, and whoever can replace allowed_signers and rewrite history can re-sign a different past."
+    limitations: "Backfill: the 11 existing verdicts were journaled on 2026-11-08 with that date, so the chain says nothing about when they were first claimed. The journal covers only the two in-repo ledgers; the rbac_pg ledger is outside it. proof and review records are not anchored, so an edit inside them is invisible to J2. There is no transparency log, timestamping authority or key revocation; the red-team drill rewrite-journal-and-resign passes with every gate green. The eval is synthetic (temporary git repositories and a throw-away key); D-JOURNAL exercises the gate, not the committed journal, whose J1-J4 run in make verify. bootstrap does not vendor the journal, so a bootstrapped target starts with an empty one."

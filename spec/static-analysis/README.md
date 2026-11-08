@@ -285,12 +285,14 @@ produce a matching signature. Two red-team drills cover it:
 `forge-anchored-test-record` renames a signed runner; both are blocked with
 `anchor subject does not describe this record`.
 
-Ten of the 16 anchors are a backfill: those records date from 2026-11-07 and
+Ten of the 17 anchors are a backfill: those records date from 2026-11-07 and
 were signed on 2026-11-08, so the signature proves the record has not changed
 since signing, not that the run happened on the day it claims. The two
-`rbac-pg-*-2026-11-08` anchors and the bootstrap `run-record-dev-sec-skills-c02`
-anchor were made the same day as their records, but the key that signed them is
-one day old and unreviewed; neither fact is evidence about the run time.
+`rbac-pg-*-2026-11-08` anchors, the bootstrap
+`run-record-dev-sec-skills-c02` anchor and the journal
+`run-record-dev-sec-skills-c42` anchor were made the same day as their records,
+but the key that signed them is one day old and unreviewed; neither fact is
+evidence about the run time.
 
 The gap C-13 records is narrower, not closed. The key holder can re-sign any
 edit, and anyone who can replace `allowed_signers` and re-sign can do the

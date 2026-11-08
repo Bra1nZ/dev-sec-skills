@@ -73,7 +73,7 @@ spec/
   anchor/                        # C-41: one anchor directory, three evidence channels
     README.md                    # adding, retiring, rotating and losing a key
     allowed_signers              # committed public key(s); the private half is not here
-    *.json{,.sig}                # 16 canonical subjects + detached signatures
+    *.json{,.sig}                # 17 canonical subjects + detached signatures
   journal/                       # C-13: append-only verdict journal, signed head
     README.md                     # threat model, checks J1-J4, limits
     verdicts.jsonl                # one canonical JSON line per recorded verdict
