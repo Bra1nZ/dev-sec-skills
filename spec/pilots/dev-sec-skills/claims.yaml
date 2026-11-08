@@ -141,3 +141,44 @@ claims:
             date: "2026-11-08"
     residual_risk: "A commit SHA fixes the action bytes, not the intent of the action or the integrity of the runner that fetches it. A ref can be pinned to a malicious commit that was reviewed once; the detector cannot tell a reviewed SHA from an unreviewed one."
     limitations: "Text scan of .github/workflows, not a proof about the pinned code. The rule set is authored here, not the Semgrep `p/ci` benchmark; a different rule set would produce a different queue. The pre-fix and post-fix runs are one engine and one rule set. The GitHub-side schedule of fuzz-nightly has not fired yet (V2-19), so the workflow's runtime behavior is unobserved. Without an external anchor (C-13) a forger can rewrite the record and both outputs together."
+  - id: C-02
+    claim: A target repository bootstrapped from this checkout moves from open templates to green cell, claim and status gates with an anchored run_record, and the bootstrap path reports drift, a signed-field edit and an escalation without evidence
+    mechanism: tools/bootstrap.py vendors the linters and data files, writes open templates and renders the CI gates; evals/bootstrap/run_evals.py builds a throw-away git repository, bootstraps it, promotes the templates with a stdlib run and a signed run_record, and attacks the result; D-BOOTSTRAP (spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py) runs that eval as one test ID
+    status: tested
+    scope:
+      platforms: Python 3.11.2, PyYAML, OpenSSH ssh-keygen and git on Linux; one temporary git repository with a stdlib unittest suite; the vendored tools from commit 7775513
+      actors_excluded:
+        - A product repository, its runner and its test framework; the eval's target is synthetic.
+        - The GitHub Actions runner; the rendered workflows were parsed, not executed.
+        - The private key's custody; the eval creates a throw-away key under its temp directory.
+    evidence:
+      - kind: test
+        tests: [test_bootstrap_eval_cases_pass]
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py"
+        artifact: "spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py"
+        commit: "77755130ca0ccac60682446a996aa1c97c48a5ad"
+        date: "2026-11-08"
+        run_record:
+          runner: "detector (dependency-free python)"
+          command: "python3 spec/pilots/dev-sec-skills/detectors/test_bootstrap_eval.py"
+          commit: "77755130ca0ccac60682446a996aa1c97c48a5ad"
+          exit_code: 0
+          started_at: "2026-11-08T16:03:40+03:00"
+          finished_at: "2026-11-08T16:03:44+03:00"
+          log: "spec/pilots/dev-sec-skills/runs/bootstrap-eval-2026-11-08.log"
+          log_sha256: "b7675ce036fcbe811efd0a6efd3c71968863933bcd152931ce742da5e17276be"
+          artifact_sha256: "27a4616c98bdede8d2c9d7505df0eceb603e8c603dd4247c78662bce36d6f0d4"
+          tests_run: 1
+          tests_passed: 1
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c02-2026-11-08.json
+            subject_sha256: 60a2a06fc9d9d735b64927f3ee4dafcda7d2b534bfca7a9099aeafd8a0fda106
+            signature: spec/anchor/run-record-dev-sec-skills-c02-2026-11-08.json.sig
+            signature_sha256: c867fa8752e3fe8e33912618daf3f14d0dad7124fc7d1d556215db96e54253d0
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+    residual_risk: A green bootstrap eval shows the generated wiring and the promotion path; it does not show that the target test exercises the claim, that the generated CI file runs on GitHub, or that the key is uncompromised.
+    limitations: The target is one temporary git repository and one stdlib runner; the CI templates keep mutable action refs and were not executed; C-13 (the key holder can re-sign, replacing allowed_signers plus a new signature, no transparency log or revocation) stays open; the bootstrap does not check claim-test relevance.
