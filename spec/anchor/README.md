@@ -80,7 +80,7 @@ code.
 
 It proves that the signed bytes have not changed since the signature was made,
 by an identity listed in `allowed_signers` at verification time. It does not
-prove that the run happened when the record says: 10 of the 15 committed
+prove that the run happened when the record says: 10 of the 16 committed
 anchors were created on 2026-11-08 over records dated 2026-11-07, so the
 signature proves immutability after signing, not the run date. It also does not
 stop the key holder, or anyone who can replace `allowed_signers` with their own
@@ -93,9 +93,12 @@ revocation list (C-13 remains open).
 The 2026-11-07 signer's private key lived at
 `/tmp/opencode/dev-sec-skills-anchor/key` and was cleared with that directory.
 Its public line stays in `allowed_signers`, so every anchor it made still
-verifies. The two `rbac-pg-*-2026-11-08` anchors are signed by a second
-identity, `dev-sec-skills-anchor-2026-11-08`
-(`SHA256:cYwKmirE4uQiSRaM9qCrRnQ7mn0wjnSN4k0wRgRnyUk`), tracked in the same way.
+verifies. Three anchors are signed by a second identity,
+`dev-sec-skills-anchor-2026-11-08`
+(`SHA256:cYwKmirE4uQiSRaM9qCrRnQ7mn0wjnSN4k0wRgRnyUk`): the two
+`rbac-pg-*-2026-11-08` static-analysis subjects and
+`run-record-dev-sec-skills-c02-2026-11-08` (the bootstrap eval), tracked in the
+same way.
 The loss has two consequences: records signed by the lost key can never be
 re-signed, and the new key's signature says nothing about when the record was
 written.
