@@ -8,7 +8,7 @@
 
 - Три скила в `skills/` — `evidence-first-docs`, `invariant-first-code`,
   `negative-test-first`.
-- Исполняемые гейты в `tools/` и `evals/`: линтер claim-леджеров L1–L6,
+- Исполняемые гейты в `tools/` и `evals/`: линтер claim-леджеров L1–L7,
   линтер ячеек CL1–CL6, гейт эскалации статусов, журнал вердиктов, якоря,
   отчёты покрытия, bootstrap для чужого репозитория.
 - Знание в `spec/`: концепт (`spec/conveyor/CONCEPT.md` — русский

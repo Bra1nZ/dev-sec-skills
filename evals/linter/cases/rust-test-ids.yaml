@@ -15,7 +15,9 @@ files:
     #[cfg(test)]
     mod tests {
         #[test]
-        fn each_bad_row_is_one_problem() {}
+        fn each_bad_row_is_one_problem() {
+            assert_eq!(1, 1);
+        }
     }
   "reports/run.txt": "test result: ok. 2 passed\n"
   "docs/README.md": "The checker validates every catalog row.\n"

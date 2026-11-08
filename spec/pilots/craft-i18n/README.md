@@ -4,7 +4,7 @@ Date: 2026-11-06. Target: `/home/admini/projects/astraoffice/craft-i18n`,
 HEAD `5c5c55400e8f7f4ee4f64a64dc196335a6a1f256` (working tree clean; the pilot
 does not modify it). Registry: [`cells.yaml`](cells.yaml). Claims:
 [`claims.yaml`](claims.yaml). Linter: `tools/cell_lint.py` (CL1–CL5) and
-`tools/claim_lint.py` (L1–L6). Mutation fixtures:
+`tools/claim_lint.py` (L1–L7). Mutation fixtures:
 [`mutations/`](mutations/README.md). Probe:
 [`probes/invisible-characters/`](probes/invisible-characters/output.txt).
 

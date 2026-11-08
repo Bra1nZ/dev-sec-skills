@@ -37,6 +37,12 @@ schemas/claim-ledger.schema.json):
                      non-open claim must cite at least one test no other claim
                      cites (V2-34) — declaring the sharing does not let a claim
                      inherit a neighbour's evidence.
+  L7  witness:       a cited test must be able to fail: a stub body (pass, a
+                     docstring, a bare return, an ellipsis), an unconditional
+                     skip, an xfail or a run-time skip is an error; a
+                     conditional skip is a warning. Report-style IDs (a string
+                     handled by a helper) have no safe static criterion and are
+                     not judged (V2-43).
 
 A run_record (schemas/run-record.schema.json) is optional: a kind=test record
 without one gets an L2 warning, because re-dating and citing a test that never
@@ -1835,6 +1841,230 @@ def check_relevance(claims, findings):
                 "needs at least one test of its own (V2-34)", cid))
 
 
+# ------------------------------------------------------- L7 witness (V2-43)
+#
+# A citation says "this test is evidence". A test that cannot fail is not
+# evidence: an empty body, an unconditional skip and an xfail all leave the
+# claim without a witness. The check is deliberately narrow — it judges only
+# facts that are decidable from the definition text — because a broader
+# heuristic ("does this test really check the claim?") would flag valid tests
+# and train reviewers to ignore it.
+#
+# Report-style IDs (rbac_pg's `report("F2 ...", condition)`) are not judged:
+# `report(..., True)` is legitimate when a preceding statement is the thing
+# that can fail, so a constant condition alone proves nothing.
+
+PY_XFAIL_RE = re.compile(r"@(?:pytest\.mark\.|unittest\.|nose\.)?xfail\b")
+PY_UNCOND_SKIP_RE = re.compile(
+    r"@(?:pytest\.mark\.|unittest\.|nose\.)?(?:skip|expectedFailure)\b")
+PY_COND_SKIP_RE = re.compile(
+    r"@(?:pytest\.mark\.|unittest\.|nose\.)?(?:skipIf|skipif)\b")
+PY_RUNTIME_SKIP_RE = re.compile(
+    r"^(?:pytest\.)?(?:skip|xfail)\(|^self\.skipTest\(")
+RUST_IGNORE_RE = re.compile(r"#\[ignore\b")
+RUST_TEST_ATTR_RE = re.compile(r"#\[(?:[A-Za-z_][A-Za-z0-9_]*::)*test\b")
+
+
+def _python_test_defs(text):
+    """Map a Python test name to its definitions: line, decorators, body.
+
+    A name can be defined twice (a redefinition shadows the first); both
+    definitions are returned, because only "every definition is a stub" makes
+    the citation unusable.
+    """
+    lines = text.splitlines()
+    defs = {}
+    for i, line in enumerate(lines):
+        m = re.match(r"^(\s*)(?:async\s+)?def\s+(test_[A-Za-z0-9_]+)\s*\(", line)
+        if not m:
+            continue
+        indent, name = len(m.group(1)), m.group(2)
+        # Walk up over decorator lines and their continuation lines, stopping
+        # at a previous statement. A multi-line decorator is one whose start
+        # ends with an unclosed parenthesis.
+        start, j = None, i - 1
+        while j >= 0 and i - 1 - j < 20:
+            stripped = lines[j].strip()
+            if not stripped or stripped.startswith("#"):
+                j -= 1
+                continue
+            if stripped.startswith("@"):
+                start = j
+                j -= 1
+                continue
+            if re.match(r"^(?:async\s+)?def\s|^class\s", stripped):
+                break
+            j -= 1  # continuation of a multi-line decorator
+        decorators = [lines[k].strip() for k in range(start, i)] if start is not None else []
+        # Signature end: the first line where the parentheses balance and the
+        # logical line ends with a colon.
+        k, depth = i, 0
+        while k < len(lines):
+            depth += lines[k].count("(") - lines[k].count(")")
+            if depth <= 0 and lines[k].rstrip().endswith(":"):
+                break
+            k += 1
+        body = []
+        for tail in lines[k + 1:]:
+            if not tail.strip():
+                body.append(tail)
+                continue
+            if len(tail) - len(tail.lstrip()) <= indent:
+                break
+            body.append(tail)
+        defs.setdefault(name, []).append((i + 1, decorators, body))
+    return defs
+
+
+def _python_statements(body):
+    """Executable statements of a test body, docstrings and comments removed."""
+    text = "\n".join(body)
+    text = re.sub(r'"""(?:.|\n)*?"""', "", text)
+    text = re.sub(r"'''(?:.|\n)*?'''", "", text)
+    statements = []
+    for line in text.splitlines():
+        code = line.split("#", 1)[0].strip()
+        if code:
+            statements.append(code)
+    return statements
+
+
+def _trivial_body(statements):
+    """True when nothing in the body can fail.
+
+    `pass`, `...` and a bare `return` are the only statements allowed: a
+    body with a call, an assertion or a branch is left to a human, because a
+    call can fail even without an `assert`.
+    """
+    return all(s in ("pass", "...", "return") for s in statements)
+
+
+def _rust_test_defs(text):
+    """Map a Rust test name to its definitions: line, attributes, empty body."""
+    lines = text.splitlines()
+    defs = {}
+    for i, line in enumerate(lines):
+        m = re.match(r"^\s*(?:pub\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", line)
+        if not m:
+            continue
+        name = m.group(1)
+        attrs, j = [], i - 1
+        while j >= 0:
+            stripped = lines[j].strip()
+            if stripped.startswith("#["):
+                attrs.append(stripped)
+                j -= 1
+                continue
+            if not stripped or stripped.startswith("//"):
+                j -= 1
+                continue
+            break
+        if not any(RUST_TEST_ATTR_RE.search(attr) for attr in attrs):
+            continue
+        # Where the signature's opening brace sits. Only a body that is
+        # empty on the spot (`{}`, or `{` then `}`) is flagged: brace
+        # counting through strings is where a false positive would come from.
+        sig, k, depth = line, i, 0
+        while "{" not in sig and k + 1 < len(lines):
+            k += 1
+            sig += "\n" + lines[k]
+        empty = False
+        if "{" in sig:
+            after = sig.split("{", 1)[1]
+            if after.strip().startswith("}"):
+                empty = True
+            elif not after.strip():
+                tail = [l.strip() for l in lines[k + 1:] if l.strip()]
+                empty = bool(tail) and tail[0] == "}"
+        defs.setdefault(name, []).append((i + 1, attrs, empty))
+    return defs
+
+
+def suite_test_definitions(root, suite_glob):
+    """Parse every suite file the traceability check indexes."""
+    py_defs, rs_defs = {}, {}
+    for path in walk_files(root, suite_glob):
+        try:
+            text = open(path, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        rel = os.path.relpath(path, root).replace(os.sep, "/")
+        if path.endswith(".py"):
+            for name, variants in _python_test_defs(text).items():
+                for line, decorators, body in variants:
+                    py_defs.setdefault(name, []).append(
+                        {"path": rel, "line": line,
+                         "decorators": decorators, "body": body})
+        elif path.endswith(".rs"):
+            for name, variants in _rust_test_defs(text).items():
+                for line, attrs, empty in variants:
+                    rs_defs.setdefault(name, []).append(
+                        {"path": rel, "line": line, "attrs": attrs,
+                         "empty": empty})
+    return py_defs, rs_defs
+
+
+def _python_witness(name, entry):
+    """None when the definition can fail, else (severity, message)."""
+    decorators = "\n".join(entry["decorators"])
+    for pattern, severity, reason in (
+            (PY_XFAIL_RE, "error", "marked xfail: an xpass is not a demonstration"),
+            (PY_UNCOND_SKIP_RE, "error",
+             "unconditionally skipped: a skipped test cannot support a claim"),
+            (PY_COND_SKIP_RE, "warning",
+             "conditionally skipped: whether it ran depends on the condition")):
+        match = pattern.search(decorators)
+        if match:
+            return severity, "test %r is %s (%s)" % (name, reason, match.group(0))
+    statements = _python_statements(entry["body"])
+    for statement in statements:
+        if PY_RUNTIME_SKIP_RE.match(statement):
+            return "error", "test %r skips at run time (%s)" % (name, statement[:40])
+    if _trivial_body(statements):
+        return "error", ("test %r has no executable statement (only %s): a stub "
+                         "cannot fail" % (name, ", ".join(statements) or "nothing"))
+    return None
+
+
+def _rust_witness(name, entry):
+    if any(RUST_IGNORE_RE.search(attr) for attr in entry["attrs"]):
+        return "error", "test %r is marked #[ignore]: a skipped test cannot support a claim" % name
+    if entry["empty"]:
+        return "error", "test %r has an empty body: a stub cannot fail" % name
+    return None
+
+
+def check_test_witness(claims, py_defs, rs_defs, findings):
+    """L7: every cited test must be able to fail (V2-43).
+
+    A citation is rejected only when EVERY definition of that name is
+    unusable: a shadowed stub next to a real definition still leaves a test
+    that can fail. Unknown IDs are L3's business, not L7's.
+    """
+    for c in claims:
+        cid = c.get("id")
+        cited = set()
+        for ev in c.get("evidence") or []:
+            if isinstance(ev, dict) and ev.get("kind") == "test":
+                cited.update(t for t in ev.get("tests") or [] if isinstance(t, str))
+        for tid in sorted(cited):
+            verdicts, where = [], None
+            for entry in py_defs.get(tid, []):
+                verdicts.append(_python_witness(tid, entry))
+                where = where or entry
+            for entry in rs_defs.get(tid, []):
+                verdicts.append(_rust_witness(tid, entry))
+                where = where or entry
+            if not verdicts or any(v is None for v in verdicts):
+                continue
+            severity = "error" if any(v[0] == "error" for v in verdicts) else "warning"
+            message = next(v[1] for v in verdicts if v[0] == severity)
+            path = line = None
+            if where and not where["path"].startswith(".."):
+                path, line = where["path"], where["line"]
+            findings.append(Finding("L7", severity, message, cid, path, line))
+
+
 # ------------------------------------------------- github annotations (V2-41)
 
 def claim_lines(path):
@@ -1971,6 +2201,8 @@ def main():
         check_traceability(claims, report_ids, def_names, findings)
         check_consistency(claims, report_ids, def_names, findings)
         check_relevance(claims, findings)
+        py_defs, rs_defs = suite_test_definitions(root, args.suite_glob)
+        check_test_witness(claims, py_defs, rs_defs, findings)
     if os.path.isdir(root):
         if args.no_vale:
             check_prose_internal(root, args.docs_glob, findings)
@@ -1997,10 +2229,11 @@ def main():
         return 1 if errors else 0
 
     print("ledger: %s | claims: %d" % (args.ledger, len(claims)))
-    for check in ("L1", "L2", "L3", "L4", "L5", "L6"):
+    for check in ("L1", "L2", "L3", "L4", "L5", "L6", "L7"):
         rows = [f for f in findings if f.check == check]
         label = {"L1": "schema", "L2": "evidence", "L3": "traceability",
-                 "L4": "consistency", "L5": "prose", "L6": "relevance"}[check]
+                 "L4": "consistency", "L5": "prose", "L6": "relevance",
+                 "L7": "witness"}[check]
         if not rows:
             print("  %s %-13s OK" % (check, label))
         else:

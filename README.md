@@ -337,7 +337,7 @@ make verify
 ```
 
 Она прогоняет адверсариальные наборы (`evals/`), CL1–CL6 по сид-реестру и по
-двум пилотным реестрам вместе с их claim-леджерами, L1–L6 по леджерам, гейт
+двум пилотным реестрам вместе с их claim-леджерами, L1–L7 по леджерам, гейт
 эскалации статусов и отчёт покрытия по двум пилотам. Пилоты ищутся по
 `PILOT_ROOT` (по умолчанию `../rbac_pg`) и `PILOT2_ROOT`
 (`../astraoffice/craft-i18n`); если цели нет, команда падает, а не пропускает
@@ -393,13 +393,13 @@ evals, а не истинность свойств и не чистоту produc
 [`evals/iteration-3/RESULTS.md`](evals/iteration-3/RESULTS.md) и
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md).
 
-Исполняемая часть: `tools/claim_lint.py` (L1–L6 над claim-леджером, Vale-first
+Исполняемая часть: `tools/claim_lint.py` (L1–L7 над claim-леджером, Vale-first
 для прозы, встроенный сканер как fallback; L2 проверяет run-record — хэши лога и
 артефакта, exit code, дату, исполненные ID — и сверяет артефакт с его блобом на
 процитированном коммите; tool-output для `model-checked`/`proven` — хэш вывода,
 exit code, дату, обязательный `status` и bound; L6 требует объявить общий тест
 через `shared_tests` с причиной и оставляет non-open claim хотя бы один
-собственный тест), `tools/status_diff.py` (гейт эскалации статусов между
+собственный тест; L7 требует, чтобы цитируемый тест мог упасть: пустое тело, `pass`, docstring, голый `return`, безусловный skip, xfail или skip во время исполнения — ошибка, условный skip — предупреждение, report-ID не судятся), `tools/status_diff.py` (гейт эскалации статусов между
 релизами: переход вверх требует новой evidence), `tools/unroutable.py` (доля
 `unroutable` в таксономии) и `ci/claim-lint.yml` — шаблон GitHub Actions для
 целевого репозитория.
@@ -584,7 +584,7 @@ vendored: Semgrep Registry Rules License v1.0 запрещает распрос�
 намеренно не-RBAC и не-БД: Rust-крейт, проверяющий каталоги переводов.
 14 ячеек (13 tested, 1 open), 13 детекторов, 12 из 13 с mutation fixture и один
 документированный exemption; claim-леджер из 9 claim'ов (C-09 —
-`static-refinement` с записанным static-analysis прогоном), 0 замечаний L1–L6.
+`static-refinement` с записанным static-analysis прогоном), 0 замечаний L1–L7.
 Открытая CELL-002 — реальный пробел: Unicode Cf-символы (U+202E, U+200B,
 U+2066) проходят проверку, а U+0007 и U+FEFF отклоняются.
 

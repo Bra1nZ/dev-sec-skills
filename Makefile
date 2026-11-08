@@ -181,6 +181,7 @@ evals:
 	$(PYTHON) evals/cell-lint/run_evals.py
 	$(PYTHON) evals/linter/run_evals.py
 	$(PYTHON) evals/claim-format/run_evals.py
+	$(PYTHON) evals/claim-witness/run_evals.py
 	$(PYTHON) evals/status-diff/run_evals.py
 	$(PYTHON) evals/fuzz/run_evals.py
 	$(PYTHON) evals/fuzz-triage/run_evals.py
@@ -219,7 +220,7 @@ lint-pilot:
 	  "$(PILOT_REGISTRY)"
 
 claims-pilot:
-	@echo "== L1-L6: pilot claim ledger =="
+	@echo "== L1-L7: pilot claim ledger =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT_ROOT)" \
 	  --suite-glob "$(PILOT_SUITE_GLOB)" \
@@ -227,7 +228,7 @@ claims-pilot:
 	  "$(PILOT_ROOT)/$(PILOT_LEDGER)"
 
 claims-static-rbac:
-	@echo "== L1-L6: rbac_pg static-analysis triage ledger =="
+	@echo "== L1-L7: rbac_pg static-analysis triage ledger =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT_ROOT)" \
 	  --suite-glob "$(PILOT_SUITE_GLOB)" \
@@ -325,7 +326,7 @@ lint-pilot2:
 	  "$(PILOT2_REGISTRY)"
 
 claims-pilot2:
-	@echo "== L1-L6: second pilot claim ledger (craft-i18n) =="
+	@echo "== L1-L7: second pilot claim ledger (craft-i18n) =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root "$(PILOT2_ROOT)" \
 	  --suite-glob "$(PILOT2_SUITE_GLOB)" \
@@ -356,7 +357,7 @@ lint-self:
 	  "$(SELF_REGISTRY)"
 
 claims-self:
-	@echo "== L1-L6: self-pilot claim ledger =="
+	@echo "== L1-L7: self-pilot claim ledger =="
 	$(PYTHON) tools/claim_lint.py \
 	  --root . \
 	  --suite-glob "$(SELF_SUITE_GLOB)" \
@@ -574,10 +575,10 @@ help:
 	@echo "  lint-pilot    CL1-CL6 over the rbac_pg registry with its claim ledger"
 	@echo "  lint-pilot2   CL1-CL5 over the craft-i18n registry with its claim ledger"
 	@echo "  lint-self     CL1-CL6 over the dev-sec-skills self-pilot registry"
-	@echo "  claims-pilot  L1-L6 over the rbac_pg claim ledger"
-	@echo "  claims-pilot2 L1-L6 over the craft-i18n claim ledger"
-	@echo "  claims-self   L1-L6 over the dev-sec-skills self-pilot claim ledger"
-	@echo "  claims-static-rbac  L1-L6 over the rbac_pg static-analysis triage ledger"
+	@echo "  claims-pilot  L1-L7 over the rbac_pg claim ledger"
+	@echo "  claims-pilot2 L1-L7 over the craft-i18n claim ledger"
+	@echo "  claims-self   L1-L7 over the dev-sec-skills self-pilot claim ledger"
+	@echo "  claims-static-rbac  L1-L7 over the rbac_pg static-analysis triage ledger"
 	@echo "  detectors-self  D-PINNED-ACTIONS, D-BOOTSTRAP and D-JOURNAL over this repository"
 	@echo "  mutations-self  MUT-001: prove D-PINNED-ACTIONS fails on a mutable ref"
 	@echo "  status-pilot  status-escalation diff for the rbac_pg ledger"

@@ -318,7 +318,7 @@ make verify
 ```
 
 It runs the adversarial suites (`evals/`), CL1–CL6 over the seed registry and
-over both pilot registries together with their claim ledgers, L1–L6 over the
+over both pilot registries together with their claim ledgers, L1–L7 over the
 ledgers, the status-escalation gates, and the coverage report for both pilots.
 The pilots are located by `PILOT_ROOT` (defaults to `../rbac_pg`) and
 `PILOT2_ROOT` (`../astraoffice/craft-i18n`); if one is missing, the command
@@ -378,12 +378,12 @@ Results are in [`evals/iteration-1/RESULTS.md`](evals/iteration-1/RESULTS.md),
 [`evals/iteration-4/RESULTS.md`](evals/iteration-4/RESULTS.md). Planned:
 executable checks for static analysis and trigger evals.
 
-The executable part also includes `tools/claim_lint.py` (L1–L6; L2 verifies
+The executable part also includes `tools/claim_lint.py` (L1–L7; L2 verifies
 run-record hashes, exit code, date and executed IDs, compares the artifact with
 its blob at the cited commit, and checks tool-output hashes, mandatory `status` and bounds for
 `model-checked`/`proven`; L6 requires a shared test to be declared in
 `shared_tests` with a reason and leaves every non-open claim at least one test
-of its own), `tools/cell_lint.py` (CL1–CL6: structure,
+of its own; L7 requires the cited test to be able to fail: an empty body, `pass`, a docstring, a bare `return`, an unconditional skip, an xfail or a run-time skip is an error, a conditional skip is a warning, and report-style IDs are not judged), `tools/cell_lint.py` (CL1–CL6: structure,
 coverage, evidence, traceability, taxonomy, status-escalation gate; a
 `runtime-enforcement` detector needs a negative test, and the cell needs
 `enforced_at`, `oracle` and `violation_response`),
@@ -571,7 +571,7 @@ The second pilot is
 non-RBAC and non-database: a Rust crate that validates translation catalogs.
 14 cells (13 tested, 1 open), 13 detectors, 12 of 13 with a mutation fixture
 and one documented exemption; a 9-claim ledger (C-09 is `static-refinement`
-with a recorded static-analysis run) with 0 L1–L6 findings. The open
+with a recorded static-analysis run) with 0 L1–L7 findings. The open
 CELL-002 is a real gap: Unicode Cf characters (U+202E, U+200B, U+2066) pass the
 checker, while U+0007 and U+FEFF are rejected.
 

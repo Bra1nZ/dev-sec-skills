@@ -9,7 +9,7 @@ holes.
 
 - Three skills in `skills/` — `evidence-first-docs`, `invariant-first-code`,
   `negative-test-first`.
-- Executable gates in `tools/` and `evals/`: the claim-ledger linter L1–L6, the
+- Executable gates in `tools/` and `evals/`: the claim-ledger linter L1–L7, the
   cell linter CL1–CL6, the status-escalation gate, the verdict journal, the
   anchors, coverage reports, and the bootstrap path for a foreign repository.
 - Knowledge in `spec/`: the concept (`spec/conveyor/CONCEPT.md` is the Russian
