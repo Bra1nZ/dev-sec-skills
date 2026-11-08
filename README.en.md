@@ -228,6 +228,7 @@ spec/
     README.md
     corpus/claim-lint/
     runs/claim-lint-2026-11-07.json
+    runs/claim-lint-2026-11-08-schedule.json
     triage/claim-lint-2026-11-07.yaml
   coverage/
     README.md
@@ -430,8 +431,13 @@ blocks no merge. The workflow replays `make fuzz-claim-lint`, fails when
 `executions_digest` moves, and uploads the `fuzz-record-<run_id>` artifact for 90
 days. The first run is [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295):
 success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
-executions, 0 findings. This proves determinism and input integrity, not
-new-bug discovery; the nightly schedule itself has not fired yet.
+executions, 0 findings. The nightly schedule fired for the first time on
+2026-11-08: [42466635404](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42466635404),
+event `schedule`, commit `7bf8192`, started `09:18:42Z` against a declared cron of
+`02:30Z`, digest matched, 0 findings; the downloaded artifact is committed as
+[`spec/fuzz/runs/claim-lint-2026-11-08-schedule.json`](spec/fuzz/runs/claim-lint-2026-11-08-schedule.json).
+This proves determinism and input integrity, not new-bug discovery; a delayed or
+skipped run is noticed by nobody.
 
 Event-driven `proven` (V2-29) is `tools/proof_plan.py` plus
 [`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): each proof declares

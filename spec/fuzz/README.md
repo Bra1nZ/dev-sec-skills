@@ -17,6 +17,7 @@ reconstruct.
 spec/fuzz/
   corpus/claim-lint/                    # five seed ledgers for the real run
   runs/claim-lint-2026-11-07.json       # the recorded run (verdict: clean)
+  runs/claim-lint-2026-11-08-schedule.json  # downloaded CI artifact of the first scheduled replay
   triage/claim-lint-2026-11-07.yaml     # triage of that run (no findings)
 ```
 
@@ -74,6 +75,29 @@ The run's clean verdict means the adapter saw no unhandled exit code and no
 traceback across those shapes and 150 mutations. It does not mean `claim_lint`
 is free of bugs: a random mutator explores a tiny fraction of the input space,
 and this oracle only observes crashes and unexpected exits, not wrong verdicts.
+
+## The first scheduled replay (2026-11-08)
+
+The nightly workflow fired for the first time on 2026-11-08 as run
+[42466635404](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42466635404):
+`event: schedule`, commit `7bf8192`, started `09:18:42Z` and finished
+`09:19:01Z`, conclusion `success`. The declared cron is `02:30Z`, so GitHub
+started the job 6h49m late; the timer is wired, but its clock is not a
+guarantee. The log line `recorded digest: 93e1af3183658aa6 | replay digest:
+93e1af3183658aa6` is the gate passing.
+
+The artifact `fuzz-record-42466635404` was downloaded and committed unchanged
+as `runs/claim-lint-2026-11-08-schedule.json` (sha256 `8ca3fcb9…`, `verdict:
+clean`, seed 20261107, 155 executions, 0 findings). It validates against
+`schemas/fuzz-run.schema.json`.
+
+That file is a downloaded CI artifact, not a locally executed run: its `cwd` is
+the runner's checkout, and it shows what the hosted runner computed. It is not
+anchored — C-41 covers three evidence channels and a fuzz record is not one of
+them — so it can be fabricated like any unanchored record; the external copy is
+the GitHub artifact, which expires after 90 days. One successful schedule shows
+the timer fires; it does not show that a delayed or skipped run would be
+noticed, because nothing alerts on it.
 
 ## Determinism
 

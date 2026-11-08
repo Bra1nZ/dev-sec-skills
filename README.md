@@ -246,6 +246,7 @@ spec/
     README.md
     corpus/claim-lint/
     runs/claim-lint-2026-11-07.json
+    runs/claim-lint-2026-11-08-schedule.json
     triage/claim-lint-2026-11-07.yaml
   coverage/
     README.md
@@ -451,8 +452,13 @@ fixture — или была отклонена с записанной прич�
 расхождении `executions_digest` и выгружает артефакт `fuzz-record-<run_id>` на 90
 дней. Первый прогон — [42394278295](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42394278295):
 success, commit `3110214`, digest `93e1af3183658aa6…`, seed 20261107, 155
-исполнений, 0 находок. Это доказательство детерминизма и целостности входов, а не
-поиск новых багов; сам ночной schedule ещё ни разу не срабатывал.
+исполнений, 0 находок. Ночной schedule сработал впервые 2026-11-08:
+[42466635404](https://github.com/Bra1nZ/dev-sec-skills/actions/runs/42466635404),
+event `schedule`, commit `7bf8192`, старт `09:18:42Z` при объявленном cron `02:30Z`,
+digest совпал, 0 находок; скачанный артефакт закоммичен как
+[`spec/fuzz/runs/claim-lint-2026-11-08-schedule.json`](spec/fuzz/runs/claim-lint-2026-11-08-schedule.json).
+Это доказательство детерминизма и целостности входов, а не поиск новых багов;
+задержанный или пропущенный запуск никто не отслеживает.
 
 Event-driven `proven` (V2-29) — `tools/proof_plan.py` и
 [`spec/proofs/manifest.yaml`](spec/proofs/manifest.yaml): каждая доказанная
