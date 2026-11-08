@@ -336,3 +336,45 @@ claims:
             date: '2026-11-08'
     residual_risk: "The identity trusts the product's own event log as its account of the increments, so a defect that drops both the counter increment and the log line is self-consistent and passes. A race that neither the lock check nor the counter identity can see (for example, a lost audit event with a correct counter) is outside what the oracle measures."
     limitations: "One path (lockout), one PostgreSQL version, one machine and one account; grants, apply_policy_document and RLS are not exercised. The oracle measures no latency, deadlocks or lock waits. The SQL is installed as a script, so extversion is not maintained and a packaging defect is invisible. The mutants are hand-written: 2/2 is sensitivity to those two edits, not completeness. The stand is external, so make concurrency-rbac and make concurrency-rbac-mutants stay out of make verify and run in verify-all. INV-TX-003 stays open in spec/invariants/catalog.yaml: one executable oracle does not prove the invariant at the other entry points."
+  - id: C-45
+    claim: "Every test this ledger cites can fail: claim_lint rejects a citation whose definition is a stub, is skipped unconditionally, is an xfail or skips at run time, and a case corpus pins each verdict"
+    mechanism: "tools/claim_lint.py parses every suite file the traceability check indexes (Python defs and Rust #[test] fns) and, for each kind=test citation, inspects every definition of the name. A Python body with no executable statement (empty, only a docstring, pass, ... or a bare return), an unconditional skip (@pytest.mark.skip, @unittest.skip, @expectedFailure), an xfail, a run-time skip (pytest.skip(...), self.skipTest(...)), a Rust #[ignore] and an empty Rust body are errors; a conditional skip (skipif/skipIf) is a warning because whether the test ran depends on the condition. A citation is rejected only when every definition of the name is unusable, so a shadowed stub next to a real test still leaves evidence. evals/claim-witness/run_evals.py builds 16 synthetic Python and Rust suites and pins the verdict (error, warning or none), including controls: a skipped neighbour does not taint the cited test, a redefinition, a real report call, and a valid test in each language; D-CLAIM-WITNESS (spec/pilots/dev-sec-skills/detectors/test_claim_witness.py) runs the eval as one test ID"
+    status: tested
+    scope:
+      platforms: "Python 3.11.2 and PyYAML on Linux; 16 synthetic temporary roots with one suite file and one claim; the three ledgers were linted on 2026-11-08: self-pilot 9 citations, rbac_pg 22 report-style IDs, craft-i18n 25 Rust tests, 0 L7 findings (spec/pilots/dev-sec-skills/runs/l7-corpora-2026-11-08.log)"
+      actors_excluded:
+        - "Semantic relevance: L7 proves the definition can fail, not that its failure is about this claim; a real test asserting an unrelated property passes the check."
+        - "Test discovery and collection: the parse reads source text, so a skip added by a plugin, a fixture that aborts, a class-level marker on a container or an environment gate outside the file is invisible."
+        - "Report-style IDs (report(\"F2 ...\", condition) in rbac_pg) and any test named by a string a helper interprets: no safe static criterion, so they are not judged."
+        - "Generated suites: parametrization, macros that emit tests and code generation run before the file exists in the indexed form, so the check sees only what is written."
+    evidence:
+      - kind: test
+        tests: [test_claim_witness_eval_cases_pass]
+        command: "python3 spec/pilots/dev-sec-skills/detectors/test_claim_witness.py"
+        artifact: "spec/pilots/dev-sec-skills/detectors/test_claim_witness.py"
+        commit: "423ff3860347658ca76daaf4ba22a9819cba3512"
+        date: "2026-11-08"
+        run_record:
+          runner: "detector (dependency-free python)"
+          command: "python3 spec/pilots/dev-sec-skills/detectors/test_claim_witness.py"
+          commit: "423ff3860347658ca76daaf4ba22a9819cba3512"
+          exit_code: 0
+          started_at: "2026-11-08T18:55:11+03:00"
+          finished_at: "2026-11-08T18:55:15+03:00"
+          log: "spec/pilots/dev-sec-skills/runs/claim-witness-eval-2026-11-08.log"
+          log_sha256: "2659d77e6ae8753efcbc2e64f68a320d6589e9eb931598519de025cdbfcfbca9"
+          artifact_sha256: "b6739beea52229579cfd32cd83e7516cc1ed1792922c37553d112814261f959a"
+          tests_run: 1
+          tests_passed: 1
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c45-2026-11-08.json
+            subject_sha256: 3c8d2916ef0f941a7bbef19615801fdb030f778df7ccdba11f15dc93e4c9d6a0
+            signature: spec/anchor/run-record-dev-sec-skills-c45-2026-11-08.json.sig
+            signature_sha256: cf5c154c08cd0a21cf8c93f9df1bf83b207ef6f830ef447f426248c4f56b2a04
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+    residual_risk: "L7 proves the definition can fail, not that its failure is about this claim; a real test asserting an unrelated property still counts. The parse is heuristic, so an exotic but valid definition may go unflagged (a missed stub), while a false rejection is bounded by requiring every definition of the name to be unusable."
+    limitations: "Narrow by design: only provable stubs, unconditional skips, an xfail, a run-time skip and Rust #[ignore] or an empty body are errors; a conditional skip is a warning; report-style IDs are outside the rule. Tests built by metaclasses, decorators that replace the body, or code generation may not be seen. The eval is synthetic: 16 fixtures, not the real corpora, and the self-pilot ledger currently has no stub for the check to catch. The corpora run is a date-stamped measurement, not a guarantee about future suites. L7 says nothing about whether the suite was executed: that is L2's run_record."

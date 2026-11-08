@@ -1,0 +1,134 @@
+# command: PILOT2_ROOT=/tmp/opencode/craft-i18n-5c5c554 make claims-self claims-pilot claims-pilot2
+# note: the live craft-i18n checkout was reset to upstream/main b32b8cda at 18:47 on 2026-11-08;
+# the pilot ledger cites 5c5c554, so pilot2 ran against a read-only clone at that commit.
+# run: 2026-11-08T18:49:23+03:00
+== L1-L7: self-pilot claim ledger ==
+python3 tools/claim_lint.py \
+  --root . \
+  --suite-glob "spec/pilots/*/*/test_*.py" \
+  --run-log-root . \
+  --tool-output-root . \
+   \
+  "spec/pilots/dev-sec-skills/claims.yaml"
+ledger: spec/pilots/dev-sec-skills/claims.yaml | claims: 5
+  L1 schema        OK
+  L2 evidence      0 error(s), 0 warning(s), 1 info
+  L3 traceability  OK
+  L4 consistency   OK
+  L5 prose         0 error(s), 72 warning(s), 8 info
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/code-auth-review/without_skill/outputs/answer.md:208
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/code-tenant-invariants/with_skill/outputs/answer.md:196
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed evals/iteration-1/code-tenant-invariants/with_skill/outputs/answer.md:347
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed evals/iteration-1/code-tenant-invariants/with_skill/outputs/answer.md:348
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/docs-readme-claims/without_skill/outputs/answer.md:13
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: Fully tested evals/iteration-1/docs-readme-claims/without_skill/outputs/answer.md:31
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantees evals/iteration-1/docs-readme-claims/without_skill/outputs/answer.md:33
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/docs-readme-claims/without_skill/outputs/answer.md:33
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant evals/iteration-1/docs-readme-claims/without_skill/outputs/answer.md:34
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/docs-release-notes/without_skill/outputs/answer.md:21
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: All tests pass evals/iteration-1/ntf-money-transfer/with_skill/outputs/answer.md:67
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/ntf-money-transfer/with_skill/outputs/answer.md:451
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/ntf-money-transfer/without_skill/outputs/answer.md:106
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed evals/iteration-1/ntf-rls-review/with_skill/outputs/answer.md:257
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-1/ntf-rls-review/with_skill/outputs/answer.md:500
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed evals/iteration-2/code-platform-masks/without_skill/outputs/answer.md:38
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee evals/iteration-2/docs-near-miss-release/without_skill/outputs/answer.md:8
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует evals/iteration-3/RESULTS.md:49
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified references/field-notes.md:68
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified references/standards-map.md:122
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified references/standards-map.md:127
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant references/standards-map.md:132
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified references/standards-map.md:132
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee references/standards/downloaded/SLSA/build-requirements.md:272
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee references/standards/downloaded/SLSA/build-requirements.md:312
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee references/standards/downloaded/SLSA/build-requirements.md:327
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee references/standards/downloaded/SLSA/build-requirements.md:356
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantees references/standards/downloaded/SLSA/index.md:3
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantees references/standards/downloaded/SLSA/index.md:8
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует schemas/README.md:308
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/README.en.md:12
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantees skills/evidence-first-docs/README.en.md:12
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/README.en.md:63
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/README.en.md:63
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/README.en.md:64
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: fully tested skills/evidence-first-docs/README.en.md:72
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: All tests pass skills/evidence-first-docs/README.en.md:72
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/README.en.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/README.en.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/README.en.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует skills/evidence-first-docs/README.md:12
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/README.md:63
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/README.md:63
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/README.md:64
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: полностью протестирована skills/evidence-first-docs/README.md:72
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/README.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/README.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/README.md:89
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/SKILL.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/SKILL.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/SKILL.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee skills/evidence-first-docs/SKILL.md:111
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee skills/evidence-first-docs/SKILL.md:154
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: All tests pass skills/evidence-first-docs/SKILL.md:155
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guaranteed skills/evidence-first-docs/references/banned-words.md:26
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/references/banned-words.md:29
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: certified skills/evidence-first-docs/references/banned-words.md:29
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: compliant skills/evidence-first-docs/references/banned-words.md:30
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: all tests pass skills/evidence-first-docs/references/banned-words.md:35
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: fully tested skills/evidence-first-docs/references/banned-words.md:41
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует skills/evidence-first-docs/references/banned-words.md:53
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: сертифицирован skills/evidence-first-docs/references/banned-words.md:56
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: сертифицирован skills/evidence-first-docs/references/banned-words.md:56
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: полностью протестировано skills/evidence-first-docs/references/banned-words.md:65
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: all tests pass skills/evidence-first-docs/references/evidence-template.md:74
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee spec/conveyor/CONCEPT.en.md:516
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует spec/conveyor/CONCEPT.md:503
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: guarantee spec/fuzz/README.md:86
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует styles/README.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: сертифицирован styles/README.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: полностью
+протестирован styles/README.md:4
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует styles/README.md:77
+  L6 relevance     OK
+  L7 witness       OK
+total: 0 error(s), 72 warning(s), 9 info
+== L1-L7: pilot claim ledger ==
+python3 tools/claim_lint.py \
+  --root "../rbac_pg" \
+  --suite-glob "setup/*.py" \
+   \
+  "../rbac_pg/docs/claims.yaml"
+ledger: ../rbac_pg/docs/claims.yaml | claims: 7
+  L1 schema        OK
+  L2 evidence      0 error(s), 6 warning(s), 0 info
+      [L2] warning C-01   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+      [L2] warning C-02   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+      [L2] warning C-03   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+      [L2] warning C-04   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+      [L2] warning C-05   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+      [L2] warning C-06   kind=test has no run_record: re-dating and a cited test that never ran are not detectable (V2-02) 
+  L3 traceability  OK
+  L4 consistency   OK
+  L5 prose         0 error(s), 1 warning(s), 11 info
+      [L5] warning -      RussianAbsolutes.BannedAbsolutes: гарантирует FSTEC-GAP.md:226
+  L6 relevance     OK
+  L7 witness       OK
+total: 0 error(s), 7 warning(s), 11 info
+== L1-L7: second pilot claim ledger (craft-i18n) ==
+python3 tools/claim_lint.py \
+  --root "/tmp/opencode/craft-i18n-5c5c554" \
+  --suite-glob "crates/craft-i18n-tests/**/*.rs" \
+  --run-log-root "/home/admini/projects/dev-sec-skills" \
+  --tool-output-root "/home/admini/projects/dev-sec-skills" \
+   \
+  "spec/pilots/craft-i18n/claims.yaml"
+ledger: spec/pilots/craft-i18n/claims.yaml | claims: 9
+  L1 schema        OK
+  L2 evidence      OK
+  L3 traceability  OK
+  L4 consistency   OK
+  L5 prose         OK
+  L6 relevance     OK
+  L7 witness       OK
+total: 0 error(s), 0 warning(s), 0 info
+# finished: 2026-11-08T18:49:28+03:00 exit=0

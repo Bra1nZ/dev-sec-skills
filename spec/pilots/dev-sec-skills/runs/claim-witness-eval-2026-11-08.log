@@ -1,0 +1,6 @@
+# command: python3 spec/pilots/dev-sec-skills/detectors/test_claim_witness.py
+# commit: 423ff3860347658ca76daaf4ba22a9819cba3512
+# started: 2026-11-08T18:55:11+03:00
+test_claim_witness_eval_cases_pass ... ok
+========== 1 passed ==========
+# finished: 2026-11-08T18:55:15+03:00 exit=0
