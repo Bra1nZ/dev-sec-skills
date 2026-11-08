@@ -265,3 +265,74 @@ claims:
             date: '2026-11-08'
     residual_risk: "An annotation proves where a finding points, not that the finding is right: a lint error can be a false positive, and a green run means the linter's contract held on the synthetic cases, not that a production ledger is clean."
     limitations: "GitHub shows the first ten annotations per step, so a ledger with more errors shows the rest only in the log. JSON ledgers get no line (PyYAML composes YAML only), so their findings point at the file. L1-L4 and L6 carry no location of their own: they point at the claim's block, not at the field. Warnings are off by default because the self-pilot has 72, so a new warning still needs --annotations warning or the text format to be seen. The eval is synthetic: it asserts the command text, not a rendered annotation in a real pull request. There is no SARIF emitter and no Code Scanning upload."
+  - id: C-44
+    claim: "Concurrent calls to rbac.register_auth_failure() on one account neither lose an increment nor let a session past a reached threshold: the counter equals the start value plus the increments the product logged, and the account ends locked"
+    mechanism: "spec/pilots/rbac_pg/concurrency/test_lockout_race.py creates a throw-away database on the MUTATION_DSN stand, installs sql/rbac--1.9.1.sql as a plain script (no CREATE EXTENSION), sets failed_attempts=4 on one account and fires 8 simultaneous rbac.register_auth_failure() calls behind a threading barrier, one connection per session; three checks run on the state and on the product's own event log: test_account_is_locked (locked_until is set), test_no_lost_update (failed_attempts == 4 + the AUTH_FAILURE rows the product wrote without a reason, because the already-locked branch writes reason=account_already_locked and does not increment, so the identity does not depend on scheduling) and test_every_session_reported (no session hangs or is dropped); spec/pilots/rbac_pg/concurrency/mutation_control.py applies two named mutants to the same SQL in memory, requires each anchor exactly once and requires the oracle to fail in every round: MUT-RACE-001 replaces the atomic UPDATE with a stale read (SELECT into a variable, then UPDATE from it) and must trip test_no_lost_update, MUT-RACE-002 drops the locked_until assignment and must trip test_account_is_locked"
+    status: tested
+    scope:
+      platforms: "PostgreSQL 15.17 (Debian 15.17-astra.se2.3r2) on Linux, port 55434, trust auth; Python 3.11.2 with psycopg2 2.9.5; sql/rbac--1.9.1.sql at rbac_pg commit d97860929b40a7a1f65e7b6a8cef66e72ef1cf4f; 8 sessions, 4 start attempts, one account, one machine; mutation control runs 2 mutants in 3 rounds each"
+      actors_excluded:
+        - "Other entry points into rbac.users: grants, apply_policy_document and RLS are not exercised, so a lost update there is invisible to this oracle."
+        - "Other PostgreSQL versions, isolation levels and configurations: the stand runs the defaults of one server."
+        - "Scheduling, latency and deadlocks: the oracle records no timings and a slow or waiting run still passes."
+        - "The extension packaging path: the SQL is installed as a plain script, so CREATE EXTENSION bookkeeping and a packaging defect are out of scope."
+        - "Races the two hand-written mutants do not model: a caught mutant says the oracle is sensitive to that edit, not that it covers every interleaving."
+    evidence:
+      - kind: test
+        tests: [test_account_is_locked, test_no_lost_update, test_every_session_reported]
+        command: "python3 spec/pilots/rbac_pg/concurrency/test_lockout_race.py"
+        artifact: "spec/pilots/rbac_pg/concurrency/test_lockout_race.py"
+        commit: "0e0de80ca270909b6e08ffce0fc993f3ec9eb338"
+        date: "2026-11-08"
+        run_record:
+          runner: "plain python oracle (psycopg2)"
+          command: "python3 spec/pilots/rbac_pg/concurrency/test_lockout_race.py"
+          commit: "0e0de80ca270909b6e08ffce0fc993f3ec9eb338"
+          exit_code: 0
+          started_at: "2026-11-08T18:25:59+03:00"
+          finished_at: "2026-11-08T18:26:01+03:00"
+          log: "spec/pilots/rbac_pg/runs/concurrency-lockout-2026-11-08.log"
+          log_sha256: "40e0cdcc65e5897c97e8121b088acb57855713f7400ed54d3bb18cb8ad8a5448"
+          artifact_sha256: "5394e77e40269943d79d5cca3a22e75ed7cd2df943e10ce4acc67443f7c42cc4"
+          tests_run: 3
+          tests_passed: 3
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c44a-2026-11-08.json
+            subject_sha256: 3946b347ded2b0b5a212a9471be167859f88f61aebc2462e4f902c388e63fb59
+            signature: spec/anchor/run-record-dev-sec-skills-c44a-2026-11-08.json.sig
+            signature_sha256: 72b01d79a7b2a8b5df79d072b8bd32b5af68851f6ddb535df22030e409b89ac4
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+      - kind: test
+        tests: [test_no_lost_update, test_account_is_locked]
+        command: "python3 spec/pilots/rbac_pg/concurrency/mutation_control.py"
+        artifact: "spec/pilots/rbac_pg/concurrency/mutation_control.py"
+        commit: "0e0de80ca270909b6e08ffce0fc993f3ec9eb338"
+        date: "2026-11-08"
+        run_record:
+          runner: "plain python mutation control (psycopg2)"
+          command: "python3 spec/pilots/rbac_pg/concurrency/mutation_control.py"
+          commit: "0e0de80ca270909b6e08ffce0fc993f3ec9eb338"
+          exit_code: 0
+          started_at: "2026-11-08T18:26:01+03:00"
+          finished_at: "2026-11-08T18:26:08+03:00"
+          log: "spec/pilots/rbac_pg/runs/concurrency-lockout-mutants-2026-11-08.log"
+          log_sha256: "224a5956a17385d2e8ccec7355c7c6594ef68bbf773f371880c1b68002d8f0cb"
+          artifact_sha256: "e959af6ffab8be10fd3625f40e7fdaa200a1de82e88e96b54d728829021357ee"
+          tests_run: 6
+          tests_passed: 6
+          anchor:
+            type: ssh-ed25519
+            signer: dev-sec-skills-anchor-2026-11-08
+            namespace: dev-sec-skills-run-record
+            subject: spec/anchor/run-record-dev-sec-skills-c44b-2026-11-08.json
+            subject_sha256: 417ad46786276b72788b3d694d99f8470202bde83403f003e7a3204c2c216ddb
+            signature: spec/anchor/run-record-dev-sec-skills-c44b-2026-11-08.json.sig
+            signature_sha256: bfa1e73acfc77ca769cebdf9a400f77816da29b605173c2b87a33a89e8b809fb
+            allowed_signers: spec/anchor/allowed_signers
+            date: '2026-11-08'
+    residual_risk: "The identity trusts the product's own event log as its account of the increments, so a defect that drops both the counter increment and the log line is self-consistent and passes. A race that neither the lock check nor the counter identity can see (for example, a lost audit event with a correct counter) is outside what the oracle measures."
+    limitations: "One path (lockout), one PostgreSQL version, one machine and one account; grants, apply_policy_document and RLS are not exercised. The oracle measures no latency, deadlocks or lock waits. The SQL is installed as a script, so extversion is not maintained and a packaging defect is invisible. The mutants are hand-written: 2/2 is sensitivity to those two edits, not completeness. The stand is external, so make concurrency-rbac and make concurrency-rbac-mutants stay out of make verify and run in verify-all. INV-TX-003 stays open in spec/invariants/catalog.yaml: one executable oracle does not prove the invariant at the other entry points."

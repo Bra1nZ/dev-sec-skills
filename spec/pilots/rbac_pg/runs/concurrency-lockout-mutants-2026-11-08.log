@@ -1,0 +1,11 @@
+== concurrency oracle: mutation control (V2-42) ==
+python3 spec/pilots/rbac_pg/concurrency/mutation_control.py \
+  --target "../rbac_pg" --dsn "postgresql://postgres@127.0.0.1:55434/postgres"
+[MUT-RACE-001 round 1] test_no_lost_update ... failed, as required (counter=5 increments=8 locked=True)
+[MUT-RACE-001 round 2] test_no_lost_update ... failed, as required (counter=5 increments=8 locked=True)
+[MUT-RACE-001 round 3] test_no_lost_update ... failed, as required (counter=5 increments=8 locked=True)
+[MUT-RACE-002 round 1] test_account_is_locked ... failed, as required (counter=12 increments=8 locked=False)
+[MUT-RACE-002 round 2] test_account_is_locked ... failed, as required (counter=12 increments=8 locked=False)
+[MUT-RACE-002 round 3] test_account_is_locked ... failed, as required (counter=12 increments=8 locked=False)
+mutants: 2/2 caught
+========== 6 passed, 0 failed in 6.93s ==========

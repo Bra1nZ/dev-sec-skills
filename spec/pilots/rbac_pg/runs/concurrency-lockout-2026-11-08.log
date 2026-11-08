@@ -1,0 +1,10 @@
+== concurrency oracle: lockout check-then-act on postgresql://postgres@127.0.0.1:55434/postgres ==
+python3 spec/pilots/rbac_pg/concurrency/test_lockout_race.py \
+  --target "../rbac_pg" --dsn "postgresql://postgres@127.0.0.1:55434/postgres"
+measured: counter=12 locked=True increments=8 already_locked=0 epoch=9 sessions=8
+returns: 9, 8, 10, 12, 7, 5, 11, 6
+test_account_is_locked ... ok — locked_until=datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc)
+test_no_lost_update ... ok — failed_attempts=12, start=4 + logged increments=8 = 12
+test_every_session_reported ... ok — 8 session(s) answered, 0 error(s)
+ИТОГ: 3 OK, 0 FAIL
+========== 3 passed, 0 failed in 1.08s ==========
