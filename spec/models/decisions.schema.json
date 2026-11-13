@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills/spec/models/decisions.schema.json",
+  "title": "Human decisions over extracted primitives",
+  "type": "object",
+  "required": ["format", "decisions"],
+  "properties": {
+    "format": {"const": "dev-sec-skills/model-decisions/1"},
+    "generated": {"type": "string"},
+    "target": {"type": ["object", "null"]},
+    "required_only": {"type": "boolean"},
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "decision"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "decision": {
+            "type": ["string", "null"],
+            "enum": ["approved", "rejected", "deferred", null]
+          },
+          "by": {"type": ["string", "null"]},
+          "at": {"type": ["string", "null"]},
+          "note": {"type": ["string", "null"]},
+          "no_guard_ok": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

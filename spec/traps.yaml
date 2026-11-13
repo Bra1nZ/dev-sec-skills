@@ -1,0 +1,82 @@
+# Known verification traps. The review step carries this file into every
+# review.md; a trap is a mistake that already cost time in a real run, and the
+# rules are the cheapest checks that would have caught it. Source: JOURNAL.md
+# (mailcraft), Iteration 3, 2026-11-13. A trap without a rule is a story, not
+# a trap; every entry here must be actionable before a run, not after.
+
+format: "dev-sec-skills/traps/1"
+updated: "2026-11-13"
+traps:
+  - id: stale-target-artifact
+    title: >-
+      A shared CARGO_TARGET_DIR shares one binary and one fingerprint across
+      worktrees.
+    symptom: >-
+      A worktree test run is green, but the new tests are not in the binary;
+      the ran-list matches a previous branch exactly.
+    cause: >-
+      Identical metadata hashes make all worktrees resolve the same artifact;
+      an mtime fingerprint can pass even then (the exact trigger is not
+      established — repeat the check on every worktree run).
+    rules:
+      - >-
+        Touch the crate sources before EVERY test run in a shared target
+        directory; an up-to-date fingerprint is not evidence.
+      - >-
+        After building, verify the new test is in the binary:
+        strings <test-binary> | grep <new-test-name> — zero hits means the
+        run was fictitious.
+      - >-
+        A test run of a just-created worktree against a shared target is
+        unproven until one of the two checks above is done.
+  - id: offline-i18n-english-only
+    title: >-
+      CRAFT_I18N_DIR unset builds English-only; language tests fail falsely.
+    symptom: >-
+      "language must be one of auto, en" for set_option("language", "de") in
+      an offline run.
+    cause: >-
+      build.rs embeds catalogs only when CRAFT_I18N_DIR points at the catalog
+      checkout — the catalog repository, not craft-libs.
+    rules:
+      - >-
+        Set CRAFT_I18N_DIR to the catalog repo checkout before running
+        ui-egui it-tests with language dependencies.
+      - >-
+        A language failure in an offline run is an environment artifact until
+        CRAFT_I18N_DIR is ruled out, not a PR bug.
+      - >-
+        CI sets CRAFT_I18N_REQUIRED=1 (error, not warning), so this false
+        failure does not exist there; an offline-only language failure is
+        expected to disappear under CI conditions.
+  - id: union-resolve-drops-imports
+    title: >-
+      Union of use-lists during rebase can drop imports; fmt does not catch it.
+    symptom: >-
+      clippy fails on an unresolved import after push; the first run was
+      fmt-only.
+    cause: >-
+      Rebase resolution unions use-lists and can lose a symbol
+      (format_date_in was lost during #5676).
+    rules:
+      - >-
+        Run clippy --workspace --all-targets -D warnings before every push;
+        fmt alone proves nothing about imports.
+  - id: env-dependent-fails
+    title: >-
+      An environment-dependent failure is an artifact, not a PR bug, only
+      with a recorded scope.
+    symptom: >-
+      The same failures appear on clean upstream/main in an offline build
+      while CI main is green.
+    cause: >-
+      Offline build differences. The environment contract is CRAFT_I18N_DIR,
+      TMPDIR, CARGO_TARGET_DIR.
+    rules:
+      - >-
+        Record the environment of every check run (--environment
+        offline | ci | full-local); a failure without an environment scope
+        cannot be classified.
+      - >-
+        Baseline a suspicious failure on clean upstream/main before calling
+        it a PR bug.

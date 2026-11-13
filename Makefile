@@ -156,6 +156,8 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
         mutations-i18n mutations-self mutations-all check-fuzz-triage fuzz-claim-lint \
         proof-plan proof-plan-selftest crosscheck-c02 crosscheck-c02-mutants red-team red-team-record \
         concurrency-rbac concurrency-rbac-mutants \
+        model-doctor model-init model-scan model-extract model-review model-gen \
+        model-check model-report model-handoff model-validate \
         journal journal-append verify-ci detectors-self help
 
 verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable coverage invariants
@@ -183,6 +185,7 @@ evals:
 	$(PYTHON) evals/claim-format/run_evals.py
 	$(PYTHON) evals/claim-witness/run_evals.py
 	$(PYTHON) evals/status-diff/run_evals.py
+	$(PYTHON) evals/term-check/run_evals.py
 	$(PYTHON) evals/fuzz/run_evals.py
 	$(PYTHON) evals/fuzz-triage/run_evals.py
 	$(PYTHON) evals/coverage/run_evals.py
@@ -566,6 +569,73 @@ concurrency-rbac-mutants:
 	$(PYTHON) spec/pilots/rbac_pg/concurrency/mutation_control.py \
 	  --target "$(PILOT_ROOT)" --dsn "$(MUTATION_DSN)"
 
+# --------------------------------------------------------------------------
+# Code-to-model conveyor (V0). Rust only. The contract is
+# docs/conveyor-agent.md; the tools are tools/model_*.py.
+#
+#   make model-doctor                  preflight + fixture run + negative tests
+#   make model-init    TARGET=...      working directory, bounds example, journal
+#   make model-scan    TARGET=...      inventory, no interpretation
+#   make model-extract TARGET=...      primitives with anchors
+#   make model-review  TARGET=...      review.md + the decisions checklist
+#   # edit <target>/model/decisions.yaml
+#   make model-gen     TARGET=...      generated/model.json and model.sys
+#   make model-check   TARGET=... MODEL_ENV=offline   checks + mandatory environment scope
+#   make model-report  TARGET=...      MODEL.md from the artifacts
+#   make model-handoff TARGET=...      handoff folder with both journals
+#   make model-validate MODEL_HANDOFF=...
+#
+# Artifacts default to <target>/model; MODEL_OUT overrides. The handoff folder
+# comes from --handoff (MODEL_HANDOFF) or MODEL_HANDOFF_DIR, never from a
+# hardcoded home directory.
+TARGET ?=
+MODEL_OUT ?=
+MODEL_HANDOFF ?=
+MODEL_OUT_ARG = $(if $(MODEL_OUT),--out "$(MODEL_OUT)",)
+MODEL_HANDOFF_ARG = $(if $(MODEL_HANDOFF),--handoff "$(MODEL_HANDOFF)",)
+MODEL_NEED_TARGET = @test -n "$(TARGET)" || { echo "$@: set TARGET=<path to a Rust project>" >&2; exit 2; }
+MODEL_NEED_HANDOFF = @test -n "$(MODEL_HANDOFF)" || { echo "$@: set MODEL_HANDOFF=<handoff folder>" >&2; exit 2; }
+
+model-doctor:
+	@echo "== conveyor: preflight, fixture pipeline, negative tests =="
+	$(PYTHON) tools/model_doctor.py $(if $(KEEP),--keep,)
+
+model-init:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_init.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-scan:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_scan.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-extract:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_extract.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-review:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_review.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-gen:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_gen.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-check:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_check.py --target "$(TARGET)" $(MODEL_OUT_ARG) --environment "$(MODEL_ENV)"
+
+model-report:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_report.py --target "$(TARGET)" $(MODEL_OUT_ARG)
+
+model-handoff:
+	$(MODEL_NEED_TARGET)
+	$(PYTHON) tools/model_handoff.py --target "$(TARGET)" $(MODEL_OUT_ARG) $(MODEL_HANDOFF_ARG)
+
+model-validate:
+	$(MODEL_NEED_HANDOFF)
+	$(PYTHON) tools/model_handoff.py --validate "$(MODEL_HANDOFF)"
+
 help:
 	@echo "targets:"
 	@echo "  verify        all static gates (evals, seed registry, both pilot registries, claims, status diffs)"
@@ -611,3 +681,13 @@ help:
 	@echo "  journal       J1-J4: the verdict journal chain, ledger agreement, history and signed head"
 	@echo "  journal-append  append changed verdicts and re-sign the head (needs JOURNAL_KEY outside the repo)"
 	@echo "  verify-ci     the CI subset: gates that need no checkout outside this repository"
+	@echo "  model-doctor  preflight the conveyor, run the fixture end to end, prove three gates can fail"
+	@echo "  model-init    TARGET=... create the model working directory (bounds example, JOURNAL.md)"
+	@echo "  model-scan    TARGET=... inventory a Rust project without interpreting it"
+	@echo "  model-extract TARGET=... derive primitives with {path,start,end,sha256} anchors"
+	@echo "  model-review  TARGET=... write review.md and the decisions checklist"
+	@echo "  model-gen     TARGET=... generate the model from approved primitives only"
+	@echo "  model-check   TARGET=... anchors, coverage, vacuity, dead state, theorem sanity"
+	@echo "  model-report  TARGET=... assemble MODEL.md from the artifacts"
+	@echo "  model-handoff TARGET=... collect artifacts, both journals and metrics into one folder"
+	@echo "  model-validate MODEL_HANDOFF=... re-check a handoff manifest offline"

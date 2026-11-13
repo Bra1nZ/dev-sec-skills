@@ -127,6 +127,9 @@ configuration; DBA is outside the model" is honest and useful.
    artifact path so a reviewer can reproduce the result.
 9. **Gate the release.** A release note may claim only what the ledger
    supports. List residual risk and open claims explicitly.
+10. **Undefined introduced terms.** A compound term used as if it were
+    established but never defined at first use — naming, not explaining. See
+    `references/undefined-terms.md`.
 
 ## Review checklist
 
@@ -140,6 +143,8 @@ configuration; DBA is outside the model" is honest and useful.
 - Dates and versions are current; stale evidence is marked stale.
 - Privileged actors and out-of-scope paths are named.
 - No banned word appears without adjacent evidence and scope.
+- Every compound technical term is either established in the domain or
+  defined at first use; undefined introduced terms are flagged.
 - The README, architecture doc, API contract, and release note do not
   contradict each other.
 - A reader can reproduce the evidence from the document alone.

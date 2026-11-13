@@ -1,0 +1,86 @@
+# Expected decisions for the doctor run. Every id here must exist after
+# extraction: a missing id means the extractor's naming or scope regressed.
+format: dev-sec-skills/model-decisions/1
+decisions:
+  - id: E-Role
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "role enumeration is the state alphabet"
+  - id: E-Permissions
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the state carrier"
+  - id: S-Permissions-roles
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the guarded set"
+  - id: S-Permissions-max_roles
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the bound named by the guard"
+  - id: S-Permissions-audit
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "append-only audit trail"
+  - id: S-Permissions-unused_note
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "deliberately dead: the doctor expects a warning"
+  - id: O-Permissions-new
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "constructor"
+  - id: O-Permissions-grant
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "limit guard and assertion"
+  - id: O-Permissions-revoke
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "admin cannot be revoked"
+  - id: O-Permissions-reset
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "caller holds the write lock"
+    no_guard_ok: true
+  - id: O-Permissions-len
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "observer"
+  - id: O-first
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "free function, lifetime exercise"
+  - id: O-before_audit
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "bodyless trait method: nothing to enforce, nothing to translate"
+    no_guard_ok: true
+  - id: I-E-Permissions-Must-never-hold-more-rol
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the bound from the struct doc"
+  - id: I-O-Permissions-grant-Grant-a-role-Must-never
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the bound from the method doc"
+  - id: I-O-before_audit-Must-be-called-before-ev
+    decision: approved
+    by: fixture
+    at: "2026-11-08"
+    note: "the doc invariant of a bodyless trait method"

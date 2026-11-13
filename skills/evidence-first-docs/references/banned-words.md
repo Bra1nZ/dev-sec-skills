@@ -66,6 +66,15 @@ PostgreSQL 14–17 (tests T-04..T-11, `tested`; superuser and DBA out of scope).
 | известных проблем нет | Неизвестные неизвестны | «открытые проблемы: ...; дата поиска ...» |
 | работает | При каких условиях? | условия и наблюдённый результат |
 
+## Undefined introduced terms
+
+A compound technical term used as if it were established is a claim about the
+domain. It is allowed only when the first use defines it ("X — это", a
+mechanism in parentheses or nearby) or the domain's vocabulary names it.
+Otherwise define the term at first use or describe the mechanism next to it —
+a term-label left undefined is naming, not explaining. See
+`references/undefined-terms.md` for the decision card.
+
 ## Normative words
 
 When the document defines requirements, use the RFC 2119/8174 keywords

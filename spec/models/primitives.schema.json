@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills/spec/models/primitives.schema.json",
+  "title": "Model primitives extracted from Rust source",
+  "type": "object",
+  "required": ["format", "generated", "tool", "target", "entities", "state",
+               "operations", "invariants", "unmapped", "counts"],
+  "properties": {
+    "format": {"const": "dev-sec-skills/model-primitives/1"},
+    "generated": {"type": "string"},
+    "tool": {"$ref": "#/definitions/tool"},
+    "target": {"$ref": "#/definitions/target"},
+    "entities": {"type": "array", "items": {"$ref": "#/definitions/entity"}},
+    "state": {"type": "array", "items": {"$ref": "#/definitions/state"}},
+    "operations": {"type": "array", "items": {"$ref": "#/definitions/operation"}},
+    "invariants": {"type": "array", "items": {"$ref": "#/definitions/invariant"}},
+    "unmapped": {"type": "array", "items": {"$ref": "#/definitions/unmapped"}},
+    "counts": {"type": "object"}
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "python": {"type": "string"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["path", "name"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "commit": {"type": ["string", "null"]},
+        "dirty": {"type": ["boolean", "null"]},
+        "is_git": {"type": "boolean"}
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "required": ["path", "start", "end"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "start": {"type": "integer", "minimum": 1},
+        "end": {"type": "integer", "minimum": 1},
+        "sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "note": {"type": "string"}
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": ["id", "kind", "name", "anchor", "status"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"enum": ["struct", "enum"]},
+        "name": {"type": "string"},
+        "visibility": {"type": "string"},
+        "anchor": {"$ref": "#/definitions/anchor"},
+        "status": {"const": "proposed"},
+        "form": {"type": "string"},
+        "fields": {"type": "array"},
+        "variants": {"type": "array"}
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": ["id", "entity", "field", "anchor", "status"],
+      "properties": {
+        "id": {"type": "string"},
+        "entity": {"type": "string"},
+        "field": {"type": "string"},
+        "type": {"type": ["string", "null"]},
+        "visibility": {"type": "string"},
+        "anchor": {"$ref": "#/definitions/anchor"},
+        "read_by": {"type": "array", "items": {"type": "string"}},
+        "written_by": {"type": "array", "items": {"type": "string"}},
+        "status": {"const": "proposed"}
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": ["id", "name", "anchor", "guards", "effects", "status"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "owner": {"type": ["string", "null"]},
+        "visibility": {"type": "string"},
+        "mut_self": {"type": "boolean"},
+        "receiver": {"type": ["string", "null"]},
+        "signature": {"type": "string"},
+        "anchor": {"$ref": "#/definitions/anchor"},
+        "guards": {"type": "array", "items": {"$ref": "#/definitions/guard"}},
+        "effects": {"type": "array", "items": {"$ref": "#/definitions/effect"}},
+        "calls": {"type": "array", "items": {"type": "string"}},
+        "status": {"const": "proposed"}
+      }
+    },
+    "guard": {
+      "type": "object",
+      "required": ["kind", "condition", "reject_when", "anchor"],
+      "properties": {
+        "kind": {"enum": ["early_return", "assert"]},
+        "condition": {"type": "string"},
+        "reject_when": {"enum": ["true", "false"]},
+        "anchor": {"$ref": "#/definitions/anchor"}
+      }
+    },
+    "effect": {
+      "type": "object",
+      "required": ["kind", "target", "anchor"],
+      "properties": {
+        "kind": {"enum": ["assign", "method", "init"]},
+        "target": {"type": "string"},
+        "method": {"type": "string"},
+        "operator": {"type": "string"},
+        "value": {"type": "string"},
+        "anchor": {"$ref": "#/definitions/anchor"}
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "required": ["id", "kind", "text", "anchor", "status"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"enum": ["doc", "assert"]},
+        "scope": {"type": ["string", "null"]},
+        "text": {"type": "string", "minLength": 1},
+        "anchor": {"$ref": "#/definitions/anchor"},
+        "status": {"const": "proposed"}
+      }
+    },
+    "unmapped": {
+      "type": "object",
+      "required": ["id", "path", "reason", "detail", "anchor"],
+      "properties": {
+        "id": {"type": "string"},
+        "path": {"type": "string"},
+        "reason": {"type": "string"},
+        "detail": {"type": "string"},
+        "anchor": {"$ref": "#/definitions/anchor"}
+      }
+    }
+  }
+}
