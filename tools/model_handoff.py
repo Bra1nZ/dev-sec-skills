@@ -86,7 +86,36 @@ def environment() -> dict:
         "platform": platform.platform(),
         "yaml": getattr(yaml, "__version__", None),
         "tools": tools,
+        "spec": spec_inputs(),
     }
+
+
+# Spec files the gates consume. Their hashes go into env.json so a reviewer
+# can verify the run judged against the same cells and traps, not just the
+# same file names: "identical for everyone" is a checked fact, not an
+# assumption (the stale-input class from Iteration 3).
+SPEC_FILES = (
+    "spec/traps.yaml",
+    "spec/conveyor/cells.seed.yaml",
+    "spec/invariants/catalog.yaml",
+)
+
+
+def spec_inputs() -> dict:
+    import hashlib
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    commit = _run_version(["git", "-C", here, "rev-parse", "HEAD"])
+    files = {}
+    for rel in SPEC_FILES:
+        path = os.path.join(here, rel)
+        if not os.path.isfile(path):
+            continue
+        digest = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                digest.update(chunk)
+        files[rel] = digest.hexdigest()
+    return {"git_commit": commit, "files": files}
 
 
 def copy_artifacts(out: str, handoff: str, env: dict) -> list:

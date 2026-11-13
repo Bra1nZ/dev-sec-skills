@@ -496,6 +496,26 @@ class Doctor:
                         "handoff manifest omits %s" % expected)
         self.expect(not any(path.startswith("runs/") for path in paths),
                     "handoff copied a relative runs/ path")
+        # The spec inputs the gates consumed are anchored: the cells and
+        # traps hashes say the run judged against this exact spec content.
+        env = self.load_json(os.path.join(self.handoff, "artifacts",
+                                          "env.json"))
+        spec = env.get("spec") or {}
+        self.expect(sorted(spec.get("files") or {}) == [
+                        "spec/conveyor/cells.seed.yaml",
+                        "spec/invariants/catalog.yaml", "spec/traps.yaml"],
+                    "env.json spec files are %r" % sorted(spec.get("files")))
+        self.expect(spec.get("git_commit"),
+                    "env.json records no conveyor git commit")
+        import hashlib
+        for rel, recorded in (spec.get("files") or {}).items():
+            digest = hashlib.sha256()
+            with open(os.path.join(os.path.dirname(os.path.dirname(
+                    os.path.abspath(__file__))), rel), "rb") as fh:
+                for chunk in iter(lambda: fh.read(65536), b""):
+                    digest.update(chunk)
+            self.expect(recorded == digest.hexdigest(),
+                        "env.json hash for %s does not match the file" % rel)
         metrics = manifest.get("metrics") or {}
         summary = metrics.get("summary") or {}
         expected = dict(EXPECT_METRICS)

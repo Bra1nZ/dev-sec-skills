@@ -674,7 +674,15 @@ def main():
     if args.base:
         checks.append(("CL6", "escalation"))
 
-    print("registry: %s | cells: %d" % (args.registry, len(cells)))
+    import hashlib
+    digest = hashlib.sha256()
+    with open(args.registry, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            digest.update(chunk)
+    # the numbers below are anchored to this exact file content: two runs
+    # with the same short hash judged against the same cells
+    print("registry: %s | cells: %d | sha256 %s"
+          % (args.registry, len(cells), digest.hexdigest()[:12]))
     for check, label in checks:
         rows = [f for f in findings if f.check == check]
         if not rows:

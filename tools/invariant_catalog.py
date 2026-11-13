@@ -30,6 +30,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -40,6 +41,14 @@ try:
     import yaml  # type: ignore
 except ImportError:  # pragma: no cover
     sys.exit("PyYAML is required: pip install pyyaml")
+
+
+def sha256_of(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 CATEGORIES = ("input-validation", "authn-session", "secrets", "lifecycle",
               "transactions")
@@ -336,6 +345,14 @@ def main():
     # below carry the messages. Loading it is optional so the tool still works
     # when vendored without the schema.
     summary, report = validate(catalog, cells_doc, rules_doc, schema_doc)
+    # Every number this run produced is anchored to the exact inputs: the
+    # hash says whether two runs judged against the same cells, not "same
+    # file name".
+    summary["inputs"] = {
+        "catalog": {"path": args.catalog, "sha256": sha256_of(args.catalog)},
+        "cells": {"path": args.cells, "sha256": sha256_of(args.cells)},
+        "rules": {"path": args.rules, "sha256": sha256_of(args.rules)},
+    }
     if args.json:
         parent = os.path.dirname(os.path.abspath(args.json))
         if parent:
@@ -343,6 +360,9 @@ def main():
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
             f.write("\n")
+    print("inputs: catalog %s, cells %s, rules %s"
+          % (sha256_of(args.catalog)[:12], sha256_of(args.cells)[:12],
+             sha256_of(args.rules)[:12]))
     return 1 if report.errors else 0
 
 
