@@ -4,3 +4,6 @@ __pycache__/
 
 # Rust build products for the bounded cross-check crate (targets live in /tmp).
 crosscheck/**/target/
+
+# Локальные заметки пользователя — не для репозитория.
+предложения.md
