@@ -47,6 +47,7 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 FIXTURE = os.path.join(REPO, "spec", "fixtures", "rust-tiny")
+TCB_FIXTURE = os.path.join(REPO, "spec", "fixtures", "rust-tcb")
 SCHEMAS = os.path.join(REPO, "spec", "models")
 
 TOOLS = (
@@ -391,9 +392,10 @@ class Doctor:
                         "%s: %s is %r, expected %r"
                         % (label, key, actual.get(key), value))
 
-    def check_anchor_shape(self, primitives: dict) -> None:
+    def check_anchor_shape(self, primitives: dict, min_anchors: int = 20) -> None:
         allowed = {"path", "start", "end", "sha256", "note"}
         seen = 0
+        from model_primitives import split_lines
 
         def visit(node, where):
             nonlocal seen
@@ -407,6 +409,22 @@ class Doctor:
                                 % (where, ", ".join(sorted(unexpected))))
                     self.expect("sha256" in node,
                                 "anchor at %s has no sha256" % where)
+                    # The line range must fit the real file: the extractor
+                    # once anchored a TCB marker one line past EOF because
+                    # the lexer invented a trailing empty line (1..99 of 98).
+                    anchor_path = node["path"]
+                    full = (anchor_path if os.path.isabs(anchor_path)
+                            else os.path.join(self.target, anchor_path))
+                    try:
+                        with open(full, "r", encoding="utf-8", newline="") as fh:
+                            lines = len(split_lines(fh.read()))
+                    except (OSError, UnicodeDecodeError):
+                        lines = None
+                    if lines is not None:
+                        self.expect(node["end"] <= lines,
+                                    "anchor at %s ends at line %d of %d "
+                                    "lines in %s"
+                                    % (where, node["end"], lines, anchor_path))
                 for key, value in node.items():
                     visit(value, "%s.%s" % (where, key))
             elif isinstance(node, list):
@@ -414,8 +432,9 @@ class Doctor:
                     visit(entry, "%s[%d]" % (where, index))
 
         visit(primitives, "primitives")
-        self.expect(seen >= 20, "only %d anchors found, expected at least 20"
-                    % seen)
+        self.expect(seen >= min_anchors,
+                    "only %d anchors found, expected at least %d"
+                    % (seen, min_anchors))
 
     def validate_schema(self, relative: str, schema_name) -> None:
         if schema_name is None:
@@ -819,6 +838,98 @@ class Doctor:
                  ["--target", self.target, "--out", self.out],
                  label="review(restored)")
 
+    def negative_fail_loud(self) -> None:
+        """debug_assert!(false) is fail-loud by design, assert!(false) is
+        vacuous; the vacuity check must tell them apart."""
+        self.say("negative: debug_assert!(false) is not a vacuous guard")
+        target = os.path.join(self.workdir, "rust-fail-loud")
+        out = os.path.join(self.workdir, "model-fail-loud")
+        os.makedirs(os.path.join(target, "src"))
+        with open(os.path.join(target, "Cargo.toml"), "w",
+                  encoding="utf-8") as fh:
+            fh.write("[package]\nname = \"fail-loud\"\nversion = \"0.1.0\"\n"
+                     "edition = \"2021\"\n")
+        with open(os.path.join(target, "src", "lib.rs"), "w",
+                  encoding="utf-8", newline="\n") as fh:
+            fh.write(
+                "pub struct Cfg {\n"
+                "    mode: u8,\n"
+                "}\n"
+                "\n"
+                "impl Cfg {\n"
+                "    pub fn decide(&mut self, flag: bool) -> bool {\n"
+                "        match self.mode {\n"
+                "            0 => {\n"
+                "                if !flag {\n"
+                "                    debug_assert!(false, "
+                "\"unreachable arm\");\n"
+                "                    return false;\n"
+                "                }\n"
+                "                true\n"
+                "            }\n"
+                "            _ => {\n"
+                "                assert!(false, \"genuinely dead guard\");\n"
+                "                true\n"
+                "            }\n"
+                "        }\n"
+                "    }\n"
+                "}\n")
+        self.run("model_scan.py", ["--target", target, "--out", out],
+                 label="fail-loud scan")
+        self.run("model_extract.py", ["--target", target, "--out", out],
+                 label="fail-loud extract")
+        primitives = self.load_yaml(os.path.join(out, "primitives.yaml"))
+        macros = [guard.get("macro") for op in primitives.get("operations") or []
+                  for guard in op.get("guards") or []]
+        self.expect("debug_assert" in macros and "assert" in macros,
+                    "guards do not record their macro name: %r" % (macros,))
+        self.run("model_check.py", ["--target", target, "--out", out,
+                                    "--environment", "offline"],
+                 expect_rc=1, label="fail-loud check")
+        checks = self.load_json(os.path.join(out, "checks", "results.json"))
+        vacuity = next(check for check in checks.get("checks") or []
+                       if check.get("id") == "vacuity")
+        self.expect(vacuity.get("status") == "fail",
+                    "a genuinely dead assert!(false) did not fail vacuity")
+        counts = checks.get("counts") or {}
+        self.expect(counts.get("vacuity_hits") == 1,
+                    "vacuity counted %r dead guards, expected exactly the "
+                    "assert!(false)" % counts.get("vacuity_hits"))
+        self.expect(counts.get("fail_loud_excluded") == 1,
+                    "the debug_assert!(false) was not excluded as fail-loud")
+
+    def negative_tcb_anchor(self) -> None:
+        """A file ending in '}\\n' with a TCB marker must anchor within the
+        real line count: the lexer once invented a trailing empty line, and
+        the TCB anchor ran one past EOF (1..99 of 98, sha256 None)."""
+        self.say("negative: a TCB anchor must fit the real line count")
+        target = os.path.join(self.workdir, "rust-tcb")
+        out = os.path.join(self.workdir, "model-tcb")
+        shutil.copytree(TCB_FIXTURE, target)
+        self.run("model_scan.py", ["--target", target, "--out", out],
+                 label="tcb scan")
+        self.run("model_extract.py", ["--target", target, "--out", out],
+                 label="tcb extract")
+        primitives = self.load_yaml(os.path.join(out, "primitives.yaml"))
+        unmapped = primitives.get("unmapped") or []
+        self.expect(len(unmapped) == 1
+                    and unmapped[0].get("reason") == "tcb",
+                    "the tcb fixture produced %r unmapped entries"
+                    % [entry.get("reason") for entry in unmapped])
+        anchor = unmapped[0].get("anchor") or {}
+        with open(os.path.join(target, "src", "lib.rs"), "r",
+                  encoding="utf-8", newline="") as fh:
+            from model_primitives import split_lines
+            lines = len(split_lines(fh.read()))
+        self.expect(anchor.get("start") == 1 and anchor.get("end") == lines,
+                    "the tcb anchor is %s..%s of %d lines"
+                    % (anchor.get("start"), anchor.get("end"), lines))
+        self.expect(isinstance(anchor.get("sha256"), str)
+                    and len(anchor["sha256"]) == 64,
+                    "the tcb anchor carries %r instead of a real sha256"
+                    % anchor.get("sha256"))
+        self.check_anchor_shape(primitives, min_anchors=1)
+
     def check_handoff_samefile(self) -> None:
         """MODEL_OUT == <handoff>/artifacts must not crash the handoff."""
         self.say("handoff: MODEL_OUT inside the handoff folder must not crash")
@@ -897,6 +1008,8 @@ def main(argv) -> int:
         doctor.negative_missing_no_guard_ok()
         doctor.negative_missing_journal()
         doctor.negative_missing_traps()
+        doctor.negative_fail_loud()
+        doctor.negative_tcb_anchor()
         doctor.check_handoff_samefile()
         doctor.check_review_queue()
     except DoctorFailure as exc:
@@ -917,11 +1030,12 @@ def main(argv) -> int:
     print("\nmodel-doctor: green")
     print("  %d tool invocations, fixture %s"
           % (doctor.steps, os.path.relpath(FIXTURE, REPO)))
-    print("  proved: counts, anchors, schemas, bounds validation, handoff "
-          "manifest, bodyless operations, crash journaling, inline "
-          "MODEL_OUT, required-only queue, queue reconciliation, known "
-          "traps in review, environment scope, and three gates that can "
-          "fail")
+    print("  proved: counts, anchors, schemas (incl. anchor ranges against "
+          "the real files), bounds validation, handoff manifest, bodyless "
+          "operations, crash journaling, inline MODEL_OUT, required-only "
+          "queue, queue reconciliation, known traps in review, environment "
+          "scope, fail-loud debug_assert exclusion, the TCB anchor within "
+          "the real line count, and three gates that can fail")
     print("  not proved: general Rust coverage, B consistency, any status "
           "above tested")
     return 0
