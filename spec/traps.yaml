@@ -5,7 +5,7 @@
 # a trap; every entry here must be actionable before a run, not after.
 
 format: "dev-sec-skills/traps/1"
-updated: "2026-11-13"
+updated: "2026-11-14"
 traps:
   - id: stale-target-artifact
     title: >-
@@ -80,3 +80,59 @@ traps:
       - >-
         Baseline a suspicious failure on clean upstream/main before calling
         it a PR bug.
+  - id: tmpdir-must-exist
+    title: >-
+      A custom TMPDIR that does not exist fails the first run; create_dir
+      does not create parents.
+    symptom: >-
+      The first test run dies on create_dir NotFound (tests.rs:141); the
+      same sources are green on the next attempt.
+    cause: >-
+      The test writes under std::env::temp_dir() but create_dir creates
+      only the last component; a TMPDIR pointing at a fresh path
+      (target/ldtmp) has no parents to build on.
+    rules:
+      - >-
+        mkdir -p the TMPDIR before every run that sets it; create_dir
+        does not create parents.
+      - >-
+        A first-run panic on a directory path is an environment error of
+        the verifier, not a patch bug, until the missing-directory trap is
+        ruled out; diagnose by the panic string before reading the diff.
+  - id: test-target-mismatch
+    title: >-
+      A new test may live in the lib target's mod tests, not the it-target
+      the filter assumes.
+    symptom: >-
+      cargo test --test it runs 0 tests although the test exists; the run
+      is green and proves nothing.
+    cause: >-
+      The harness lives in mod tests inside src (lib binary), so an
+      integration-target filter selects nothing; the test is real but in
+      another target.
+    rules:
+      - >-
+        Before running a filtered test, grep the diff for mod tests to see
+        which target the new test lives in.
+      - >-
+        A filtered run with test names in the output proves ran more
+        reliably than strings: stripping does not remove everything, but
+        a hit count alone does not distinguish ran from merely linked.
+  - id: model-handoff-fallback-dir
+    title: >-
+      MODEL_HANDOFF does not survive between shells; the model falls back
+      to a directory inside the target.
+    symptom: >-
+      The handoff lands in <target>/.model-handoff/ although the run was
+      launched with a handoff path in another shell.
+    cause: >-
+      The env var is set per shell only; a step launched without it reads
+      the fallback default and writes the artifacts where nobody looks.
+    rules:
+      - >-
+        Pass MODEL_HANDOFF explicitly to every step that writes the
+        handoff; never rely on the variable surviving between shells.
+      - >-
+        After a handoff step, check the artifacts are at the expected
+        path before the next step reads them; a fallback write is a
+        silently wrong location, not an error.

@@ -259,7 +259,10 @@ class Doctor:
         for trap_heading in ("## Known traps", "### stale-target-artifact",
                              "### offline-i18n-english-only",
                              "### union-resolve-drops-imports",
-                             "### env-dependent-fails"):
+                             "### env-dependent-fails",
+                             "### tmpdir-must-exist",
+                             "### test-target-mismatch",
+                             "### model-handoff-fallback-dir"):
             self.expect(trap_heading in review_text,
                         "review.md lacks the trap heading %r" % trap_heading)
         self.check_review_artifacts(primitives)
@@ -605,8 +608,12 @@ class Doctor:
                     % (breakdown.get("tiered_operations"),
                        sum((index.get("tiers") or {}).values())))
         self.expect(sorted(index.get("traps") or []) == [
-                        "env-dependent-fails", "offline-i18n-english-only",
+                        "env-dependent-fails",
+                        "model-handoff-fallback-dir",
+                        "offline-i18n-english-only",
                         "stale-target-artifact",
+                        "test-target-mismatch",
+                        "tmpdir-must-exist",
                         "union-resolve-drops-imports"],
                     "review-index traps are %r" % sorted(index.get("traps")))
         areas = os.listdir(os.path.join(self.out, "review"))
