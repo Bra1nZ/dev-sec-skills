@@ -105,6 +105,8 @@
         "kind": {"enum": ["early_return", "assert"]},
         "condition": {"type": "string"},
         "reject_when": {"enum": ["true", "false"]},
+        "macro": {"type": "string",
+                  "description": "Originating assert macro; debug_assert* marks an intentional fail-loud guard"},
         "anchor": {"$ref": "#/definitions/anchor"}
       }
     },

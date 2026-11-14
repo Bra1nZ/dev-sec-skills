@@ -4,12 +4,16 @@
 Five checks, and a status that is derived from them rather than written by hand:
 
 * ``anchor``   — every anchored primitive still hashes to the same snippet;
+  an anchor without a hash is ``unanchored`` (it was never valid), distinct
+  from ``stale`` (the file changed);
 * ``coverage`` — every required operation is decided, and every ``&mut self``
   operation is either guarded or explicitly ``no_guard_ok``. Test code is
   skipped by default (``--include-tests`` checks it as well), and a private
   read-only operation without a decision is counted as not required;
 * ``vacuity``  — a guard that can never hold (``false``, ``x == 1 && x == 2``)
-  makes every proof about it empty;
+  makes every proof about it empty. One exception, counted separately as
+  ``fail_loud_excluded``: ``debug_assert!(false, ...)`` is an intentional
+  fail-loud marker for an unreachable arm, not a silently dead guard;
 * ``dead_state`` — a field nobody reads or nobody writes;
 * ``theorem``  — an invariant that is a tautology, or one whose scope touches
   none of the state it names. An ``assert!`` invariant follows its operation:
@@ -128,8 +132,9 @@ def main(argv) -> int:
         root = (primitives.get("target") or {}).get("path") or info["path"]
 
         checks = []
-        counts = {"anchors": 0, "stale": 0, "missing": 0, "undecided": 0,
-                  "unguarded_mut_self": 0, "vacuity_hits": 0,
+        counts = {"anchors": 0, "stale": 0, "missing": 0, "unanchored": 0,
+                  "undecided": 0, "unguarded_mut_self": 0, "vacuity_hits": 0,
+                  "fail_loud_excluded": 0,
                   "dead_state": 0, "tautologies": 0, "not_required": 0,
                   "test_skipped": 0}
 
@@ -147,11 +152,17 @@ def main(argv) -> int:
                 counts["missing"] += 1
                 stale.append("%s: %s (%s)" % (label, anchor.get("path"),
                                               detail))
+            elif state == "unanchored":
+                counts["unanchored"] += 1
+                stale.append("%s: %s:%s-%s (%s)"
+                             % (label, anchor["path"], anchor["start"],
+                                anchor["end"], detail))
         checks.append({
             "id": "anchor",
             "status": "fail" if stale else "pass",
-            "detail": "%d anchors, %d stale, %d missing"
-                      % (counts["anchors"], counts["stale"], counts["missing"]),
+            "detail": "%d anchors, %d stale, %d missing, %d unanchored"
+                      % (counts["anchors"], counts["stale"], counts["missing"],
+                         counts["unanchored"]),
             "items": stale[:100],
         })
 
@@ -201,6 +212,11 @@ def main(argv) -> int:
         })
 
         # -- vacuity ------------------------------------------------------
+        # A guard that can never hold is vacuous. One exception, counted
+        # separately: debug_assert!(false, ...) is an intentional fail-loud
+        # marker for an unreachable arm (it fires in debug builds and is
+        # compiled out in release), not a silently dead guard. The five
+        # "vacuous" hits in craft-libs (Iteration 6) were all of this kind.
         vacuous = []
         for op in primitives.get("operations") or []:
             if op.get("test") and not args.include_tests:
@@ -211,7 +227,10 @@ def main(argv) -> int:
                 text = normalise(guard.get("condition"))
                 reason = None
                 if text in ("false", "!true"):
-                    reason = "condition is literally false"
+                    if str(guard.get("macro") or "").startswith("debug_assert"):
+                        counts["fail_loud_excluded"] += 1
+                    else:
+                        reason = "condition is literally false"
                 elif contradictory(text):
                     reason = contradictory(text)
                 if reason:
@@ -223,7 +242,10 @@ def main(argv) -> int:
         checks.append({
             "id": "vacuity",
             "status": "fail" if vacuous else "pass",
-            "detail": "%d hit(s)" % len(vacuous),
+            "detail": "%d hit(s)%s" % (len(vacuous),
+                                       ", %d fail-loud excluded"
+                                       % counts["fail_loud_excluded"]
+                                       if counts["fail_loud_excluded"] else ""),
             "items": vacuous[:100],
         })
 

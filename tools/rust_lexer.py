@@ -350,7 +350,16 @@ class _Scanner:
 
         self.tokens.append(Token(EOF, "", self.n, self.n, self.line, self.col))
         pairs = _bracket_map(self.tokens)
+        # Line count and texts must agree with model_primitives.split_lines:
+        # no invented last line after a trailing newline, CR dropped. This
+        # once kept split("\\n")'s trailing empty line, so the TCB anchor for
+        # a file ending in "}\n" ran one line past EOF (1..99 of 98 lines,
+        # sha256 None, and anchor_state reported "stale" forever even though
+        # the file never changed).
         lines = s.split("\n")
+        if lines and lines[-1] == "" and s.endswith("\n"):
+            lines.pop()
+        lines = [line[:-1] if line.endswith("\r") else line for line in lines]
         return Lexed(s, self.tokens, self.docs, pairs, lines)
 
 

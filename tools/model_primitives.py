@@ -101,7 +101,13 @@ def split_lines(text: str) -> list:
 
 def snippet(path: str, start: int, end: int) -> str:
     """The exact lines ``start..end`` (1-based, inclusive), joined by LF."""
-    lines = split_lines(read_source(path))
+    try:
+        lines = split_lines(read_source(path))
+    except (OSError, UnicodeDecodeError) as exc:
+        # A file the anchors cannot be computed against at all is a model
+        # error, not a crash: extraction saw the same file and anchored it,
+        # so check time must degrade to a state, not a traceback.
+        raise ModelError("cannot read %s: %s" % (path, exc)) from exc
     if start < 1 or end < start or end > len(lines):
         raise ModelError(
             "anchor out of range for %s: %d..%d of %d lines"
@@ -121,10 +127,15 @@ def make_anchor(path: str, start: int, end: int) -> dict:
 
 
 def anchor_state(anchor: dict, root: str) -> tuple:
-    """Return ``("fresh"|"stale"|"missing", detail)`` for one anchor."""
+    """Return ``("fresh"|"stale"|"missing"|"unanchored", detail)`` for one anchor."""
     path = anchor.get("path")
     if not path:
         return "missing", "anchor has no path"
+    if not anchor.get("sha256"):
+        # Distinct from "stale": an anchor without a hash was never valid,
+        # so it cannot mean the file changed (the EOF off-by-one once
+        # reported an unchanged file stale forever through this path).
+        return "unanchored", "anchor could not be hashed at extraction"
     full = path if os.path.isabs(path) else os.path.join(root, path)
     if not os.path.isfile(full):
         return "missing", "file not found: %s" % path

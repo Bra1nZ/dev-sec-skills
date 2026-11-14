@@ -353,6 +353,10 @@ class Extractor:
             "kind": "assert",
             "condition": condition.strip(),
             "reject_when": "false",
+            # The macro name distinguishes an intentional fail-loud marker
+            # (debug_assert!(false, ...) for an unreachable arm) from a
+            # silently vacuous assert!(false) in production logic.
+            "macro": t[i].text,
             "anchor": self._anchor_lines(lexed, i, close),
         }
 
