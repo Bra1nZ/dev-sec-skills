@@ -7,3 +7,4 @@ crosscheck/**/target/
 
 # Локальные заметки пользователя — не для репозитория.
 предложения.md
+REPORT-iteration6-findings.md

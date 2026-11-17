@@ -163,7 +163,10 @@ def case_append_and_verify(root, key, allowed):
     expect(proc, 0, ["appended 3 entries", "seq 1..3"], "append")
     expect(verify(repo, allowed), 0,
            ["J1 chain         OK", "J2 ledgers       OK", "J3 history       OK",
-            "J4 head anchor   OK", "total: 0 error(s), 0 warning(s), 0 info"],
+            "J4 head anchor   OK",
+            "J5 external anchor 0 error(s), 0 warning(s), 1 info",
+            "external anchor is not configured",
+            "total: 0 error(s), 0 warning(s), 1 info"],
            "verify")
     if len(entry_lines(repo)) != 3:
         raise Fail("append wrote %d lines, expected 3" % len(entry_lines(repo)))

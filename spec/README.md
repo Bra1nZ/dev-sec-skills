@@ -75,7 +75,7 @@ spec/
     allowed_signers              # committed public key(s); the private half is not here
     *.json{,.sig}                # 17 canonical subjects + detached signatures
   journal/                       # C-13: append-only verdict journal, signed head
-    README.md                     # threat model, checks J1-J4, limits
+    README.md                     # threat model, checks J1-J5, limits
     verdicts.jsonl                # one canonical JSON line per recorded verdict
     head.json{,.sig}              # signed head: last entry, file hash, ledger bytes
   proofs/

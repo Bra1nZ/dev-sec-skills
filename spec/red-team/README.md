@@ -136,12 +136,15 @@ rule detects a claim with no evidence of its own, not a mismatched assertion.
   document cannot quietly become stale.
 - The drills run `claim_lint --no-vale`: L5 prose scanning is not exercised here
   (L5 is covered by the linter evals and `make verify`).
+- If the local craft-i18n checkout is ahead of the recorded evidence commit, the
+  harness creates a temporary detached worktree at that commit and removes it
+  after the run; the source checkout is not advanced or reset.
 - Only the craft-i18n ledger is attacked. It is one pilot with nine claims; the
   rbac_pg ledger is external and has no run records, so the same attack there
   would test less.
 - The journal drills build a fresh journal from that ledger in a throw-away git
   repository. They exercise the gate against real claim text, not the
-  repository's committed journal; J1–J4 on the committed journal run in
+  repository's committed journal; J1–J5 on the committed journal run in
   `make verify` through the `journal` target.
 - The attacks are static edits to committed artifacts. A compromised tool, a
   rewritten CI job, or a forged GitHub artifact are outside this scope.

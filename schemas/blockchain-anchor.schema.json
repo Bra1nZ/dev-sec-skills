@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-sec-skills.invalid/schemas/blockchain-anchor.schema.json",
+  "title": "Blockchain anchor",
+  "description": "A canonical record binding one verdict journal head to one public blockchain transaction. It is a timestamping commitment, not evidence that the journaled claims are true and not, by itself, protection against an attacker who controls the repository and the anchoring pipeline.",
+  "type": "object",
+  "required": ["format", "journal_sha256", "journal_head", "journal_seq",
+               "chain", "network", "txid", "confirmations",
+               "provider", "anchored_at"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "dev-sec-skills/blockchain-anchor/1"
+    },
+    "journal_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the exact journal bytes anchored by the transaction."
+    },
+    "journal_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Hash of the last journal entry."
+    },
+    "journal_seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "chain": {
+      "enum": ["bitcoin", "ethereum"]
+    },
+    "network": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Chain-specific network, for example mainnet, testnet3, testnet4 or sepolia."
+    },
+    "txid": {
+      "type": "string",
+      "description": "Transaction containing the journal digest."
+    },
+    "block_height": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Block containing the transaction, when known."
+    },
+    "block_hash": {
+      "type": "string",
+      "description": "Hash of the block containing the transaction, when known."
+    },
+    "confirmations": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Confirmations observed when the record was created."
+    },
+    "inclusion_proof": {
+      "type": "object",
+      "description": "Provider-specific merkle or receipt proof. Its semantics are declared by provider, so this schema only preserves its bytes."
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the wallet, node or service used to publish the commitment."
+    },
+    "provider_output_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the provider's raw JSON output at publication time."
+    },
+    "anchored_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 publication or observation time with an offset."
+    }
+  }
+}

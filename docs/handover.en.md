@@ -59,9 +59,9 @@ same gates minus the pilot checkouts, and that is what CI runs.
 
 | Command | What it checks | Needs siblings | In CI |
 | --- | --- | --- | --- |
-| `make verify-ci` | evals, the self-pilot registry and ledger, the journal J1–J4, `unroutable`, invariants, `status-pilot2` | no | yes |
+| `make verify-ci` | evals, the self-pilot registry and ledger, the journal J1–J5, `unroutable`, invariants, `status-pilot2` | no | yes |
 | `make verify` | the same plus both pilot registries, their ledgers and the coverage report | yes | no |
-| `make journal` | J1–J4: the chain, ledger agreement, the prefix against `HEAD`, the canonical head and its signature | no | yes |
+| `make journal` | J1–J5: the chain, ledger agreement, the prefix against `HEAD`, the canonical head and its signature; J5 is enabled by `TRANSPARENCY_GATE=1` | no | yes |
 | `make journal-append` | appends changed verdicts and re-signs the head; needs the private key | no | no |
 | `make red-team` | 20 attacks on the real artifacts: 18 blocked, 2 allowed (recorded holes) | yes | no |
 | `make verify-all` | `verify` plus both mutation batches (PostgreSQL and cargo) | yes | no |
@@ -79,8 +79,13 @@ the first ledger edit.
    bypassed by editing the gate.
 3. If a claim's status or its evidence identity changed — `make journal-append`.
    The gate refuses to continue a broken chain, head or history.
-4. Commit. If the journal changed, it and the head signature travel in the same
-   commit as the ledger; otherwise J2/J4 go red.
+4. If the journal changed — re-anchor the head on Rekor staging and commit the
+   new anchor artifact in the same commit (procedure:
+   `spec/anchor/transparency/README.md`, section "Re-anchoring ritual"). CI
+   runs `make verify-ci TRANSPARENCY_GATE=1`: a commit with new journal bytes
+   and a stale anchor goes red.
+5. Commit. If the journal changed, it, the head signature and the anchor travel
+   in the same commit as the ledger; otherwise J2/J4/J5 go red.
 
 A claim's status does not rise without new evidence — `tools/status_diff.py`
 enforces that. A prose, `limitations` or `note` edit is not new evidence; it
@@ -93,6 +98,7 @@ re-signs the head without adding an entry.
 | --- | --- | --- | --- |
 | `dev-sec-skills-anchor-2026-11-07` | **lost** (was in `/tmp`) | `spec/anchor/allowed_signers` | 13 older anchors |
 | `dev-sec-skills-anchor-2026-11-08` | `~/.config/dev-sec-skills/anchor/key` (600) | same directory | 4 anchors, the journal head |
+| Rekor signer (one-off, 2026-11-17) | `~/.config/dev-sec-skills/anchor/rekor-rsa-key.pem` (600) | `spec/anchor/transparency/rekor-signer-cert.pem` | the hashedrekord entry on Rekor staging over `head.json` seq 15; self-signed, 24-hour validity, not a project identity |
 
 - Private keys never enter the repository; `allowed_signers` is public and
   committed.
@@ -112,10 +118,13 @@ The open holes are recorded in the claims and in the concept; here is the map:
   characters through. The claim is open; the evidence is a probe under
   `spec/pilots/craft-i18n/probes/`.
 - **C-13** — the journal closes silent rewriting of the past within one key
-  holder. There is no transparency log, timestamping or revocation; the key
-  holder, or anyone who can replace `allowed_signers` and rewrite git history,
-  bypasses everything. The red-team drill `rewrite-journal-and-resign` is
-  recorded as `allowed`.
+  holder. One Rekor staging entry exists (2026-11-17, head seq 15), but its
+  signer is a one-off self-signed certificate; there is no durable
+  transparency signer, no timestamping guarantee beyond staging and no
+  revocation; the key holder, or anyone who can replace `allowed_signers` and
+  rewrite git history, still bypasses everything — a new log entry cannot
+  delete the old one, and only an external observer sees the divergence. The
+  red-team drill `rewrite-journal-and-resign` is recorded as `allowed`.
 - **C-07…C-12** — hypotheses: no product runs, no statistics.
 - **V2-33** — the product-trial boundary is filled when the first product
   sprint opens.

@@ -27,6 +27,12 @@ evidence-first contract. The ledger turns the prose discipline of
 - `proof-manifest.schema.json` — JSON Schema (draft-07) for the proof manifest
   (V2-29), read by `../tools/proof_plan.py`; it declares which code, model,
   encoding and tooling a proof depends on.
+- `transparency-anchor.schema.json` — canonical Rekor/SCITT anchor for one
+  verdict-journal head (C-13), written and checked by
+  `../tools/transparency_anchor.py`.
+- `blockchain-anchor.schema.json` — optional second public timestamp for the
+  same journal head (C-13), written and checked by
+  `../tools/blockchain_anchor.py`.
 - `../tools/claim_lint.py` — the linter (Python 3 stdlib; PyYAML for `.yaml` ledgers).
 
 ## Ledger format

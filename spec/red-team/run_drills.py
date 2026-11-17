@@ -50,8 +50,26 @@ if os.path.join(REPO, "tools") not in sys.path:
     sys.path.insert(0, os.path.join(REPO, "tools"))
 import anchor_subject  # noqa: E402
 import verdict_journal  # noqa: E402
-PILOT2_ROOT = os.path.normpath(os.path.join(REPO, "..", "astraoffice",
-                                            "craft-i18n"))
+PILOT2_COMMIT = "5c5c55400e8f7f4ee4f64a64dc196335a6a1f256"
+
+
+def _pilot2_source():
+    configured = os.environ.get("CRAFT_I18N_ROOT")
+    if configured:
+        return os.path.normpath(configured)
+    candidates = (
+        os.path.join(REPO, "..", "astraoffice", "craft-i18n"),
+        os.path.join(REPO, "..", "craft-i18n"),
+    )
+    for candidate in candidates:
+        candidate = os.path.normpath(candidate)
+        if os.path.isdir(candidate):
+            return candidate
+    return None
+
+
+PILOT2_SOURCE = _pilot2_source()
+PILOT2_ROOT = PILOT2_SOURCE or ""
 LEDGER = os.path.join(REPO, "spec", "pilots", "craft-i18n", "claims.yaml")
 REGISTRY = os.path.join(REPO, "spec", "pilots", "craft-i18n", "cells.yaml")
 SUITE_GLOB = "crates/craft-i18n-tests/**/*.rs"
@@ -640,6 +658,31 @@ def check_stand():
     return None
 
 
+def prepare_pilot2(td):
+    """Return a read-only craft-i18n tree at the recorded evidence commit."""
+    global PILOT2_ROOT
+    if PILOT2_SOURCE is None:
+        PILOT2_ROOT = os.path.normpath(os.path.join(
+            REPO, "..", "craft-i18n"))
+        return
+    proc = subprocess.run(
+        ["git", "-C", PILOT2_SOURCE, "rev-parse", "--verify",
+         PILOT2_COMMIT + "^{commit}"], capture_output=True, text=True)
+    if proc.returncode != 0:
+        PILOT2_ROOT = PILOT2_SOURCE
+        return
+    head = subprocess.run(["git", "-C", PILOT2_SOURCE, "rev-parse", "HEAD"],
+                          capture_output=True, text=True)
+    if head.returncode == 0 and head.stdout.strip() == PILOT2_COMMIT:
+        PILOT2_ROOT = PILOT2_SOURCE
+        return
+    worktree = os.path.join(td, "craft-i18n")
+    subprocess.run(
+        ["git", "-C", PILOT2_SOURCE, "worktree", "add", "--detach",
+         "--quiet", worktree, PILOT2_COMMIT], check=True, capture_output=True)
+    PILOT2_ROOT = worktree
+
+
 def run_drill(drill):
     td = tempfile.mkdtemp(prefix="red-team-%s-" % drill["name"])
     problems = []
@@ -672,64 +715,75 @@ def main():
     ap.add_argument("--only", default=None, help="run one drill by name")
     args = ap.parse_args()
 
-    stand = check_stand()
-    if stand:
-        print("error: %s" % stand, file=sys.stderr)
-        return 2
-
-    drills = DRILLS
-    if args.only:
-        drills = [d for d in DRILLS if d["name"] == args.only]
-        if not drills:
-            print("error: unknown drill %s" % args.only, file=sys.stderr)
+    pilot_td = tempfile.mkdtemp(prefix="red-team-pilot-")
+    try:
+        prepare_pilot2(pilot_td)
+        stand = check_stand()
+        if stand:
+            print("error: %s" % stand, file=sys.stderr)
             return 2
 
-    rows, failed = [], 0
-    for drill in drills:
-        problems = run_drill(drill)
-        if problems:
-            failed += 1
-            print("FAIL %-34s %s" % (drill["name"], drill["verdict"]))
-            for problem in problems:
-                print("     %s" % problem)
-            rows.append({"name": drill["name"], "verdict": drill["verdict"],
-                         "attack": drill["attack"], "problems": problems})
-        else:
-            print("ok   %-34s %-7s %s"
-                  % (drill["name"], drill["verdict"], drill["attack"]))
-            row = {"name": drill["name"], "verdict": drill["verdict"],
-                   "attack": drill["attack"]}
-            if drill.get("gap"):
-                row["gap"] = drill["gap"]
-            rows.append(row)
+        drills = DRILLS
+        if args.only:
+            drills = [d for d in DRILLS if d["name"] == args.only]
+            if not drills:
+                print("error: unknown drill %s" % args.only, file=sys.stderr)
+                return 2
 
-    blocked = sum(1 for r in rows if r["verdict"] == "blocked")
-    allowed = sum(1 for r in rows if r["verdict"] == "allowed")
-    print("%d/%d drills matched: %d blocked, %d allowed by a recorded gap"
-          % (len(rows) - failed, len(rows), blocked, allowed))
+        rows, failed = [], 0
+        for drill in drills:
+            problems = run_drill(drill)
+            if problems:
+                failed += 1
+                print("FAIL %-34s %s" % (drill["name"], drill["verdict"]))
+                for problem in problems:
+                    print("     %s" % problem)
+                rows.append({"name": drill["name"], "verdict": drill["verdict"],
+                             "attack": drill["attack"], "problems": problems})
+            else:
+                print("ok   %-34s %-7s %s"
+                      % (drill["name"], drill["verdict"], drill["attack"]))
+                row = {"name": drill["name"], "verdict": drill["verdict"],
+                       "attack": drill["attack"]}
+                if drill.get("gap"):
+                    row["gap"] = drill["gap"]
+                rows.append(row)
 
-    if args.record:
-        stamp = datetime.now().date().isoformat()
-        if os.path.basename(args.record)[:10] != stamp:
-            print("note: record name does not start with the run date %s" % stamp)
-        payload = {
-            "format": "dev-sec-skills/red-team/v1",
-            "date": stamp,
-            "ledger": os.path.relpath(LEDGER, REPO),
-            "registry": os.path.relpath(REGISTRY, REPO),
-            "drills": rows,
-            "summary": {"drills": len(rows), "blocked": blocked,
-                        "allowed": allowed, "failed": failed},
-        }
-        parent = os.path.dirname(os.path.abspath(args.record))
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        with open(args.record, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        print("record written to %s" % args.record)
+        blocked = sum(1 for r in rows if r["verdict"] == "blocked")
+        allowed = sum(1 for r in rows if r["verdict"] == "allowed")
+        print("%d/%d drills matched: %d blocked, %d allowed by a recorded gap"
+              % (len(rows) - failed, len(rows), blocked, allowed))
 
-    return 1 if failed else 0
+        if args.record:
+            stamp = datetime.now().date().isoformat()
+            if os.path.basename(args.record)[:10] != stamp:
+                print("note: record name does not start with the run date %s"
+                      % stamp)
+            payload = {
+                "format": "dev-sec-skills/red-team/v1",
+                "date": stamp,
+                "ledger": os.path.relpath(LEDGER, REPO),
+                "registry": os.path.relpath(REGISTRY, REPO),
+                "drills": rows,
+                "summary": {"drills": len(rows), "blocked": blocked,
+                            "allowed": allowed, "failed": failed},
+            }
+            parent = os.path.dirname(os.path.abspath(args.record))
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            with open(args.record, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+            print("record written to %s" % args.record)
+
+        return 1 if failed else 0
+    finally:
+        if PILOT2_SOURCE and PILOT2_ROOT \
+                and os.path.realpath(PILOT2_ROOT) != os.path.realpath(PILOT2_SOURCE):
+            subprocess.run(
+                ["git", "-C", PILOT2_SOURCE, "worktree", "remove", "--force",
+                 PILOT2_ROOT], capture_output=True)
+        shutil.rmtree(pilot_td, ignore_errors=True)
 
 
 if __name__ == "__main__":

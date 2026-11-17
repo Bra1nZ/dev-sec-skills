@@ -148,6 +148,49 @@ PROOF_HEAD ?= HEAD
 # need that checkout and are a point-in-time audit, so they are not in `verify`.
 RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
 
+# Optional blockchain timestamp for the verdict journal (C-13). Publishing
+# always needs an explicit wallet command and timestamp; the tool never assumes
+# network access. `verify-blockchain-anchor` without BLOCKCHAIN_VERIFY_COMMAND
+# checks the local binding only and says so.
+BLOCKCHAIN_ANCHOR ?= spec/anchor/blockchain/journal-latest.json
+BLOCKCHAIN_CHAIN ?= bitcoin
+BLOCKCHAIN_NETWORK ?= testnet4
+BLOCKCHAIN_PROVIDER ?= wallet-cli
+BLOCKCHAIN_MIN_CONFIRMATIONS ?= 1
+BLOCKCHAIN_PUBLISH_COMMAND ?=
+BLOCKCHAIN_VERIFY_COMMAND ?=
+BLOCKCHAIN_ANCHORED_AT ?=
+
+# Primary external anchor (C-13). The adapter is offline until an operator
+# passes an explicit Rekor/SCITT publish command. Set TRANSPARENCY_GATE=1 once
+# the committed anchor should become part of `make journal`.
+TRANSPARENCY_ANCHOR ?= spec/anchor/transparency/journal-latest.json
+TRANSPARENCY_KIND ?= rekor
+TRANSPARENCY_PROVIDER ?= rekor-staging
+TRANSPARENCY_SERVER ?= https://rekor.sigstage.dev
+TRANSPARENCY_SIGNATURE ?= spec/anchor/transparency/journal-seq15-head.sig
+TRANSPARENCY_PUBLIC_KEY ?= spec/anchor/transparency/rekor-signer-cert.pem
+TRANSPARENCY_SIGNER ?= dev-sec-skills-anchor-2026-11-08
+TRANSPARENCY_SIGNATURE_NAMESPACE ?= dev-sec-skills-verdict-journal
+TRANSPARENCY_PAYLOAD_KIND ?= hashedrekord
+TRANSPARENCY_SIGNATURE_FORMAT ?= x509
+TRANSPARENCY_PUBLISH_COMMAND ?= python3 tools/rekor_adapter.py publish --request {request}
+TRANSPARENCY_VERIFY_COMMAND ?= python3 tools/rekor_adapter.py verify --anchor {anchor} --head {head} --signature {signature} --public-key {public_key} --signer {signer} --signature-namespace {signature_namespace} --payload-kind {payload_kind} --signature-format {signature_format}
+TRANSPARENCY_ANCHORED_AT ?=
+TRANSPARENCY_GATE ?= 0
+TRANSPARENCY_REQUIRE_PROVIDER ?= 0
+TRANSPARENCY_REQUIRE_INCLUSION ?= 0
+
+TRANSPARENCY_PUBLISH_FLAGS = $(if $(filter 1,$(TRANSPARENCY_REQUIRE_INCLUSION)),--require-inclusion,)
+TRANSPARENCY_VERIFY_FLAGS = \
+	$(if $(filter 1,$(TRANSPARENCY_REQUIRE_PROVIDER)),--require-provider,) \
+	$(if $(filter 1,$(TRANSPARENCY_REQUIRE_INCLUSION)),--require-inclusion,)
+TRANSPARENCY_VERIFY_ARGS = $(subst {signature},$(TRANSPARENCY_SIGNATURE),$(subst {public_key},$(TRANSPARENCY_PUBLIC_KEY),$(subst {signer},$(TRANSPARENCY_SIGNER),$(subst {signature_namespace},$(TRANSPARENCY_SIGNATURE_NAMESPACE),$(subst {payload_kind},$(TRANSPARENCY_PAYLOAD_KIND),$(subst {signature_format},$(TRANSPARENCY_SIGNATURE_FORMAT),$(TRANSPARENCY_VERIFY_COMMAND)))))))
+TRANSPARENCY_JOURNAL_FLAGS = \
+	$(if $(filter 1,$(TRANSPARENCY_GATE)),--transparency-anchor "$(TRANSPARENCY_ANCHOR)",) \
+	$(if $(filter 1,$(TRANSPARENCY_GATE)),--require-transparency,) \
+	$(if $(filter 1,$(TRANSPARENCY_GATE)),$(if $(TRANSPARENCY_VERIFY_COMMAND),--transparency-verify-command "$(TRANSPARENCY_VERIFY_ARGS)",),)
+
 .PHONY: verify verify-all verify-repo verify-pilot verify-pilot2 verify-self evals lint-seed \
         lint-pilot lint-pilot2 lint-self claims-pilot claims-pilot2 claims-self status-pilot \
         status-pilot2 claims-static-rbac unroutable coverage coverage-record diff-coverage \
@@ -158,7 +201,9 @@ RED_TEAM_RECORD ?= spec/red-team/2026-11-08-drills.json
         concurrency-rbac concurrency-rbac-mutants \
         model-doctor model-init model-scan model-extract model-review model-gen \
         model-check model-report model-handoff model-validate \
-        journal journal-append verify-ci detectors-self help
+        journal journal-append anchor-transparency verify-transparency-anchor \
+        anchor-blockchain verify-blockchain-anchor \
+        verify-ci detectors-self help
 
 verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable coverage invariants
 
@@ -198,6 +243,8 @@ evals:
 	$(PYTHON) evals/proof-plan/run_evals.py
 	$(PYTHON) evals/bootstrap/run_evals.py
 	$(PYTHON) evals/journal/run_evals.py
+	$(PYTHON) evals/transparency-anchor/run_evals.py
+	$(PYTHON) evals/blockchain-anchor/run_evals.py
 
 lint-seed:
 	@echo "== CL1-CL6: seed registry =="
@@ -378,14 +425,50 @@ detectors-self:
 	$(PYTHON) spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py
 
 journal:
-	@echo "== J1-J4: append-only verdict journal (C-13) =="
+	@echo "== J1-J5: append-only verdict journal (C-13) =="
 	$(PYTHON) tools/verdict_journal.py verify \
 	  --journal "$(JOURNAL)" \
 	  --head "$(JOURNAL_HEAD)" \
 	  $(foreach l,$(JOURNAL_LEDGERS),--ledger "$(l)") \
 	  --allowed-signers spec/anchor/allowed_signers \
 	  --git-ref "$(BASE_REF)" \
-	  $(if $(filter 1,$(JOURNAL_FIRST_RELEASE)),--first-release)
+	  $(if $(filter 1,$(JOURNAL_FIRST_RELEASE)),--first-release) \
+	  $(TRANSPARENCY_JOURNAL_FLAGS)
+
+anchor-transparency:
+	@echo "== primary C-13 Rekor/SCITT anchor =="
+	@test -n "$(TRANSPARENCY_PUBLISH_COMMAND)" || { echo "$@: set TRANSPARENCY_PUBLISH_COMMAND='<adapter command with {digest} and {request}>'" >&2; exit 2; }
+	@test -n "$(TRANSPARENCY_ANCHORED_AT)" || { echo "$@: set TRANSPARENCY_ANCHORED_AT=<ISO 8601 timestamp>" >&2; exit 2; }
+	@test ! -f "$(TRANSPARENCY_ANCHOR)" || { echo "$@: anchor already exists: $(TRANSPARENCY_ANCHOR)" >&2; exit 2; }
+	$(PYTHON) tools/transparency_anchor.py \
+	  --kind "$(TRANSPARENCY_KIND)" --provider "$(TRANSPARENCY_PROVIDER)" \
+	  --server "$(TRANSPARENCY_SERVER)" \
+	  --signature "$(TRANSPARENCY_SIGNATURE)" \
+	  --public-key "$(TRANSPARENCY_PUBLIC_KEY)" \
+	  --signer "$(TRANSPARENCY_SIGNER)" \
+	  --signature-namespace "$(TRANSPARENCY_SIGNATURE_NAMESPACE)" \
+	  --payload-kind "$(TRANSPARENCY_PAYLOAD_KIND)" \
+	  --signature-format "$(TRANSPARENCY_SIGNATURE_FORMAT)" \
+	  --anchored-at "$(TRANSPARENCY_ANCHORED_AT)" \
+	  publish --journal "$(JOURNAL)" --head "$(JOURNAL_HEAD)" \
+	  --publish-command "$(TRANSPARENCY_PUBLISH_COMMAND)" \
+	  --out "$(TRANSPARENCY_ANCHOR)" $(TRANSPARENCY_PUBLISH_FLAGS)
+
+verify-transparency-anchor:
+	@echo "== primary C-13 transparency anchor =="
+	@test -f "$(TRANSPARENCY_ANCHOR)" || { echo "$@: anchor not found: $(TRANSPARENCY_ANCHOR)" >&2; exit 2; }
+	$(PYTHON) tools/transparency_anchor.py \
+	  --kind "$(TRANSPARENCY_KIND)" \
+	  --server "$(TRANSPARENCY_SERVER)" \
+	  --signature "$(TRANSPARENCY_SIGNATURE)" \
+	  --public-key "$(TRANSPARENCY_PUBLIC_KEY)" \
+	  --signer "$(TRANSPARENCY_SIGNER)" \
+	  --signature-namespace "$(TRANSPARENCY_SIGNATURE_NAMESPACE)" \
+	  --payload-kind "$(TRANSPARENCY_PAYLOAD_KIND)" \
+	  --signature-format "$(TRANSPARENCY_SIGNATURE_FORMAT)" \
+	  verify --anchor "$(TRANSPARENCY_ANCHOR)" --journal "$(JOURNAL)" --head "$(JOURNAL_HEAD)" \
+	  $(if $(TRANSPARENCY_VERIFY_COMMAND),--verify-command "$(TRANSPARENCY_VERIFY_COMMAND)",) \
+	  $(TRANSPARENCY_VERIFY_FLAGS)
 
 journal-append:
 	@echo "== journal: append changed verdicts and re-sign the head =="
@@ -398,6 +481,28 @@ journal-append:
 	  $(if $(filter 1,$(JOURNAL_FIRST_RELEASE)),--first-release) \
 	  --key "$(JOURNAL_KEY)" \
 	  --signer "$(JOURNAL_SIGNER)"
+
+anchor-blockchain:
+	@echo "== optional C-13 blockchain timestamp =="
+	@test -n "$(BLOCKCHAIN_PUBLISH_COMMAND)" || { echo "$@: set BLOCKCHAIN_PUBLISH_COMMAND='<wallet command with {digest} and {request}>'" >&2; exit 2; }
+	@test -n "$(BLOCKCHAIN_ANCHORED_AT)" || { echo "$@: set BLOCKCHAIN_ANCHORED_AT=<ISO 8601 timestamp>" >&2; exit 2; }
+	@test ! -f "$(BLOCKCHAIN_ANCHOR)" || { echo "$@: anchor already exists: $(BLOCKCHAIN_ANCHOR)" >&2; exit 2; }
+	$(PYTHON) tools/blockchain_anchor.py \
+	  --chain "$(BLOCKCHAIN_CHAIN)" --network "$(BLOCKCHAIN_NETWORK)" \
+	  --provider "$(BLOCKCHAIN_PROVIDER)" --anchored-at "$(BLOCKCHAIN_ANCHORED_AT)" \
+	  --min-confirmations "$(BLOCKCHAIN_MIN_CONFIRMATIONS)" \
+	  publish --journal "$(JOURNAL)" --head "$(JOURNAL_HEAD)" \
+	  --publish-command "$(BLOCKCHAIN_PUBLISH_COMMAND)" \
+	  --out "$(BLOCKCHAIN_ANCHOR)"
+
+verify-blockchain-anchor:
+	@echo "== optional C-13 blockchain anchor =="
+	@test -f "$(BLOCKCHAIN_ANCHOR)" || { echo "$@: anchor not found: $(BLOCKCHAIN_ANCHOR)" >&2; exit 2; }
+	$(PYTHON) tools/blockchain_anchor.py \
+	  --chain "$(BLOCKCHAIN_CHAIN)" --network "$(BLOCKCHAIN_NETWORK)" \
+	  --min-confirmations "$(BLOCKCHAIN_MIN_CONFIRMATIONS)" \
+	  verify --anchor "$(BLOCKCHAIN_ANCHOR)" --journal "$(JOURNAL)" --head "$(JOURNAL_HEAD)" \
+	  $(if $(BLOCKCHAIN_VERIFY_COMMAND),--verify-command "$(BLOCKCHAIN_VERIFY_COMMAND)",)
 
 unroutable:
 	@echo "== U: unroutable share of the pilot taxonomies (V2-25) =="
@@ -678,8 +783,12 @@ help:
 	@echo "  crosscheck-c02-mutants  every named model edit must be detected"
 	@echo "  red-team      attack the real pilot ledger/log/registry; 13 blocked, 1 recorded gap"
 	@echo "  red-team-record  rewrite spec/red-team/2026-11-08-drills.json"
-	@echo "  journal       J1-J4: the verdict journal chain, ledger agreement, history and signed head"
+	@echo "  journal       J1-J5: the verdict journal chain, ledgers, history, head and external anchor"
 	@echo "  journal-append  append changed verdicts and re-sign the head (needs JOURNAL_KEY outside the repo)"
+	@echo "  anchor-transparency  publish the primary Rekor/SCITT anchor for the journal head"
+	@echo "  verify-transparency-anchor  check the primary journal-head transparency anchor"
+	@echo "  anchor-blockchain  publish an optional public timestamp for the journal head"
+	@echo "  verify-blockchain-anchor  check the optional journal-head timestamp"
 	@echo "  verify-ci     the CI subset: gates that need no checkout outside this repository"
 	@echo "  model-doctor  preflight the conveyor, run the fixture end to end, prove three gates can fail"
 	@echo "  model-init    TARGET=... create the model working directory (bounds example, JOURNAL.md)"

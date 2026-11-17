@@ -44,6 +44,9 @@ Checks:
                 the working file (a truncated or rewritten history is visible)
   J4 head       the head is canonical, names the last entry and the file hash,
                 and its signature verifies against allowed_signers
+  J5 external   with --transparency-anchor, the head is bound to a Rekor or
+                SCITT entry; --require-transparency makes a missing anchor
+                fail, and --transparency-verify-command asks the provider too
 
 Exit codes: 0 ok, 1 a violation, 2 usage/input/tool error.
 
@@ -52,7 +55,9 @@ Usage:
         --journal spec/journal/verdicts.jsonl --head spec/journal/head.json \\
         --ledger spec/pilots/dev-sec-skills/claims.yaml \\
         --ledger spec/pilots/craft-i18n/claims.yaml \\
-        --allowed-signers spec/anchor/allowed_signers --git-ref HEAD
+        --allowed-signers spec/anchor/allowed_signers --git-ref HEAD \\
+        --transparency-anchor spec/anchor/transparency/journal-latest.json \\
+        --require-transparency
 
     python3 tools/verdict_journal.py append \\
         --journal spec/journal/verdicts.jsonl --head spec/journal/head.json \\
@@ -80,6 +85,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import anchor_subject  # noqa: E402
 import status_diff  # noqa: E402
+import transparency_anchor  # noqa: E402
 
 GENESIS = "0" * 64
 NAMESPACE = anchor_subject.VERDICT_JOURNAL_NAMESPACE
@@ -462,6 +468,44 @@ def check_head(journal, head_path, allowed_signers, first_release, findings,
                                        "utf-8", "replace").strip())))
 
 
+def check_transparency(args, journal, head_path, findings):
+    """J5: the signed head is bound to the declared external anchor.
+
+    Without `--transparency-anchor`, J5 reports an unconfigured-channel info.
+    When an anchor path is passed, a missing artifact is fail-loud unless this
+    is a first release. `--require-transparency` turns even an unconfigured
+    channel into an error, so CI cannot silently forget the external anchor.
+    """
+    anchor_path = getattr(args, "transparency_anchor", None)
+    require = getattr(args, "require_transparency", False)
+    provider_command = getattr(args, "transparency_verify_command", None)
+    if not anchor_path:
+        if require or provider_command:
+            findings.append(Finding("J5", "error",
+                                    "external anchor required, but "
+                                    "--transparency-anchor is not set"))
+        else:
+            findings.append(Finding("J5", "info",
+                                    "external anchor is not configured"))
+        return
+    if not os.path.exists(anchor_path):
+        if getattr(args, "first_release", False):
+            findings.append(Finding("J5", "info",
+                                    "no transparency anchor at %s; first release, "
+                                    "external gate skipped" % anchor_path))
+        else:
+            findings.append(Finding("J5", "error",
+                                    "transparency anchor not found: %s"
+                                    % anchor_path))
+        return
+    try:
+        transparency_anchor.verify_binding(
+            anchor_path, journal, head_path, provider_command,
+            require_provider=bool(provider_command))
+    except transparency_anchor.AnchorError as exc:
+        findings.append(Finding("J5", "error", str(exc)))
+
+
 def report(label, sections, findings):
     errors = [f for f in findings if f.severity == "error"]
     warnings = [f for f in findings if f.severity == "warning"]
@@ -498,8 +542,10 @@ def verify(args):
                   open(args.journal, "rb").read(), findings)
     check_head(args.journal, args.head, args.allowed_signers,
                args.first_release, findings, pairs)
+    check_transparency(args, args.journal, args.head, findings)
     return report(label, (("J1", "chain"), ("J2", "ledgers"),
-                          ("J3", "history"), ("J4", "head anchor")), findings)
+                          ("J3", "history"), ("J4", "head anchor"),
+                          ("J5", "external anchor")), findings)
 
 
 def signer_key_matches(allowed_signers, signer, key):
@@ -684,8 +730,17 @@ def main():
         parser.add_argument("--first-release", action="store_true",
                             help="allow a missing journal or head at the base ref")
 
+    def transparency(parser):
+        parser.add_argument("--transparency-anchor", default=None,
+                            help="Rekor/SCITT anchor for this journal head")
+        parser.add_argument("--transparency-verify-command", default=None,
+                            help="independent provider verification command")
+        parser.add_argument("--require-transparency", action="store_true",
+                            help="fail if no external anchor is configured")
+
     check = sub.add_parser("verify", help="verify the chain, ledgers, history and head")
     common(check)
+    transparency(check)
     check.set_defaults(func=verify)
 
     add = sub.add_parser("append", help="append changed verdicts and re-sign the head")
@@ -706,6 +761,8 @@ def main():
     args.journal = inside(args.journal)
     args.head = inside(args.head)
     args.allowed_signers = inside(args.allowed_signers)
+    if getattr(args, "transparency_anchor", None):
+        args.transparency_anchor = inside(args.transparency_anchor)
     if args.command == "append":
         args.key = os.path.abspath(os.path.expanduser(args.key))
         if args.date is None:

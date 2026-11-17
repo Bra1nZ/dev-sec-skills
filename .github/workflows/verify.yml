@@ -45,4 +45,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check pyyaml
 
       - name: Run the self-sufficient gates
-        run: make verify-ci
+        # TRANSPARENCY_GATE=1: J5 fails closed. Any commit that changes the
+        # journal bytes must publish a fresh Rekor entry and commit the new
+        # anchor artifact in the same commit (see docs/handover.md).
+        run: make verify-ci TRANSPARENCY_GATE=1

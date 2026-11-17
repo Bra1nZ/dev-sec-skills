@@ -72,10 +72,10 @@ no verdict, so J2 stays green, but it does change the bytes the signer
 attested to. After such an edit `append` re-signs the head over the same chain
 instead of inventing an entry.
 
-## Checks (J1–J4)
+## Checks (J1–J5)
 
 ```bash
-make journal                 # J1-J4 with --git-ref HEAD
+make journal                 # J1-J4 with --git-ref HEAD; J5 when TRANSPARENCY_GATE=1
 make journal-append          # append changed verdicts and re-sign the head
 ```
 
@@ -85,10 +85,12 @@ make journal-append          # append changed verdicts and re-sign the head
 | **J2 ledgers** | a claim with no entry, a status or evidence set that disagrees with the ledger, a retired claim whose last entry is not `retired`, an entry for a claim that vanished without a tombstone, a journal entry naming a ledger that was not passed |
 | **J3 history** | with `--git-ref`: a working journal that no longer has the committed one as a byte prefix (delete, reorder, rewrite, truncate) |
 | **J4 head** | a head that is not canonical JSON, does not name the last entry or the file hash, names different ledger bytes, or whose signature does not verify against `spec/anchor/allowed_signers` |
+| **J5 external anchor** | with `TRANSPARENCY_GATE=1`: a missing Rekor/SCITT artifact or a journal/head that no longer matches the anchored `journal_sha256`, `journal_head` and `journal_seq`; an optional provider command can also verify the log receipt. Without the flag it reports `info: external anchor is not configured` |
 
 Before the journal lands in a commit there is no base to compare against, so
-the first release runs with `JOURNAL_FIRST_RELEASE=1`; J3 and J4 then report
-`info` instead of an error. After that commit the flag must be `0`.
+the first release runs with `JOURNAL_FIRST_RELEASE=1`; J3, J4 and a configured
+but missing J5 anchor then report `info` instead of an error. After that commit
+the flag must be `0`.
 
 `append` is atomic: it builds the new journal and head as temporary files,
 signs the temporary head, and only then replaces the originals. A signing
@@ -115,9 +117,15 @@ to be an explicit edit.
 | prove *when* a verdict was journaled | **not provable** | no timestamping authority |
 | revoke a leaked key | **not supported** | no revocation list; rotation alone leaves old signatures valid |
 
-The two `allowed` rows are the rest of C-13 (Rekor/SCITT, in-toto/Sigstore, a
-timestamping authority, key revocation). This journal narrows silent rewriting;
-it does not make the verdicts independent of whoever holds the key.
+Rekor/SCITT is implemented as an adapter (`spec/anchor/transparency/README.md`)
+and one real Rekor staging entry anchors the seq-15 head (2026-11-17). The
+signer is a one-off self-signed x509 certificate, so the entry proves external
+ordering and availability, not a project identity. Key revocation and a durable
+transparency signer remain separate gaps; the second residual row still
+applies to them. Once an anchor is committed and gated (`TRANSPARENCY_GATE=1`,
+enabled in CI), an attacker can build a new history and publish a new entry,
+but cannot remove the old entry; the divergence is visible to an external
+observer.
 
 ## Backfill
 
@@ -133,13 +141,22 @@ one `append`, followed by one signed head. Later verdicts are appended one
 change at a time, so the journal grows by exactly what changed: entry 12 is
 C-42 itself, journaled the day it was claimed.
 
-## Measured state (2026-11-08)
+## Measured state (2026-11-08; transparency anchor 2026-11-17)
 
-- 12 entries, seq 1..12, head `09721e562461`; signer
+- 15 entries, seq 1..15, head `b6052df36a66`; signer
   `dev-sec-skills-anchor-2026-11-08`
   (`SHA256:cYwKmirE4uQiSRaM9qCrRnQ7mn0wjnSN4k0wRgRnyUk`).
-- `make journal` → J1–J4 OK, 0 errors.
+- `make journal` → J1–J4 with 0 errors; J5 reports info unless
+  `TRANSPARENCY_GATE=1`.
+- `make journal TRANSPARENCY_GATE=1` → J1–J5 with 0 errors: the seq-15 head is
+  bound to Rekor staging entry
+  `71d46696179fcd5dd669b111a037fb10facae7450130eda3ee7a3e3de6c224a11cad8c790f427c9f`
+  (log index 56960699, integrated 2026-11-17T09:21:02Z), verified against the
+  live service with `--require-provider --require-inclusion`.
+- CI runs `make verify-ci TRANSPARENCY_GATE=1`: a commit that changes journal
+  bytes without a fresh committed anchor is red.
 - `evals/journal/run_evals.py` → 14/14 cases (synthetic repositories).
+- `evals/transparency-anchor/run_evals.py` → 11/11 offline adapter/J5 cases.
 - `spec/red-team/run_drills.py` → 20/20 drills: 18 blocked, 2 allowed by a
   recorded gap (`redate-and-resign`, `rewrite-journal-and-resign`).
 - `spec/pilots/dev-sec-skills/detectors/test_verdict_journal.py` is the test

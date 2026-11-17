@@ -248,9 +248,11 @@ A verdict record: commit hash + extractor hash + verifier versions + model hash
 
 Anchor options (choice is C-13, open):
 
-- transparency log: Rekor / SCITT;
+- transparency log: Rekor / SCITT — the primary option;
 - in-toto layout + Sigstore attestations;
 - a separate append-only repository referenced by CI.
+- a public blockchain timestamp; it adds external ordering, but it neither
+  proves the contents true nor stops a new commitment over a forged history.
 
 A narrow variant is implemented for static-analysis records (C-41): an offline
 SSH signature over the record's canonical bytes, with the public key in
@@ -261,6 +263,19 @@ repository. It does not close C-13: the key holder can re-sign, and replacing
 The anchor is needed so that rewriting the log is visible. Without an external
 anchor a hash chain protects only against accidental corruption, not against
 deliberate substitution.
+
+A provider-neutral adapter exists for the last option
+(`tools/blockchain_anchor.py`): it binds a journal hash to a transaction and
+supports local or on-chain verification. This is an implementation of the
+channel, not evidence that C-13 is closed: there is no real blockchain anchor
+yet, and it does not replace a transparency log.
+
+A provider-neutral adapter also exists for the primary option
+(`tools/transparency_anchor.py`): it binds a journal head to a Rekor or SCITT
+entry and supports local plus independent provider verification. One real
+entry exists (Rekor staging, 2026-11-17, head seq 15); its signer is a one-off
+self-signed certificate, not a project identity, so C-13 remains open until a
+durable signer and a rotation/revocation procedure exist.
 
 ### 7.2 Risk-based routing
 

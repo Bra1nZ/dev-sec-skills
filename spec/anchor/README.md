@@ -13,6 +13,13 @@ Committed SSH-signature anchors for three evidence channels:
 (ed25519). A signature made in one namespace does not verify in another, so a
 static-analysis signature cannot be replayed as a test-run anchor.
 
+The primary journal-head anchor is a transparency-log adapter in
+[`transparency/README.md`](transparency/README.md) (Rekor/SCITT). One real
+Rekor staging entry exists (2026-11-17, journal head seq 15); its signer is a
+one-off self-signed x509 certificate, not a project identity. C-13 stays open:
+the channel is implemented and anchored once, but key rotation, revocation and
+a durable signer identity are not solved.
+
 ## Files
 
 - `allowed_signers` — plain text, one `signer <type> <key>` line per trusted
@@ -85,8 +92,13 @@ anchors were created on 2026-11-08 over records dated 2026-11-07, so the
 signature proves immutability after signing, not the run date. It also does not
 stop the key holder, or anyone who can replace `allowed_signers` with their own
 key and re-sign: the `redate-and-resign` red-team drill does exactly that and
-every gate stays green. There is no transparency log, timestamping authority or
-revocation list (C-13 remains open).
+every gate stays green. There is no real transparency-log entry, timestamping
+authority or revocation list yet (C-13 remains open).
+
+An optional blockchain timestamp for the journal head lives in
+[`blockchain/README.md`](blockchain/README.md). It adds a public ordered
+commitment, but it still cannot prove the journal's claims or prevent a new
+commitment over a rewritten history.
 
 ## Recorded key loss
 

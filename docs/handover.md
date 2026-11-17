@@ -58,9 +58,9 @@ make verify
 
 | Команда | Что проверяет | Нужны соседи | В CI |
 | --- | --- | --- | --- |
-| `make verify-ci` | evals, self-pilot реестр и леджер, журнал J1–J4, `unroutable`, инварианты, `status-pilot2` | нет | да |
+| `make verify-ci` | evals, self-pilot реестр и леджер, журнал J1–J5, `unroutable`, инварианты, `status-pilot2` | нет | да |
 | `make verify` | то же плюс оба пилотных реестра, их леджеры и отчёт покрытия | да | нет |
-| `make journal` | J1–J4: цепь, согласие с леджерами, prefix против `HEAD`, canonical-голова и подпись | нет | да |
+| `make journal` | J1–J5: цепь, согласие с леджерами, prefix против `HEAD`, canonical-голова и подпись; J5 включается флагом `TRANSPARENCY_GATE=1` | нет | да |
 | `make journal-append` | добавляет изменившиеся вердикты и пере-подписывает голову; нужен приватный ключ | нет | нет |
 | `make red-team` | 20 атак на реальные артефакты: 18 blocked, 2 allowed (записанные дыры) | да | нет |
 | `make verify-all` | `verify` + оба mutation-набора (PostgreSQL и cargo) | да | нет |
@@ -78,8 +78,13 @@ make verify
    обходится правкой гейта.
 3. Если изменился статус claim'а или его evidence id — `make journal-append`.
    Гейт сам откажется продолжать битую цепь, голову или историю.
-4. Коммит. Если журнал изменился, он и подпись головы едут в том же коммите,
-   что и леджер: иначе J2/J4 красные.
+4. Если журнал изменился — пере-якорить голову в Rekor staging и закоммитить
+   новый артефакт якоря тем же коммитом (процедура —
+   `spec/anchor/transparency/README.md`, раздел «Re-anchoring ritual»). CI
+   гоняет `make verify-ci TRANSPARENCY_GATE=1`: коммит с новыми байтами
+   журнала и старым якорем красный.
+5. Коммит. Если журнал изменился, он, подпись головы и якорь едут в том же
+   коммите, что и леджер: иначе J2/J4/J5 красные.
 
 Статус claim'а не поднимается без новой evidence — это проверяет
 `tools/status_diff.py`. Смена прозы, `limitations` или `note` не является
@@ -93,6 +98,7 @@ make verify
 | --- | --- | --- | --- |
 | `dev-sec-skills-anchor-2026-11-07` | **потерян** (был в `/tmp`) | `spec/anchor/allowed_signers` | 13 старых якорей |
 | `dev-sec-skills-anchor-2026-11-08` | `~/.config/dev-sec-skills/anchor/key` (600) | там же | 4 якоря, голова журнала |
+| Rekor-подписант (одноразовый, 2026-11-17) | `~/.config/dev-sec-skills/anchor/rekor-rsa-key.pem` (600) | `spec/anchor/transparency/rekor-signer-cert.pem` | запись hashedrekord в Rekor staging над `head.json` seq 15; self-signed, живёт 24 ч, identity проекта не задаёт |
 
 - Приватные ключи никогда не попадают в репозиторий; `allowed_signers` —
   публичный и закоммичен.
@@ -112,9 +118,13 @@ make verify
   Unicode Cf-символы. Claim открыт, evidence — probe в
   `spec/pilots/craft-i18n/probes/`.
 - **C-13** — журнал закрывает молчаливую правку прошлого в пределах одного
-  держателя ключа. Нет transparency log, timestamping и отзыва; key holder или
-  замена `allowed_signers` + перезапись истории git обходят всё. Red-team drill
-  `rewrite-journal-and-resign` записан как `allowed`.
+  держателя ключа. Первая запись в Rekor staging есть (2026-11-17, голова
+  seq 15), но подписант — одноразовый self-signed сертификат; нет постоянного
+  transparency-подписанта, timestamping-гарантий вне staging и отзыва; key
+  holder или замена `allowed_signers` + перезапись истории git по-прежнему
+  обходят всё — новая запись в логе не удалит старую, расхождение видно только
+  внешнему наблюдателю. Red-team drill `rewrite-journal-and-resign` записан
+  как `allowed`.
 - **C-07…C-12** — гипотезы: продуктовых прогонов не было, статистики нет.
 - **V2-33** — граница продуктовых испытаний заполняется при открытии первого
   продуктового спринта.
