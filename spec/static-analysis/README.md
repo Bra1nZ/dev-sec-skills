@@ -201,6 +201,23 @@ reaches a cell, so the measurement says nothing about coverage; C-08 stays
 `bandit-sarif-formatter` package for `-f sarif`, and the earlier claim that it
 did not was wrong.
 
+## LLM scanner measurement, not a record
+
+`codex-security-2026-11-18.md` evaluates `@openai/codex-security` 0.10.0
+driven by the project's own model hub over clone copies of both pilots: the
+craft-i18n clone returned zero findings while the probe-proven C-08 gap sat in
+the scanned tree, and the rbac_pg clone returned two medium findings that map
+to the pilot's declared limitations (THREATS.md §4.10/§4.12) with one
+doc-vs-code divergence against SECURITY.md's D3 promise. The note is
+deliberately not a static-analysis channel record: the scans are
+nondeterministic, the SARIF has no engine adapter (both real findings came
+back `UNMAPPED … unknown-engine`, which is the gate's fail-loud path working),
+and no claim or cell was touched. The rbac_pg artifacts are withheld from the
+public repository — they contained source excerpts of a private pilot, which
+the anchor discipline forbids; their SHA-256s are recorded in the note. The
+craft-i18n artifacts were lost to a `/tmp` cleanup and only their SHA-256s
+are recorded.
+
 ## Triage: five findings, five decisions
 
 The pilot taxonomy is the translation-row grammar of `docs/catalog-format.md`.
