@@ -1,0 +1,13 @@
+diff --git a/tools/examples/normalize_name.py b/tools/examples/normalize_name.py
+new file mode 100644
+--- /dev/null
++++ b/tools/examples/normalize_name.py
+@@ -0,0 +1,9 @@
++"""Name normalization for report keys."""
++
++import unicodedata
++
++
++def normalize(name):
++    collapsed = " ".join(name.split())
++    return unicodedata.normalize("NFC", collapsed).strip()

@@ -223,6 +223,12 @@ verify-pilot2: lint-pilot2 claims-pilot2 status-pilot2
 
 verify-self: lint-self claims-self detectors-self
 
+# Network-dependent (model hub): not part of verify-ci. Needs ASTRA_API_KEY;
+# without it the eval self-skips with a notice.
+evals-ai-review:
+	@echo "== evals: AI diff-review canary/control (live hub) =="
+	$(PYTHON) evals/ai-review/run_evals.py
+
 evals:
 	@echo "== evals: adversarial cases for the linters =="
 	$(PYTHON) evals/cell-lint/run_evals.py
