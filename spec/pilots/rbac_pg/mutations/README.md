@@ -91,7 +91,7 @@ Unmutated baselines on the same stand: `test_v191_fixes.py` 22 OK,
 
 2. **CELL-002 is not mutation-testable at the repository layer.** The F8
    refusal comes from the platform's membership semantics, not from extension
-   code: on the Astra stand `F8b` reports "platform blocks" and the extension's
+   code: on the test stand `F8b` reports "platform blocks" and the extension's
    `ddl_guard` GRANT/REVOKE branch never fires (PostgreSQL does not raise the
    role-membership event trigger for global role objects). On true vanilla
    PostgreSQL 15 the platform allows the grant, so the same detector would fail
@@ -192,7 +192,8 @@ Unmutated baselines on the same stand: `test_v191_fixes.py` 22 OK,
 
 Recorded run:
 
-- PostgreSQL 15.17 (Debian 15.17-astra.se2.3r2) on Astra Linux.
+- PostgreSQL 15.17 on the pilot's test stand (the distro build string is
+  recorded with the fixtures in `mutations.yaml`).
 - Relocated `tools/stand.sh` prefix at `/tmp/opencode/pgmut`, port 55434,
   trust auth; run as the `postgres` user.
 - `rbac_pg` at commit `492f23c`.

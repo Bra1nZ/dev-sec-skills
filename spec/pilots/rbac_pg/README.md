@@ -192,7 +192,8 @@ alone.
 
 The three exemptions are not free passes:
 
-- **CELL-002** — F8 passes because the Astra/PP1C platform refuses the grant
+- **CELL-002** — F8 passes because the platform (PP1C membership semantics)
+  refuses the grant
   before the extension guard runs. On vanilla PostgreSQL 15 the platform allows
   it, so the same detector should fail with no code change. No repository
   mutation can flip it.

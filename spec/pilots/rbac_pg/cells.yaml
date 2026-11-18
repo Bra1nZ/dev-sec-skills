@@ -77,8 +77,8 @@ cells:
         command: "ADMIN_DATABASE_URL=postgresql://... python3 setup/test_fstek.py"
         status: tested
         last_verified: "2026-11-06"
-        mutation_exemption: "Platform membership semantics (Astra/PP1C) decide F8b before the extension guard runs. Mutating extension SQL cannot change that decision, and the ddl_guard GRANT/REVOKE branch does not fire for global role objects on PG15; there is no source mutation that can make F8b fail."
-        note: "F8a, F8b, F8c, F8d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL. F8b reported the platform branch: the refusal came from Astra/PP1C membership semantics, not from the extension guard."
+        mutation_exemption: "Platform membership semantics (PP1C) decide F8b before the extension guard runs. Mutating extension SQL cannot change that decision, and the ddl_guard GRANT/REVOKE branch does not fire for global role objects on PG15; there is no source mutation that can make F8b fail."
+        note: "F8a, F8b, F8c, F8d. Re-run on a fresh PostgreSQL 15.17 stand on 2026-11-06: 57 OK / 0 FAIL. F8b reported the platform branch: the refusal came from platform (PP1C) membership semantics, not from the extension guard."
     claim_ids: [C-02]
     residual_risk: On true vanilla PostgreSQL 15 an implicit ADMIN OPTION remains (ROLES.md 2.2); the superuser is outside the model. On such a cluster the same suite should fail F8a with no code change.
     limitations: "The refusal is platform membership semantics on the tested clusters, not a portable application guard. It has no repository-level mutation fixture: mutating extension SQL does not change the platform decision, and the ddl_guard GRANT/REVOKE branch does not fire for global role objects on PG15."
