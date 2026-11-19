@@ -62,8 +62,9 @@ fi
 PRAGENT_BIN="$HOME/.local/opt/pr-agent-venv/bin/pr-agent"
 
 # Blocking rule for the MVP engine: any high-severity finding in the JSON
-# report sets AI_BLOCK. Parse failure here must not silently pass — fail
-# closed (a report we cannot read cannot be trusted as clean).
+# report sets AI_BLOCK. Shell predicate semantics: exit 0 = high present
+# (block), 1 = clean. An unreadable report also blocks — fail closed (a
+# report we cannot read is not a clean report).
 mvp_has_high() {
   python3 - "$REPORT_JSON" <<'PYEOF'
 import json
@@ -74,8 +75,8 @@ try:
         data = json.load(fh)
     findings = data.get("findings", [])
 except Exception:
-    sys.exit(1)  # unreadable report != clean report
-sys.exit(1 if any(f.get("severity") == "high" for f in findings) else 0)
+    sys.exit(0)  # unreadable report != clean report
+sys.exit(0 if any(f.get("severity") == "high" for f in findings) else 1)
 PYEOF
 }
 
