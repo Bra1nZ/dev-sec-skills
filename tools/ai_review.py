@@ -20,7 +20,8 @@ Usage:
   python3 tools/ai_review.py --diff /tmp/pr.diff --repo-root . \
       --out-json /tmp/findings.json --out-md /tmp/comment.md
 
-Exit codes: 0 ok, 3 no API key (skip), 4 hub error, 5 unparseable reply.
+Exit codes: 0 ok, 3 no API key (skip), 4 hub error, 5 unparseable model
+reply (the model answered but no usable findings array came back).
 """
 
 from __future__ import annotations
@@ -77,6 +78,10 @@ class HubError(Exception):
     pass
 
 
+class ParseError(Exception):
+    """The model replied, but the reply is not a usable findings array."""
+
+
 def changed_files(diff_text: str) -> list[str]:
     """Files touched by the diff, in first-appearance order."""
     seen: list[str] = []
@@ -88,9 +93,21 @@ def changed_files(diff_text: str) -> list[str]:
 
 
 def numbered_content(path: str, repo_root: str) -> str | None:
-    """New-version file content with line numbers, capped; None if unreadable."""
+    """New-version file content with line numbers, capped; None if unreadable.
+
+    The path comes from the diff text, which is untrusted input: a crafted
+    diff (or a symlink committed inside the repo) can point outside the
+    checkout, and whatever is read is sent to the hub. Confinement is
+    enforced on the fully resolved path — including symlink targets — and
+    escapes are rejected loudly instead of being read.
+    """
+    root_real = os.path.realpath(repo_root)
     full = os.path.join(repo_root, path)
-    if not os.path.isfile(full):
+    resolved = os.path.realpath(full)
+    if resolved != root_real and not resolved.startswith(root_real + os.sep):
+        print(f"ai-review: refusing to read outside the repo root: {path}", file=sys.stderr)
+        return None
+    if not os.path.isfile(resolved):
         return None
     try:
         with open(full, "r", encoding="utf-8", errors="replace") as fh:
@@ -224,10 +241,13 @@ def parse_findings(raw: str) -> list[dict]:
     text = re.sub(r"\s*```$", "", text)
     start, end = text.find("["), text.rfind("]")
     if start == -1 or end == -1 or end <= start:
-        raise HubError("no JSON array in reply")
-    parsed = json.loads(text[start:end + 1])
+        raise ParseError("no JSON array in reply")
+    try:
+        parsed = json.loads(text[start:end + 1])
+    except json.JSONDecodeError as err:
+        raise ParseError(f"reply is not valid JSON: {err}") from err
     if not isinstance(parsed, list):
-        raise HubError("reply is not a JSON array")
+        raise ParseError("reply is not a JSON array")
     valid = []
     for item in parsed:
         if not isinstance(item, dict):
@@ -237,16 +257,34 @@ def parse_findings(raw: str) -> list[dict]:
             continue
         if not isinstance(item.get("file"), str) or not isinstance(item.get("title"), str):
             continue
+        try:
+            line = int(item.get("line") or 0)
+        except (TypeError, ValueError):
+            # A model replying "12-15" or a nested object must not crash the
+            # tool; the finding survives with the file-level location only.
+            line = 0
         valid.append({
             "severity": severity,
             "file": item["file"],
-            "line": int(item.get("line") or 0),
+            "line": line,
             "title": item["title"],
             "detail": str(item.get("detail") or ""),
         })
         if len(valid) >= MAX_FINDINGS:
             break
     return valid
+
+
+def md_escape(text: str) -> str:
+    """Make model-supplied text safe for a markdown table cell.
+
+    The text is derived from untrusted PR content via the model, so a
+    prompt-injected finding could otherwise plant arbitrary markdown/HTML
+    in the posted report, and a stray pipe or newline would break the table.
+    """
+    text = text.replace("\\", "\\\\").replace("|", "\\|")
+    text = text.replace("\r", " ").replace("\n", " ")
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def render_markdown(findings: list[dict], meta: dict) -> str:
@@ -261,7 +299,8 @@ def render_markdown(findings: list[dict], meta: dict) -> str:
         lines.append("| --- | --- | --- | --- |")
         for f in sorted(findings, key=lambda x: order.get(x["severity"], 3)):
             loc = f"{f['file']}:{f['line']}" if f["line"] else f["file"]
-            lines.append(f"| {f['severity']} | `{loc}` | {f['title']} | {f['detail']} |")
+            lines.append(f"| {f['severity']} | `{md_escape(loc)}` | "
+                         f"{md_escape(f['title'])} | {md_escape(f['detail'])} |")
     lines += [
         "",
         "---",
@@ -324,6 +363,14 @@ def main() -> int:
                 raw = call_hub(args.api_base, api_key, args.model, user_content)
                 chunk_findings = parse_findings(raw)
                 break
+            except ParseError as err:
+                # The model answered but the reply is unusable: not fixed by
+                # truncation, so record and move on.
+                chunk_errors.append(
+                    f"chunk {i}/{len(chunks)} ({', '.join(p for p, _ in chunk)}): unparseable reply: {err}")
+                print(f"ai-review: chunk {i}/{len(chunks)} failed: unparseable reply: {err}", file=sys.stderr)
+                chunk_findings = None
+                break
             except HubError as err:
                 tried += 1
                 if "finish_reason=length" not in str(err) or tried > 1 or len(chunk_diff) < 1_000:
@@ -379,3 +426,6 @@ if __name__ == "__main__":
     except HubError as err:
         print(f"ai-review: {err}", file=sys.stderr)
         sys.exit(4)
+    except ParseError as err:
+        print(f"ai-review: unparseable reply: {err}", file=sys.stderr)
+        sys.exit(5)

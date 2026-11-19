@@ -63,7 +63,12 @@ def run_case(case: dict, workdir: str) -> dict:
         [sys.executable, TOOLS,
          "--diff", case["patch"], "--repo-root", workdir,
          "--out-json", out_json, "--out-md", out_md],
-        capture_output=True, text=True, timeout=300,
+        capture_output=True, text=True,
+        # Must exceed the reviewer's own worst case (call_hub: 2 attempts x
+        # TIMEOUT_S + retry sleep = ~603s), otherwise a slow-but-successful
+        # run is killed and recorded as FAIL "timeout", conflating hub
+        # latency with a reviewer defect (caught by the pr-agent review).
+        timeout=900,
     )
     result: dict = {"name": case["name"], "rc": proc.returncode,
                     "stderr": proc.stderr.strip()[-400:]}
