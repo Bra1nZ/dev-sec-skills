@@ -18,7 +18,7 @@ import sys
 import time
 
 from model_primitives import (
-    add_target_args, default_out, prepare, sha256_file,
+    add_target_args, default_out, journal_crash, prepare, sha256_file,
 )
 
 BOUNDS_EXAMPLE = """\

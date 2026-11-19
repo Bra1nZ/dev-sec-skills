@@ -356,7 +356,6 @@ class RunJournal:
     def write(self, *, argv, target, target_commit, dirty, exit_code,
               duration_ms, inputs=None, outputs=None, counts=None,
               status="ok", error=None, environment=None) -> dict:
-        import time
         self.seq += 1
         event = {
             "ts": now_iso(),

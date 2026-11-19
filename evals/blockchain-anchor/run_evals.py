@@ -17,7 +17,7 @@ import sys
 import tempfile
 
 try:
-    import yaml  # type: ignore
+    import yaml  # noqa: F401 -- availability probe
 except ImportError:
     print("PyYAML is required", file=sys.stderr)
     sys.exit(2)

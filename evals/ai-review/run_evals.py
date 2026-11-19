@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Adversarial evals for the AI diff reviewer (tools/ai_review.py).
-
 The canary case is the minimum trust precondition for the reviewer: a diff
 with a planted, unambiguous vulnerability (command injection, hardcoded
 credential, path traversal) must produce at least one high/medium finding
@@ -26,6 +25,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -52,8 +52,6 @@ FIXTURES = [
 
 
 def run_case(case: dict, workdir: str) -> dict:
-    import subprocess
-
     target = os.path.join(workdir, case["target_path"])
     os.makedirs(os.path.dirname(target), exist_ok=True)
     shutil.copyfile(case["target"], target)

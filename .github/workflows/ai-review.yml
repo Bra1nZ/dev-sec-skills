@@ -10,6 +10,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      base:
+        description: Base ref for the diff on manual runs
+        default: main
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -47,8 +53,11 @@ jobs:
         env:
           ASTRA_API_KEY: ${{ secrets.ASTRA_API_KEY }}
         run: |
-          python3 evals/ai-review/run_evals.py --canary-only
-          if [ $? -ne 0 ]; then
+          # `if ! cmd`, not `cmd; if [ $? -ne 0 ]`: Actions runs `bash -e`,
+          # so a direct check of $? never runs when the command fails
+          # (caught by actionlint+shellcheck, SC2181) — the failure
+          # message below would be silently dead code.
+          if ! python3 evals/ai-review/run_evals.py --canary-only; then
             printf '%s\n\n**AI review skipped: canary preflight FAILED.**\nThe reviewer did not detect the planted issue, so findings on this PR would be untrusted.\n' \
               '<!-- dev-sec-skills-ai-review -->' > /tmp/comment.md
             exit 1
@@ -66,7 +75,10 @@ jobs:
             --out-md /tmp/comment.md
 
       - name: Post review comment
-        if: always() && steps.review.outcome != 'skipped'
+        # always(): the canary-failure message must be posted even when the
+        # reviewer step was skipped — a failed trust precondition must leave
+        # a trace on the PR, not vanish into the log.
+        if: always() && !cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -74,6 +86,13 @@ jobs:
           if [ ! -s /tmp/comment.md ]; then
             printf '%s\n\n**AI review did not produce a report** (hub error or no API key). Check the workflow log.\n' \
               '<!-- dev-sec-skills-ai-review -->' > /tmp/comment.md
+          fi
+          if [ -z "$PR_NUMBER" ]; then
+            # workflow_dispatch runs have no PR to comment on; print the
+            # report instead of calling gh with an empty issue number.
+            echo "workflow_dispatch run: no PR to comment on; review report follows"
+            cat /tmp/comment.md
+            exit 0
           fi
           MARKER='<!-- dev-sec-skills-ai-review -->'
           CID=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \

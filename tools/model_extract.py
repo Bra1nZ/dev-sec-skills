@@ -25,7 +25,7 @@ import time
 from model_primitives import (
     FORMAT_PRIMITIVES, ModelError, add_target_args, is_test_path,
     journal_crash, make_anchor, now_iso, prepare, sha256_file, slug,
-    tool_block, write_json, dump_yaml,
+    tool_block, dump_yaml,
 )
 from rust_items import ParseError, parse_source
 from rust_lexer import LexError

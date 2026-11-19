@@ -39,7 +39,6 @@ def _decision(chosen, primitive_id) -> str:
 def build_report(primitives, decisions, model, checks, inventory):
     chosen = (decisions or {}).get("decisions") or []
     chosen = {entry["id"]: entry for entry in chosen if isinstance(entry, dict)}
-    counts = primitives.get("counts") or {}
     target = primitives.get("target") or {}
     status = (checks or {}).get("status", "open")
     lines = []

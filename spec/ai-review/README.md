@@ -170,6 +170,43 @@ with repository access, but an information edge a stranger would not
 have. The engines themselves detected the issues from the diff alone;
 the fixture recognition changed the framing, not the detection.
 
+## Static baseline and the "beyond static gates" measurement (2026-11-19)
+
+`make verify-ci` now runs `lint-static`: shellcheck over shell scripts,
+flake8 with the F (pyflakes) selector over every tracked Python file,
+and actionlint (which runs shellcheck inside `run:` blocks) over every
+GitHub workflow. A missing tool is a loud skip; a finding is a hard
+failure. The day it landed, the static baseline caught two real bugs in
+this repository that the AI reviews had never flagged: an undefined
+name in an exception path (`tools/model_init.py` — `journal_crash`
+used but not imported, so a crash would raise NameError instead of
+journaling) and a latent NameError in the eval's own timeout handler
+(`evals/ai-review/run_evals.py` — `subprocess` referenced at the
+handler site but imported only inside `run_case`, i.e. the same
+timeout-class defect planted in retro case 06, sitting in the fix
+commit itself). Both fixed; the workflow's dead canary-failure path
+(`if [ $? -ne 0 ]` under `bash -e`, the exact retro case 04 class) and
+two more workflow defects were fixed as well — found by actionlint.
+
+Measured against the retro corpus (8 cases, 8 planted mechanisms), the
+static baseline catches:
+
+- case 04, one mechanism of three: SC2181 sees the `bash -e` + `$?`
+  dead path; the skipped-outcome guard and the dispatch PR-number bug
+  are invisible to it;
+- case 05, the extraction artifact only (F821 undefined constants),
+  not the planted traversal;
+- everything else — Makefile recipe glue, hunk-header arithmetic, the
+  Cf-character gap, the timeout race, markdown injection — is
+  semantic and invisible to this baseline; the clean control stays
+  silent, as it should.
+
+Score: static baseline 1 of 8 planted mechanisms; the AI ensemble
+union 8 of 8. The claim "the reviewer adds coverage beyond the static
+gates" is now measured, not asserted — and the complementarity runs
+both ways: the static layer catches the undefined-name class for free
+and instantly, which the LLM engines had not flagged.
+
 ## Open questions
 
 - pr-agent × hub integration: model naming via LiteLLM config, behavior

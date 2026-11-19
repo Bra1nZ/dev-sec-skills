@@ -121,7 +121,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 try:
     import yaml  # type: ignore
@@ -1964,7 +1964,7 @@ def _rust_test_defs(text):
         # Where the signature's opening brace sits. Only a body that is
         # empty on the spot (`{}`, or `{` then `}`) is flagged: brace
         # counting through strings is where a false positive would come from.
-        sig, k, depth = line, i, 0
+        sig, k = line, i
         while "{" not in sig and k + 1 < len(lines):
             k += 1
             sig += "\n" + lines[k]

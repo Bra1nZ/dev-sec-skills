@@ -211,7 +211,31 @@ verify: verify-repo verify-pilot verify-pilot2 verify-self journal unroutable co
 # ../rbac_pg has no remote and ../astraoffice/craft-i18n needs a deploy key,
 # so verify-pilot, verify-pilot2 and coverage stay local-only; handover.md
 # says so. status-pilot2 only needs this repository's git history.
-verify-ci: verify-repo verify-self status-pilot2 journal unroutable invariants
+verify-ci: verify-repo verify-self status-pilot2 journal unroutable invariants lint-static
+
+# Generic static analyzers over the repository's own code — shell, Python,
+# GitHub workflows. This is the baseline the AI review is measured against:
+# the retro corpus (evals/ai-review/retro/README.md) records which planted
+# defects this baseline cannot see. A missing tool is a loud skip; a finding
+# is a hard failure. (Tools: apt install shellcheck; pip install flake8;
+# actionlint from github.com/rhysd/actionlint releases.)
+# Scope note: flake8 covers tools/ and evals/ but not spec/pilots — those
+# detector files are cited evidence artifacts with pinned sha256s (the L2
+# gate forbids byte changes), so they are linted in their own evidence
+# process, not by a drive-by pass.
+lint-static:
+	@echo "== static linters: shellcheck / flake8(F) / actionlint =="
+	@if command -v shellcheck >/dev/null 2>&1; then \
+	  shellcheck tools/*.sh; echo "shellcheck: clean"; \
+	else echo "SKIP: shellcheck not installed"; fi
+	@if python3 -c "import flake8" 2>/dev/null; then \
+	  $(PYTHON) -m flake8 --select=F tools/*.py $$(git ls-files 'evals/*.py' 'evals/*/*.py'); \
+	  echo "flake8 (F): clean"; \
+	else echo "SKIP: flake8 not installed (pip install flake8)"; fi
+	@if command -v actionlint >/dev/null 2>&1; then \
+	  actionlint $$(git ls-files '.github/workflows/*.yml'); \
+	  echo "actionlint: clean"; \
+	else echo "SKIP: actionlint not installed"; fi
 
 verify-all: verify mutations-all concurrency-rbac concurrency-rbac-mutants
 
