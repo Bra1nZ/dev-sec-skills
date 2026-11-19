@@ -13,13 +13,23 @@
 # Usage:
 #   tools/prepush.sh [--base REF] [--skip-canary] [--skip-ai-review] [--skip-pragent]
 #
-# Exit codes: 0 all green, 1 any check failed.
+# Blocking policy (since the independent-evaluator experiment, 2026-11-19):
+# the two hard gates are verify-ci and the canary preflight; the AI diff
+# review is blocking at HIGH severity only — a high-severity finding from
+# either engine fails the gate (exit 1), medium/low stay advisory.
+# pr-agent has no numeric severities; its "Security concerns" section is
+# its highest-urgency bucket and is mapped to high. The --skip-ai-review
+# flag is the explicit human override.
+#
+# Exit codes: 0 all green, 1 any check failed (including high-severity AI
+# findings), 2 usage error.
 set -euo pipefail
 
 BASE="origin/main"
 SKIP_CANARY=0
 SKIP_AI=0
 SKIP_PRAGENT=0
+AI_BLOCK=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --base) BASE="$2"; shift 2 ;;
@@ -51,6 +61,24 @@ fi
 # total failure, so the output is verified by content, not by exit code.
 PRAGENT_BIN="$HOME/.local/opt/pr-agent-venv/bin/pr-agent"
 
+# Blocking rule for the MVP engine: any high-severity finding in the JSON
+# report sets AI_BLOCK. Parse failure here must not silently pass — fail
+# closed (a report we cannot read cannot be trusted as clean).
+mvp_has_high() {
+  python3 - "$REPORT_JSON" <<'PYEOF'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as fh:
+        data = json.load(fh)
+    findings = data.get("findings", [])
+except Exception:
+    sys.exit(1)  # unreadable report != clean report
+sys.exit(1 if any(f.get("severity") == "high" for f in findings) else 0)
+PYEOF
+}
+
 run_pragent_review() {
   if [ ! -x "$PRAGENT_BIN" ]; then
     echo "prepush: pr-agent venv not found ($PRAGENT_BIN) — skipping second engine"
@@ -76,6 +104,13 @@ run_pragent_review() {
       echo "---- pr-agent review ($PRAGENT_MD) ----"
       grep -v 'INFO \|WARNING \|DEBUG ' "$PRAGENT_MD" | sed -n '/PR Reviewer Guide/,$p'
       echo "---- end pr-agent review ----"
+      # Blocking rule for the second engine: pr-agent emits no numeric
+      # severities; its "Security concerns" section is its highest-urgency
+      # bucket and is mapped to high (documented in the header and spec).
+      if grep -q 'Security concerns' "$PRAGENT_MD"; then
+        echo "prepush: BLOCKED — pr-agent raised Security concerns (mapped to high severity)"
+        AI_BLOCK=1
+      fi
     else
       echo "prepush: WARNING — pr-agent exited 0 but produced no review (engine failure); see $PRAGENT_MD"
     fi
@@ -115,10 +150,21 @@ if [ "$SKIP_AI" -eq 0 ]; then
     echo "---- AI review comment ($REPORT_MD) ----"
     cat "$REPORT_MD"
     echo "---- end AI review comment ----"
+    if mvp_has_high; then
+      echo "prepush: BLOCKED — high-severity finding(s) from the MVP reviewer (see $REPORT_MD)"
+      AI_BLOCK=1
+    fi
     if [ "$SKIP_PRAGENT" -eq 0 ]; then
       run_pragent_review
     fi
   fi
+fi
+
+if [ "$AI_BLOCK" -ne 0 ]; then
+  echo
+  echo "== prepush: FAILED — high-severity AI review findings block the push =="
+  echo "prepush: address the findings, or re-run with --skip-ai-review to override explicitly."
+  exit 1
 fi
 
 echo
