@@ -74,6 +74,15 @@ try:
     with open(sys.argv[1], encoding="utf-8") as fh:
         data = json.load(fh)
     findings = data.get("findings", [])
+    # A structurally malformed report (findings null, a string, non-dict
+    # items) must fail closed like an unreadable one — the report is
+    # gate-generated, so any schema deviation means corruption or
+    # tampering, and an exception after this block would exit 1, which
+    # here means "clean".
+    if not isinstance(findings, list) or any(
+        not isinstance(f, dict) for f in findings
+    ):
+        sys.exit(0)
 except Exception:
     sys.exit(0)  # unreadable report != clean report
 sys.exit(0 if any(f.get("severity") == "high" for f in findings) else 1)

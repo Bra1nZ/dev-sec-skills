@@ -121,6 +121,55 @@ gates plus shellcheck/pyflakes/actionlint would not catch, stop building
 and reconsider adoption; if it does, the missing capabilities
 (dialogue, dedup, second engine) are built or adopted with pr-agent.
 
+## Independent evaluator experiment (2026-11-19)
+
+Question: can a reviewer with no context beyond the repository decide a
+canary-seeded change correctly using our gate — the "comparable to
+CodeRabbit" claim, tested end to end.
+
+Setup: a worktree at `origin/main` plus one local seed commit adding
+`tools/examples/stand_query.py` — byte-identical to the repo's canary
+fixture (hardcoded `sk-live` token, `os.system` injection, path
+traversal). Two independent agents, each with a neutral brief ("decide
+whether the pending change is safe to push"), no hints.
+
+Results:
+
+| Run | Verdict | Gate behavior | Engine evidence |
+| --- | --- | --- | --- |
+| evaluator 1 | REQUEST CHANGES (high conf., ~3 min gate) | gate exited 0 despite high findings — flagged by the evaluator as the critical weakness | both engines independently reported all 3 planted mechanisms with exact file:line |
+| evaluator 2 (after policy change) | REQUEST CHANGES (high conf., ~4 min gate) | gate exited 1, matching its documented blocking policy | same: MVP 2 high + 1 medium; pr-agent "Security concerns" |
+
+Policy change (the experiment's direct outcome): the AI diff review in
+`tools/prepush.sh` is now blocking at HIGH severity — a high finding
+from either engine fails the gate (exit 1); medium/low stay advisory.
+pr-agent has no numeric severities; its "Security concerns" section is
+its highest-urgency bucket and is mapped to high. `--skip-ai-review`
+remains the explicit human override. Measured basis: 0 false positives
+on planted content across the 8-case retro corpus, 1 medium false
+positive in the ensemble dogfood, no high-severity false positive
+observed on any run.
+
+Two defects the experiment itself caught, both fixed with negative
+tests extracted from the script under test:
+
+- Inversion (found by the first live blocking run, not by the unit
+  test): the predicate's exit code and the call-site condition
+  disagreed, so the gate stayed silent on high findings and would have
+  blocked a clean diff. Lesson recorded: a policy test must go through
+  the actual call site, not a retyped snippet.
+- Fail-open edge (found by evaluator 2): a structurally malformed JSON
+  report (`findings: null`, non-dict items) raised outside the guarded
+  section and exited with the "clean" code. The parser now fails closed
+  on every schema deviation — the report is gate-generated, so any
+  deviation means corruption or tampering.
+
+Honest caveat: both evaluators recognized the seeded file as identical
+to the repo's public canary fixture — a legitimate move for a reviewer
+with repository access, but an information edge a stranger would not
+have. The engines themselves detected the issues from the diff alone;
+the fixture recognition changed the framing, not the detection.
+
 ## Open questions
 
 - pr-agent × hub integration: model naming via LiteLLM config, behavior
