@@ -1,0 +1,19 @@
+diff --git a/retro-cases/case-clean-control.patch b/retro-cases/case-clean-control.patch
+new file mode 100644
+index 0000000..ee1cb8c
+--- /dev/null
++++ b/retro-cases/case-clean-control.patch
+@@ -0,0 +1,13 @@
++diff --git a/tools/examples/normalize_name.py b/tools/examples/normalize_name.py
++new file mode 100644
++--- /dev/null
+++++ b/tools/examples/normalize_name.py
++@@ -0,0 +1,8 @@
+++"""Name normalization for report keys."""
+++
+++import unicodedata
+++
+++
+++def normalize(name):
+++    collapsed = " ".join(name.split())
+++    return unicodedata.normalize("NFC", collapsed).strip()

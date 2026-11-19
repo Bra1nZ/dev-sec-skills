@@ -1,0 +1,52 @@
+diff --git a/retro-cases/case-traversal-v2.py b/retro-cases/case-traversal-v2.py
+new file mode 100644
+index 0000000..7516fdb
+--- /dev/null
++++ b/retro-cases/case-traversal-v2.py
+@@ -0,0 +1,46 @@
++import os
++import re
++
++MAX_CONTENT_LINES = 400
++DIFF_FILE_RE = re.compile(r'^diff --git a/(.+?) b/(.+?)$', re.MULTILINE)
++
++
++class HubError(Exception):
++    pass
++
++
++def changed_files(diff_text: str) -> list[str]:
++    """Files touched by the diff, in first-appearance order."""
++    seen: list[str] = []
++    for match in DIFF_FILE_RE.finditer(diff_text):
++        path = match.group(2)
++        if path not in seen:
++            seen.append(path)
++    return seen
++
++
++def numbered_content(path: str, repo_root: str) -> str | None:
++    """New-version file content with line numbers, capped; None if unreadable."""
++    full = os.path.join(repo_root, path)
++    if not os.path.isfile(full):
++        return None
++    try:
++        with open(full, "r", encoding="utf-8", errors="replace") as fh:
++            lines = fh.readlines()
++    except OSError:
++        return None
++    lines = lines[:MAX_FILE_LINES]
++    out = []
++    used = 0
++    for i, line in enumerate(lines, start=1):
++        entry = f"{i:5d}: {line.rstrip()}"
++        used += len(entry) + 1
++        if used > MAX_FILE_CHARS:
++            out.append(f"{i:5d}: <truncated: file exceeds {MAX_FILE_CHARS} chars>")
++            break
++        out.append(entry)
++    if len(lines) == MAX_FILE_LINES:
++        out.append("<truncated: max line count reached>")
++    return "\n".join(out)
++
++

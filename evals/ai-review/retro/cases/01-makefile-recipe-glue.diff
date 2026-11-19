@@ -1,0 +1,12 @@
+diff --git a/retro-cases/Makefile b/retro-cases/Makefile
+new file mode 100644
+index 0000000..20ef44c
+--- /dev/null
++++ b/retro-cases/Makefile
+@@ -0,0 +1,6 @@
++evals:
++	@echo "== evals: adversarial cases for the linters =="
++	$(PYTHON) evals/cell-lint/run_evals.py
++	$(PYTHON) evals/linter/run_evals.py	$(PYTHON) evals/claim-format/run_evals.py
++	$(PYTHON) evals/claim-witness/run_evals.py
++	$(PYTHON) evals/status-diff/run_evals.py

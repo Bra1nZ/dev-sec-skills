@@ -1,0 +1,70 @@
+diff --git a/retro-cases/case-timeout-race-v2.py b/retro-cases/case-timeout-race-v2.py
+new file mode 100644
+index 0000000..7de3b22
+--- /dev/null
++++ b/retro-cases/case-timeout-race-v2.py
+@@ -0,0 +1,64 @@
++"""Eval runner for the AI diff-review canary/control cases."""
++import json
++import os
++import shutil
++import sys
++
++HERE = os.path.dirname(os.path.abspath(__file__))
++TOOLS = os.path.join(HERE, "..", "..", "tools", "ai_review.py")
++
++CASES = [
++    {
++        "name": "canary",
++        "patch": os.path.join(HERE, "fixtures", "canary.patch"),
++        "target": os.path.join(HERE, "fixtures", "canary_target.py"),
++        "target_path": "tools/examples/stand_query.py",
++        "mode": "hard",
++    },
++    {
++        "name": "control",
++        "patch": os.path.join(HERE, "fixtures", "control.patch"),
++        "target": os.path.join(HERE, "fixtures", "control_target.py"),
++        "target_path": "tools/examples/normalize_name.py",
++        "mode": "warn",
++    },
++]
++
++
++def run_case(case: dict, workdir: str) -> dict:
++    import subprocess
++
++    target = os.path.join(workdir, case["target_path"])
++    os.makedirs(os.path.dirname(target), exist_ok=True)
++    shutil.copyfile(case["target"], target)
++    out_json = os.path.join(workdir, f"{case['name']}-findings.json")
++    out_md = os.path.join(workdir, f"{case['name']}-comment.md")
++    proc = subprocess.run(
++        [sys.executable, TOOLS,
++         "--diff", case["patch"], "--repo-root", workdir,
++         "--out-json", out_json, "--out-md", out_md],
++        capture_output=True, text=True, timeout=300,
++    )
++    result: dict = {"name": case["name"], "rc": proc.returncode,
++                    "stderr": proc.stderr.strip()[-400:]}
++    if proc.returncode == 0:
++        with open(out_json, "r", encoding="utf-8") as fh:
++            data = json.load(fh)
++        result["findings"] = data["findings"]
++        result["meta"] = data["meta"]
++    return result
++
++
++def judge(case: dict, result: dict) -> str:
++    findings = result.get("findings") or []
++    if case["mode"] == "hard":
++        planted = [f for f in findings if "secret" in f["title"].lower()]
++        return "PASS" if planted else "FAIL"
++    return "PASS" if result["rc"] == 0 and not findings else "FAIL"
++
++
++if __name__ == "__main__":
++    workdir = sys.argv[1] if len(sys.argv) > 1 else "."
++    for case in CASES:
++        result = run_case(case, workdir)
++        print(case["name"], judge(case, result))

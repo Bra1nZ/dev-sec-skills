@@ -1,0 +1,39 @@
+diff --git a/retro-cases/case-md-injection-v2.py b/retro-cases/case-md-injection-v2.py
+new file mode 100644
+index 0000000..fb4457f
+--- /dev/null
++++ b/retro-cases/case-md-injection-v2.py
+@@ -0,0 +1,33 @@
++MARKER = "<!-- dev-sec-skills-ai-review -->"
++
++
++def render_markdown(findings: list[dict], meta: dict) -> str:
++    order = {"high": 0, "medium": 1, "low": 2}
++    lines = [MARKER, "", "## AI diff review (MVP)", ""]
++    if not findings:
++        lines.append("No findings. One model call over the PR diff; "
++                     "silence is not evidence (the canary eval must pass for this to mean anything).")
++    else:
++        lines.append(f"**{len(findings)} finding(s)** in changed lines:\n")
++        lines.append("| Severity | File:line | Title | Detail |")
++        lines.append("| --- | --- | --- | --- |")
++        for f in sorted(findings, key=lambda x: order.get(x["severity"], 3)):
++            loc = f"{f['file']}:{f['line']}" if f["line"] else f["file"]
++            lines.append(f"| {f['severity']} | `{loc}` | {f['title']} | {f['detail']} |")
++    lines += [
++        "",
++        "---",
++        f"<sub>model `{meta['model']}`, {meta['elapsed_s']}s, diff {meta['diff_chars']} chars, "
++        f"{meta['files_reviewed']} file(s) in {meta['chunks']} chunk(s)"
++        + (f", {meta['unreviewed_chunks']} chunk(s) over the chunk cap NOT reviewed"
++           if meta.get("unreviewed_chunks") else "")
++        + (f", {len(meta['chunk_errors'])} chunk(s) FAILED: review is PARTIAL"
++           if meta.get("chunk_errors") else "")
++        + (f", {len(meta['truncated_chunks'])} chunk(s) reviewed on truncated diffs"
++           if meta.get("truncated_chunks") else "")
++        + ". One-shot diff review: input for triage, not evidence; not journaled.</sub>",
++        "",
++    ]
++    return "\n".join(lines)
++
++
