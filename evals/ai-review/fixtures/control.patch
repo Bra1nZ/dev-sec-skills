@@ -2,7 +2,7 @@ diff --git a/tools/examples/normalize_name.py b/tools/examples/normalize_name.py
 new file mode 100644
 --- /dev/null
 +++ b/tools/examples/normalize_name.py
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,8 @@
 +"""Name normalization for report keys."""
 +
 +import unicodedata
