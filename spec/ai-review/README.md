@@ -65,6 +65,38 @@ Known pr-agent caveats to resolve during integration: it is PR-centric
 after donation by Qodo (slower cadence, e.g. /help_docs disabled over a
 credential-exposure bug in 2026).
 
+### Integration measurement (2026-11-19, hub GLM-5.3 via LiteLLM)
+
+pr-agent's plain-diff CLI mode (`--diff-file`) needs no PR at all — the
+PR-centric caveat above is resolved. Working configuration:
+`CONFIG__MODEL=openai/GLM-5.3`, `OPENAI__API_BASE=<hub>`,
+`CONFIG__CUSTOM_MODEL_MAX_TOKENS=8000`, `CONFIG__AI_TIMEOUT=300`
+(the default 120s times out before this reasoning model finishes),
+`CONFIG__FALLBACK_MODELS=""` (the shipped default names models the hub
+does not serve), and — the decisive find —
+`PR_REVIEWER__ENABLE_LARGE_PR_CHUNKING=true`: pr-agent already contains
+a complete chunked-review flow (split via `get_pr_multi_diffs`, batched
+calls, finding merge, coverage accounting) that is simply disabled by
+default for /review. Option C ("teach the engine multi-pass") turned out
+to be a config discovery, not a development project.
+
+Measured on the MVP's own 37k-char / 12.8k-token diff (13 files):
+
+| Configuration | Result |
+| --- | --- |
+| default budget (32k) | full diff sent → the D2 reasoning wall: 2×120s timeouts, total failure; also: the CLI exits 0 on failure, the gate must check content |
+| budget 4000, single-pass | 92s, compression kept 1 of 13 files; planted canary found, real code invisible; coverage honestly reported |
+| budget 8000, single-pass | 89s, ~3 files reviewed, 3 real catches (broken exit-code contract, unescaped markdown in `render_markdown`, eval timeout race 300s < 363s worst case) |
+| budget 8000 + chunking, ≤5 calls | **262s, all 13 files in 3 merged chunks**, honest "Chunked review" notice; canary 3/3; 3 real catches incl. a path-traversal vector in the MVP's `numbered_content` (diff-parsed paths read and sent to the hub) — found by neither the MVP's self-review nor single-pass runs |
+
+Cross-engine comparison on identical inputs shows near-zero overlap of
+findings: the MVP's chunked self-review caught an undefined-name bug and
+dead workflow code; pr-agent's chunks caught the exit-code contract, the
+markdown-injection vector, the eval timeout race, and the diff-path
+traversal. One cross-chunk false positive ("Missing Fixtures" — the
+fixtures were in a different chunk) is the known context-loss cost of
+chunking, honestly visible in the output.
+
 ## D4 — the measurement plan is engine-independent (2026-11-19)
 
 Any candidate engine (MVP or pr-agent) passes the same gates before its
