@@ -75,7 +75,12 @@ def scan_file(target: str, rel_path: str) -> dict:
         return row
     row["lines"] = source.count("\n") + (0 if source.endswith("\n") else 1)
     try:
-        lexed, items, unsupported = parse_source(source)
+        suffix = os.path.splitext(rel_path)[1]
+        if suffix in (".c", ".h"):
+            import c_items
+            lexed, items, unsupported = c_items.parse_source(source)
+        else:
+            lexed, items, unsupported = parse_source(source)
     except LexError as exc:
         row["lex"] = "error"
         row["error"] = "lex: %s" % exc
@@ -103,8 +108,12 @@ def scan_file(target: str, rel_path: str) -> dict:
     row["impls"] = len(owners)
     if unsupported:
         row["unsupported"] = unsupported
-    markers = [tok.text for tok in lexed.tokens
-               if tok.kind == "ident" and tok.text in TCB_MARKERS]
+    if rel_path.endswith((".c", ".h")):
+        # C linkage keywords are not model boundaries; asm markers are V1
+        markers = []
+    else:
+        markers = [tok.text for tok in lexed.tokens
+                   if tok.kind == "ident" and tok.text in TCB_MARKERS]
     row["tcb"] = sorted(set(markers))
     return row
 
@@ -118,10 +127,12 @@ def main(argv) -> int:
 
     info, out, console, journal = prepare(args, "scan")
     try:
-        from model_primitives import hash_inputs, iter_rust_files
+        from model_primitives import hash_inputs, iter_c_files, iter_rust_files
         rel_paths = iter_rust_files(info["path"])
         if not rel_paths:
-            raise ModelError("no .rs files under %s" % info["path"])
+            rel_paths = iter_c_files(info["path"])
+        if not rel_paths:
+            raise ModelError("no .rs or .c files under %s" % info["path"])
 
         rows = [scan_file(info["path"], rel) for rel in rel_paths]
         totals = {

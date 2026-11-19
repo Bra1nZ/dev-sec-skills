@@ -245,6 +245,21 @@ def iter_rust_files(target: str, limit: int = 20000):
     return found
 
 
+def iter_c_files(target: str, limit: int = 20000):
+    """Yield repository-relative `.c`/`.h` paths in a deterministic order."""
+    found = []
+    for root, dirs, files in os.walk(target):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS
+                         and not d.startswith(".git"))
+        for name in sorted(files):
+            if name.endswith((".c", ".h")):
+                full = os.path.join(root, name)
+                found.append(os.path.relpath(full, target))
+                if len(found) >= limit:
+                    return found
+    return found
+
+
 # ------------------------------------------------------------------- artifacts
 
 def rel(path: str, root: str) -> str:

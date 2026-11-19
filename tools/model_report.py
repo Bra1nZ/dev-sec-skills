@@ -78,11 +78,11 @@ def build_report(primitives, decisions, model, checks, inventory):
 
     add("## 2. Scope and borders")
     add("")
-    add("The model is derived from the declarations and bodies of the Rust")
+    add("The model is derived from the declarations and bodies of the source")
     add("project above. It covers:")
     add("")
     add("- state declared as named `struct` fields;")
-    add("- operations declared as `fn`, with their receivers and visibility;")
+    add("- operations declared as `fn` (Rust) or file-scope C function definitions, with receivers and visibility;")
     add("- guards recognised as early returns, `assert!` and `debug_assert!`;")
     add("- effects recognised as field assignment and a closed list of mutating")
     add("  methods (`insert`, `push`, `remove`, `clear`, `extend`, `retain`,")

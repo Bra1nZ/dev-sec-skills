@@ -81,8 +81,14 @@ class Extractor:
         except UnicodeDecodeError as exc:
             self._unmapped(rel_path, 1, 1, "non-utf8", str(exc))
             return
+        suffix = os.path.splitext(rel_path)[1]
+        is_c = suffix in (".c", ".h")
         try:
-            lexed, items, unsupported = parse_source(source)
+            if is_c:
+                import c_items
+                lexed, items, unsupported = c_items.parse_source(source)
+            else:
+                lexed, items, unsupported = parse_source(source)
         except LexError as exc:
             line = max(1, getattr(exc, "line", 1))
             self._unmapped(rel_path, line, line, "lex-error",
@@ -95,8 +101,8 @@ class Extractor:
         for entry in unsupported:
             self._unmapped(rel_path, entry["line"], entry["line"],
                            entry["reason"], entry["detail"])
-        if any(tok.kind == "ident" and tok.text in ("unsafe", "extern")
-               for tok in lexed.tokens):
+        if not is_c and any(tok.kind == "ident" and tok.text in ("unsafe", "extern")
+                            for tok in lexed.tokens):
             self._unmapped(rel_path, 1, max(1, len(lexed.lines)),
                            "tcb", "unsafe or extern: outside the model")
 
@@ -553,10 +559,12 @@ def main(argv) -> int:
     info, out, console, journal = prepare(args, "extract")
     extractor = Extractor(info["path"])
     try:
-        from model_primitives import hash_inputs, iter_rust_files
+        from model_primitives import hash_inputs, iter_c_files, iter_rust_files
         rel_paths = iter_rust_files(info["path"])
         if not rel_paths:
-            raise ModelError("no .rs files under %s" % info["path"])
+            rel_paths = iter_c_files(info["path"])
+        if not rel_paths:
+            raise ModelError("no .rs or .c files under %s" % info["path"])
         for rel in rel_paths:
             extractor._current_path = rel
             extractor.add_file(rel)
