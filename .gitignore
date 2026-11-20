@@ -8,3 +8,8 @@ crosscheck/**/target/
 # Локальные заметки пользователя — не для репозитория.
 предложения.md
 REPORT-iteration6-findings.md
+
+# Локальные результаты экспериментов (прод-данные, file:line) — жить в
+# рабочем дереве, но никогда не попадать в историю: см. правило
+# data-handling в docs/ai-review-experiment.md.
+/local-results/
